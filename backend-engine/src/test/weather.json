@@ -1,0 +1,4 @@
+[
+{"city":{"id":524901,"name":"Moscow","findname":"MOSCOW","country":"RU","coord":{"lon":37.615555,"lat":55.75222},"zoom":1},"time":1611331348,"sunrise":1611294012,"sunset":1611322902,"main":{"temp":271.18,"feels_like":266.12,"pressure":1008,"humidity":100,"temp_min":270.93,"temp_max":271.48},"visibility":2900,"wind":{"speed":4,"deg":190},"clouds":{"all":90},"weather":[{"id":701,"main":"Mist","description":"mist","icon":"50n"}],"uvi":0.42},
+{"city":{"id":520555,"name":"Nizhniy Novgorod","findname":"NIZHNIY NOVGOROD","country":"RU","coord":{"lon":44.002048,"lat":56.328674},"zoom":1},"time":1611331348,"sunrise":1611292657,"sunset":1611321190,"main":{"temp":263.93,"feels_like":258.62,"pressure":1016,"humidity":79,"temp_min":263.71,"temp_max":264.15},"visibility":7000,"wind":{"speed":3,"deg":140},"clouds":{"all":90},"weather":[{"id":600,"main":"Snow","description":"light snow","icon":"13n"}],"snow":{"1h":0.33},"uvi":0.41}
+]

@@ -1,0 +1,69 @@
+
+# User friendly name for your project.
+project: Triggerator
+
+# A yaml List of ldaps of users involved in developing the solution.
+authors:
+  - segy
+
+# Valid types: see go/gtech-file-type for all options.
+#
+type: scalable
+
+# Valid statuses: in dev, complete, deprecated, or inactive
+# See go/gtech-file-status for more options
+#
+status: in dev
+
+description: >
+  The solution aims at automating campaign management in DV360
+  based on external data feeds and a set of rules defined in configuration.
+
+# Expected sunset date for solution represented either numerically in
+# yyyy-mm-dd format (e.g. 1970-01-01) or in words using either a month day, year
+# format (e.g. January 1, 1970) or an abbreviated month day, year format (e.g.
+# Jan 1, 1970). This follows the specifications of the Google Developer
+# Documentation Style Guide.
+# See https://developers.google.com/style/dates-times for more information.
+#
+#sunset_date: 1970-01-01
+
+# A list of links to images for your solution.
+# Specify 'logo' or 'screenshot' so that portals can use your image correctly.
+#
+#images:
+#  - type: logo|screenshot
+#    url: http://my.site.com/image.jpg
+
+
+# Links to resources for your project. PRD, G3Doc, PLX, etc...
+# See go/gtech-file-links for more information
+# and go/gtech-file-links-checklist for suggestions.
+#
+links:
+  - name: Design Doc
+    url: go/triggerator-designdoc
+
+# Optional attribute for capturing impact metrics and tracking information.
+# For example, you could put 'Revenue Enabled' with an amount for the value
+# or 'GA' (Google Analytics) and the value is the tracking id.
+#
+#metrics:
+#  - type: GA
+#    value: UA-12456-01
+#    description: Tracking tag for adoption metrics.
+#  - type: Revenue Enabled
+#    value: 10M
+#    description: Total Revenue Enabled among Y customers in 2018.
+
+# List of tags to capture the solution purpose, product, tech stack,
+# data sources and more. See go/gtech-file-tags for more information
+# and go/gtech-file-tags-checklist for a list of classifiers.
+#
+tags:
+   - DV360
+   - GMP
+   - NodeJS
+   - TypeScript
+   - Angular
+   - Cloud Run
