@@ -1,0 +1,13 @@
+.mat-table {
+  width: 100%;
+}
+
+.editable-table .mat-row:hover:not(.invalid) {
+  cursor: pointer;
+}
+.mat-row:hover {
+  background-color: rgb(70, 70, 70);
+}
+// mat-row.remove-background {
+//   background: none ;
+// }

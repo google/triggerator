@@ -1,0 +1,78 @@
+<h1 mat-dialog-title>Feed</h1>
+<form [formGroup]="form" novalidate>
+
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" required>
+        <mat-hint>Feed name</mat-hint>
+        <mat-error *ngIf="form.get('name').invalid">Name is required</mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Type</mat-label>
+        <mat-select formControlName="type" required>
+          <mat-option *ngFor="let feedType of feedTypes" [value]="feedType.value">
+            {{feedType.title}}
+          </mat-option>
+        </mat-select>
+        <mat-hint>Feed type</mat-hint>
+        <mat-error *ngIf="form.get('type').invalid">Type is required</mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>URL</mat-label>
+        <input matInput formControlName="url" required>
+        <mat-icon matSuffix>link</mat-icon>
+        <mat-hint>Feed URL. Please note the resource you specify here should be accessing for server's service account
+        </mat-hint>
+        <mat-error *ngIf="form.get('url').invalid">URL is required</mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Encoding</mat-label>
+        <input matInput formControlName="charset">
+        <mat-icon matSuffix>translate</mat-icon>
+        <mat-hint>Feed data encoding (leave empty for UTF8)</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Unique key</mat-label>
+        <input matInput formControlName="key_column">
+        <mat-icon matSuffix>vpn_key</mat-icon>
+        <mat-hint>Feed key column name</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>External key</mat-label>
+        <input matInput formControlName="external_key">
+        <mat-icon matSuffix>vpn_key</mat-icon>
+        <mat-hint>A key of other feed to join</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col text-right">
+      <button mat-raised-button color="accent" (click)='save()' [disabled]="!form.valid">Save</button>
+      <button mat-raised-button mat-dialog-close style="margin-left: 20px">Cancel</button>
+    </div>
+  </div>
+
+</form>

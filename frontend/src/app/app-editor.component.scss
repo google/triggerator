@@ -1,0 +1,54 @@
+form .col {
+  margin-bottom: 15px;
+}
+
+.editable-table .mat-row:hover {
+  cursor: pointer;
+}
+
+.mat-row:hover {
+  background-color: rgb(70, 70, 70);
+}
+
+.mat-cell:not(:first-of-type) {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+.row.divider {
+  margin-top: 10px;
+  height: 5px;
+}
+
+.table-with-actions mat-cell:last-of-type, 
+.table-with-actions mat-header-cell:last-of-type, 
+.table-with-actions mat-footer-cell:last-of-type {
+  max-width: 100px;
+}
+
+.mat-expansion-panel .mat-cell:first-of-type, 
+.mat-expansion-panel .mat-header-cell:first-of-type, 
+.mat-expansion-panel .mat-footer-cell:first-of-type {
+  padding-left: 0;
+  padding-right: 0;
+}
+.mat-expansion-panel .mat-cell:last-of-type, 
+.mat-expansion-panel .mat-header-cell:last-of-type, 
+.mat-expansion-panel .mat-footer-cell:last-of-type {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.editable-title .float-edit-icon {
+  visibility: hidden;
+  margin-left: 5px;
+  vertical-align: middle;
+  // float: right;
+}
+.editable-title:hover .float-edit-icon {
+  visibility: visible;
+  font-size: 16px;
+}
+.editable-title:hover {
+  text-decoration: dashed underline;
+  cursor: pointer;
+}

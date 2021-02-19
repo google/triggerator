@@ -1,0 +1,6 @@
+{
+    "ignore": [".git", "node_modules", ".nyc_output", ".tmp", "coverage", "draft"],
+    "watch": ["./src"],
+    "exec": "npm run start:local",
+    "ext": "ts"
+}

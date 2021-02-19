@@ -1,0 +1,30 @@
+<tr-navbar></tr-navbar>
+<main class="container">
+  <router-outlet></router-outlet>
+  <app-progress-spinner [backdropEnabled]="true" [positionGloballyCenter]="true" [displayProgressSpinner]="loading">
+  </app-progress-spinner>
+  <!--
+  <cm-growler position="top-right" timeout="2000"></cm-growler>
+  <cm-modal></cm-modal>
+  -->
+</main>
+<footer class="footer mt-auto">
+  <div class="container">
+    <span class="text-muted">Display & Video 360 Triggerator, &copy;&nbsp;Google Professional Services, 2021.</span>
+  </div>
+</footer>
+
+
+<!-- 
+<div class="toolbar" role="banner">{{appTitle}}
+</div>
+<div class="content" role="main">
+  <h2>Google Sheets tests</h2>
+  <input type='text' [(ngModel)]='spreadsheetUri' />
+  <br>
+  <button (click)='fetchSpreadsheet()'>Fetch spreadsheet</button>
+</div>
+<footer>
+  Triggerator for DV360, &copy;&nbsp;Google, 2021. 
+</footer>
+-->

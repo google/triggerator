@@ -1,0 +1,47 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Frontend: Chrome against localhost",
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}/frontend"
+    }, {
+      "name": "Backend: server (ts)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/src/index.ts",
+      "args": [
+        "--keyFile=./keys/triggerator-sd-sa.json",
+        "--masterSpreadsheet=1fnxjMudPpiHz0XezAmdFjvD2QCYi6IvgluDLpxYs8-M"
+      ],
+      "cwd": "${workspaceFolder}/backend",
+      "sourceMaps": true,
+      "preLaunchTask": "build: tsc - backend",
+      //"preLaunchTask": "build",
+      // "outFiles": [
+      //   "${workspaceFolder}/backend/dist/**/*.js"
+      // ],
+      // "skipFiles": [
+      //   "<node_internals>/**"
+      // ],     
+    }, {
+      "name": "Backend: test.ts",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/src/test/test.ts",
+      "sourceMaps": true,
+      //"preLaunchTask": "build",
+      "outFiles": [
+        "${workspaceFolder}/backend/dist/**/*.js"
+      ],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+    }
+  ]
+}
