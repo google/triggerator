@@ -1,0 +1,28 @@
+{
+  "editor.tabSize": 2,
+  "mocha.env": {
+		//"TS_NODE_FILES" : true,
+		"TS_NODE_TRANSPILE_ONLY": true
+	},
+  "mocha.files.glob": "src/test/**/*.tests.ts",
+  "mocha.options": {
+    "ui": "tdd",
+    "timeout": "5s"
+  },
+  "mocha.requires": [
+    "ts-node/register",
+    "src/test/fixtures-auth-key.ts"
+  ],
+  "mocha.coverage": {
+    "enable": true,
+    "decoration": true,
+    "runWithInterval": false,
+    "autoUpdateInterval": 20000,
+    "activeOnStart": true,
+    "runAfterTest": false,
+    "runCoverageAfterFileSave": false,
+    "reporters": []
+  },
+
+  //"mocha.logVerbose": true,
+}

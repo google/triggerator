@@ -1,0 +1,75 @@
+<div class="alert alert-dark">
+  Please note that rules are executed for every feed row and a first rule evaluted to TRUE will be used.
+  <br>
+  To actually execute rules load feeds with 'Evaluate rules' option checked by pressing Preview button above.
+</div>
+
+<div class="row">
+  <div class="col col-12" style="margin-bottom: 15px;">
+    <table mat-table [dataSource]="dataSource" multiTemplateDataRows class="mat-elevation-z8 table-with-actions">
+      <!-- Name Column -->
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef> Name </th>
+        <td mat-cell *matCellDef="let element">{{element.name}}</td>
+      </ng-container>
+      <ng-container matColumnDef="condition">
+        <th mat-header-cell *matHeaderCellDef> Condition </th>
+        <td mat-cell *matCellDef="let element">{{element.condition}}</td>
+      </ng-container>
+      <ng-container [matColumnDef]="'actions'">
+        <th mat-header-cell *matHeaderCellDef actions> Actions </th>
+        <td mat-cell *matCellDef="let element">
+          <button mat-icon-button (click)="editRule(element)">
+            <mat-icon mat-icon-button color="accent">edit</mat-icon>
+          </button>
+          <button mat-icon-button (click)="deleteRule(element)">
+            <mat-icon mat-icon-button color="warn">delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <!-- Expanded Content Column - The detail row is made up of this one column that spans across all columns -->
+      <ng-container matColumnDef="expandedDetail">
+        <td mat-cell *matCellDef="let element" [attr.colspan]="columnsToDisplay.length">
+          <div class="element-detail expanded-row container">
+            <div class="row">
+              <div class="col "><strong>Display</strong></div>
+              <div class="col ">Bid: {{ element.display_state?.bid }}</div>
+              <div class="col ">Creatives: {{ element.display_state?.creatives }}</div>
+              <div class="col ">IO Frequency: {{ element.display_state?.frequency_io }}</div>
+              <div class="col ">LI Frequency: {{ element.display_state?.frequency_li }}</div>
+            </div>
+            <div class="row">
+              <div class="col "><strong>YouTube</strong></div>
+              <div class="col ">Bid: {{ element.youtube_state?.bid }}</div>
+              <div class="col ">Creatives: {{ element.youtube_state?.creatives }}</div>
+              <div class="col ">IO Frequency: {{ element.youtube_state?.frequency_io }}</div>
+              <div class="col ">LI Frequency: {{ element.youtube_state?.frequency_li }}</div>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnsToDisplay"></tr>
+      <tr mat-row *matRowDef="let element; columns: columnsToDisplay;" class="element-row expanded-row"></tr>
+      <tr mat-row *matRowDef="let row; columns: ['expandedDetail']" class="detail-row"></tr>
+      <ng-template matNoDataRow>
+        <div class="alert">No rules yet, ready to <a href="#" (click)="createRule();$event.preventDefault()">create</a>?
+        </div>
+      </ng-template>
+    </table>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col col-6 text-left">
+    <button mat-raised-button (click)="validate()" [disabled]="!this.dataSource.data?.length" color="accent" class="mat-elevation-z2">
+      <mat-icon>check</mat-icon> Validate
+    </button>
+  </div>
+  <div class="col col-6 text-right">
+    <button mat-raised-button color="accent" (click)='createRule()'>
+      <mat-icon>add</mat-icon> &nbsp;Create
+    </button>
+  </div>
+</div>

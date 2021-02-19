@@ -1,0 +1,85 @@
+<app-progress-spinner [backdropEnabled]="true" [positionGloballyCenter]="true" [displayProgressSpinner]="loading">
+</app-progress-spinner>
+
+<div *ngIf="errorMessage">
+  <div class="alert alert-danger alert-dismissible" #errorMessageAlert>
+    <div [innerHTML]="errorMessage"></div>
+    <button type="button" class="close" aria-label="Close" (click)="closeErrorMessage()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+</div>
+<table mat-table [dataSource]="dataSource" class="mat-elevation-z8 editable-table">
+
+  <!--- Note that these columns can be defined in any order.
+        The actual rendered columns are set as a property on the row definition" -->
+
+  <!-- Position Column -->
+  <ng-container matColumnDef="position">
+    <th mat-header-cell *matHeaderCellDef> No. </th>
+    <td mat-cell *matCellDef="let element"> {{element.position}} </td>
+  </ng-container>
+
+  <!-- Name Column -->
+  <ng-container matColumnDef="name">
+    <th mat-header-cell *matHeaderCellDef> Name </th>
+    <td mat-cell *matCellDef="let element">
+      <a [routerLink]="[element.configId,'edit']" class="md-primary">{{element.name}}</a>
+    </td>
+  </ng-container>
+
+  <!-- SpreadsheetId Column -->
+  <ng-container matColumnDef="spreadsheetId">
+    <th mat-header-cell *matHeaderCellDef> Configuration Spreadsheet</th>
+    <td mat-cell *matCellDef="let element">
+      <a target="_blank" class="md-primary"
+        href="https://docs.google.com/spreadsheets/d/{{element.configId}}/edit">{{element.configId}}</a>
+    </td>
+  </ng-container>
+
+  <!-- Version Column -->
+  <ng-container matColumnDef="version">
+    <th mat-header-cell *matHeaderCellDef> Version </th>
+    <td mat-cell *matCellDef="let element"> {{element.version}} </td>
+  </ng-container>
+
+  <!-- Status Column -->
+  <ng-container matColumnDef="status">
+    <th mat-header-cell *matHeaderCellDef> Status </th>
+    <td mat-cell *matCellDef="let element" matTooltip="{{element.statusDetails}}" 
+      [ngClass]="{'text-danger': element.status==='invalid'}"> {{element.status}} </td>
+  </ng-container>
+
+  <ng-container [matColumnDef]="'actions'">
+    <th mat-header-cell *matHeaderCellDef> Actions </th>
+    <td mat-cell *matCellDef="let element">
+      <button mat-icon-button (click)="deleteConfig(element)">
+        <mat-icon mat-icon-button color="warn">delete</mat-icon>
+      </button>
+    </td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; let e = index; columns: displayedColumns;" class="remove-background"
+    (mouseover)="mouseOverIndex = e" (mouseout)="mouseOverIndex=-1"
+    [ngClass]="{'mat-elevation-z8' : e == mouseOverIndex, 'invalid': row.status === 'invalid'}" 
+    (click)="onRowClick($event, row)"></tr>
+  <ng-template matNoDataRow>
+    <div class="alert" style="color: white">No applications yet, ready to <a href="#"
+        (click)="createConfig();$event.preventDefault()">create</a> one?
+    </div>
+  </ng-template>
+
+</table>
+<p></p>
+
+<div class="row">
+  <div class="col text-right">
+    <button mat-raised-button color="accent" (click)='createConfig()'>
+      <mat-icon>add</mat-icon> &nbsp;Create
+    </button>
+    <button mat-raised-button (click)='onRefresh()' style="margin-left: 20px">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  </div>
+</div>

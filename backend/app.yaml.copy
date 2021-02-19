@@ -1,0 +1,7 @@
+runtime: nodejs14
+default_expiration: 0
+
+env_variables:
+  SECURITY:
+  EXPECTED_AUDIENCE:
+  MASTER_SPREADSHEET:

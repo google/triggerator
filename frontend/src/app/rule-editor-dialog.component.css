@@ -1,0 +1,11 @@
+.col {
+  margin-bottom: 10px;
+}
+.row.divider {
+  margin-top: 10px;
+  height: 5px;
+}
+
+.mat-divider-horizontal.mat-divider-inset {
+  margin-left: 0;
+}

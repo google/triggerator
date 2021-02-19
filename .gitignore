@@ -1,7 +1,1 @@
-node_modules/
-backend-engine/node_modules/
-backend-engine/.nyc_output
-backend-engine/dist/
-backend-engine/src/test/token.json
-backend-engine/src/test/credentials.json
 .DS_Store

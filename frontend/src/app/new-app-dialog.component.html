@@ -1,0 +1,31 @@
+<h1 mat-dialog-title>New Application</h1>
+<h3 mat-dialog-subtitle style="margin-bottom: 0;">Formerly known as State and Tier</h3>
+<form [formGroup]="form" novalidate>
+
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" required>
+        <mat-hint>Application name</mat-hint>
+        <mat-error *ngIf="form.get('name').invalid">Name is required</mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Spreadsheet Id</mat-label>
+        <input matInput formControlName="appId">
+        <mat-hint>Spreadsheet Id (for connecting with Triggerator v1 spreadsheet)</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col text-right" style="margin-top: 10px">
+      <button mat-raised-button color="accent" (click)='save()' [disabled]="!form.valid">Save</button>
+      <button mat-raised-button mat-dialog-close style="margin-left: 20px">Cancel</button>
+    </div>
+  </div>  
+</form>

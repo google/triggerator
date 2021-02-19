@@ -1,0 +1,197 @@
+<app-progress-spinner [backdropEnabled]="true" [positionGloballyCenter]="true" [displayProgressSpinner]="loading">
+</app-progress-spinner>
+<h1 mat-dialog-title>Rule</h1>
+<h3 mat-dialog-subtitle style="margin-bottom: 5px;">Formerly known as State and Tier</h3>
+
+<div *ngIf="errorMessage">
+  <div class="alert alert-danger alert-dismissible" #errorMessageAlert>
+    <div [innerHTML]="errorMessage"></div>
+    <button type="button" class="close" aria-label="Close" (click)="closeErrorMessage()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+</div>
+<form [formGroup]="form" novalidate>
+
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" required>
+        <mat-hint>Rule name</mat-hint>
+        <mat-error *ngIf="form.get('name').invalid">Name is required</mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Condition</mat-label>
+        <input matInput formControlName="condition" required>
+        <mat-hint>Expression for condition</mat-hint>
+        <mat-error *ngIf="form.get('condition').invalid">Condition is required</mat-error>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="row divider">
+    <div class="col">
+      <mat-divider [inset]="true"></mat-divider>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col" style="margin:0">
+      <h3 mat-subheader>Parameters for Display campaigns</h3>
+    </div>
+  </div>
+  <!-- Bid -->
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Bid</mat-label>
+        <input matInput formControlName="display_bid">
+        <!-- <mat-hint>LI's BidStrategyValue, either absolute number or multiplier (format: 'xN')</mat-hint> -->
+      </mat-form-field>
+    </div>
+    <div class="col">
+      <div class="mat-hint" style="font-size:75%; padding-top: 5px">
+        LI's BidStrategyValue, either absolute number or multiplier (format: 'xN')
+      </div>
+    </div>
+  </div>
+  <!-- CreativeAssignments -->
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Creatives</mat-label>
+        <input matInput formControlName="display_creatives">
+        <mat-hint>Creative Assignments, list of values separated by commas or semicolons</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>  
+  <!-- IO Frequency (format: (\d+)\/(week|day|month)) -->
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" color="accent">
+        <mat-label>IO Frequency Exposures</mat-label>
+        <input matInput formControlName="display_io_frequency_value">
+        <mat-hint>Numeric value for frequency</mat-hint>
+      </mat-form-field>
+    </div>
+    <div class="col">
+      <mat-form-field appearance="outline" color="accent">
+        <mat-label>IO Frequency Period</mat-label>
+        <mat-select formControlName="display_io_frequency_period">
+          <mat-option *ngFor="let periodType of periodTypes" [value]="periodType.value">
+            {{periodType.title}}
+          </mat-option>
+        </mat-select>
+        <mat-hint>Frequency period</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+  <!-- LI Frequency -->
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" color="accent">
+        <mat-label>LI Frequency Exposures</mat-label>
+        <input matInput formControlName="display_li_frequency_value">
+        <mat-hint>Numeric value for frequency</mat-hint>
+      </mat-form-field>
+    </div>
+    <div class="col">
+      <mat-form-field appearance="outline" color="accent">
+        <mat-label>LI Frequency Period</mat-label>
+        <mat-select formControlName="display_li_frequency_period">
+          <mat-option *ngFor="let periodType of periodTypes" [value]="periodType.value">
+            {{periodType.title}}
+          </mat-option>
+        </mat-select>
+        <mat-hint>Frequency period</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+  <div class="row divider">
+    <div class="col">
+      <mat-divider [inset]="true"></mat-divider>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col" style="margin:0">
+      <h3 mat-subheader>Parameters for YouTube campaigns</h3>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Bid</mat-label>
+        <input matInput formControlName="yt_bid">
+      </mat-form-field>
+    </div>
+    <div class="col">
+      <div class="mat-hint" style="font-size:75%; padding-top: 5px">
+        LI's BidStrategyValue, either absolute number or multiplier (format: 'xN')
+      </div>
+    </div>
+  </div>
+  <!-- CreativeAssignments -->
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" class="full-width" color="accent">
+        <mat-label>Creative</mat-label>
+        <input matInput formControlName="yt_creatives">
+        <mat-hint>Creative id for YouTube campaigns</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>  
+  <!-- IO Frequency -->
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" color="accent">
+        <mat-label>IO Frequency Exposures</mat-label>
+        <input matInput formControlName="yt_io_frequency_value">
+        <mat-hint>Numeric value for frequency</mat-hint>
+      </mat-form-field>
+    </div>
+    <div class="col">
+      <mat-form-field appearance="outline" color="accent">
+        <mat-label>IO Frequency Period</mat-label>
+        <mat-select formControlName="yt_io_frequency_period">
+          <mat-option *ngFor="let periodType of periodTypes" [value]="periodType.value">
+            {{periodType.title}}
+          </mat-option>
+        </mat-select>
+        <mat-hint>Frequency period</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+  <!-- LI Frequency -->
+  <div class="row">
+    <div class="col">
+      <mat-form-field appearance="outline" color="accent">
+        <mat-label>LI Frequency Exposures</mat-label>
+        <input matInput formControlName="yt_li_frequency_value">
+        <mat-hint>Numeric value for frequency</mat-hint>
+      </mat-form-field>
+    </div>
+    <div class="col">
+      <mat-form-field appearance="outline" color="accent">
+        <mat-label>LI Frequency Period</mat-label>
+        <mat-select formControlName="yt_li_frequency_period">
+          <mat-option *ngFor="let periodType of periodTypes" [value]="periodType.value">
+            {{periodType.title}}
+          </mat-option>
+        </mat-select>
+        <mat-hint>Frequency period</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col text-right">
+      <button mat-raised-button color="accent" (click)='save()' [disabled]="!form.valid">Save</button>
+      <button mat-raised-button mat-dialog-close>Cancel</button>
+    </div>
+  </div>
+
+
+</form>

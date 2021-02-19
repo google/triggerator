@@ -1,0 +1,533 @@
+<app-progress-spinner [backdropEnabled]="true" [positionGloballyCenter]="true" [displayProgressSpinner]="loading">
+</app-progress-spinner>
+
+<div *ngIf="errorMessage">
+  <div class="alert alert-danger alert-dismissible" #errorMessageAlert>
+    <div [innerHTML]="errorMessage"></div>
+    <button type="button" class="close" aria-label="Close" (click)="closeErrorMessage()">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+</div>
+
+<mat-card>
+  <mat-card-title>
+    <div class="row">
+      <div class="col">
+        Application
+      </div>
+      <div class="col text-right" style="font-size: 14px">
+        <mat-slide-toggle [(ngModel)]="autoSave">Auto-save</mat-slide-toggle>
+      </div>
+    </div>
+  </mat-card-title>
+  <mat-card-subtitle class="editable-title" (click)="editTitle()">{{config?.title}}<a href="" (click)="editTitle();$event.preventDefault()"><mat-icon class="float-edit-icon">edit</mat-icon></a></mat-card-subtitle>
+</mat-card>
+<p></p>
+
+
+<mat-tab-group animationDuration="0ms" dynamicHeight color="accent" #tabGroup>
+  <mat-tab label="General">
+    <form [formGroup]="formGeneral" novalidate>
+      <mat-card>
+        <div class="row">
+          <div class="col">    
+            <mat-form-field appearance="outline" color="accent">
+              <mat-label>Advertiser Id</mat-label>
+              <input matInput formControlName="advertiserId">
+              <mat-error *ngIf="formGeneral.controls['advertiserId'].hasError('required')">
+                Advertiser Id is <strong>required</strong>
+              </mat-error>
+              <mat-hint>Your DV360 advertiser id</mat-hint>
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>Campaign Id</mat-label>
+              <input matInput formControlName="campaignId">
+              <mat-hint>DV360 campaign's id that Triggerator manages (you'll know it after you import a generated SDF - see <a href="#" (click)="switchToTab('DV360 Generation');$event.preventDefault()">DV360 Generation</a>)
+              </mat-hint>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>Notification email</mat-label>
+              <input matInput formControlName="notificationEmails">
+              <mat-icon matSuffix>email</mat-icon>
+              <mat-hint>An email where all notifications will be sent to</mat-hint>
+            </mat-form-field>
+          </div>
+        </div>
+      </mat-card>
+    </form>
+  </mat-tab>
+  <!-- Tab: Execution -->
+  <mat-tab label="Execution">
+    <form [formGroup]="formExecution" novalidate>
+      <mat-card>
+        <div class="row">
+          <div class="col" style="margin:0">
+            <h3 mat-subheader color="primary">Schedule</h3>
+          </div>
+        </div>
+        <div class="alert alert-dark" *ngIf="this.formExecution.dirty">
+          There are unsaved changes.
+        </div>
+        <!-- enable -->
+        <div class="row">
+          <div class="col">
+            <mat-slide-toggle formControlName="enable">Enabled</mat-slide-toggle>
+          </div>
+        </div>
+        <!-- schedule -->
+        <div class="row">
+          <div class="col-5 mb-3">
+            <mat-form-field appearance="outline" color="accent" class="full-width">
+              <mat-label>Schedule (Frequency)</mat-label>
+              <input matInput formControlName="schedule">
+              <mat-hint>Schedules are specified using unix-cron format. E.g. every minute: "* * * * *", every 3 hours: "0 */3 * * *", every monday at 9:00: "0 9 * * 1"</mat-hint>
+              <mat-icon matSuffix>schedule</mat-icon>              
+            </mat-form-field>
+          </div>
+          <div class="col pt-1">
+            <div class="alert alert-dark">
+              See description of the cron format <a href="https://crontab.guru/#{{this.scheduleLink}}" target="_blank">here</a><br>
+              Format is "* * * * *", "*"" - any value, "," - value list separator, "-" - range of values, "/" - step values
+            </div>
+          </div>
+        </div>        
+        <!-- timeZone -->
+        <div class="row">
+          <div class="col-5 mb-4">
+            <mat-form-field appearance="outline" color="accent" class="full-width">
+              <mat-label>Timezone</mat-label>
+              <input matInput formControlName="timeZone">
+              <mat-hint>Name of a timezone from <a href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones">tz database</a>, e.g. Europe/Moscow, America/Los_Angeles, UTC</mat-hint>
+              <mat-icon matSuffix>globe</mat-icon>
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <button mat-raised-button (click)="saveSchedule()" color="accent" class="mat-elevation-z2">
+              <mat-icon>sync</mat-icon> Save
+            </button>
+            <button mat-raised-button (click)="loadSchedule()" class="mat-elevation-z2 ml-4">
+              <mat-icon>download</mat-icon> Load
+            </button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-divider [inset]="true"></mat-divider>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col" style="margin:0">
+            <h3 mat-subheader>Run</h3>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <button mat-raised-button (click)="runExecution()" color="accent" class="mat-elevation-z2">
+              <mat-icon>bolt</mat-icon> Run
+            </button>
+          </div>
+        </div>
+      </mat-card>
+    </form>
+  </mat-tab>
+  <!-- Tab: SDF -->
+  <mat-tab label="DV360 Generation">
+    <form [formGroup]="formSdf" novalidate>
+      <mat-card>
+        <!-- template campaign id -->
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" color="accent">
+              <mat-label>Template Campaign</mat-label>
+              <input matInput formControlName="template_campaign">
+              <mat-hint>Id of a template DV360 campaign to generate SDF from</mat-hint>
+            </mat-form-field>
+          </div>
+        </div>
+        <!-- campaign name -->
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>New campaign name</mat-label>
+              <input matInput formControlName="campaign_name">
+              <mat-hint>A name for generated campaign</mat-hint>
+            </mat-form-field>
+          </div>
+        </div>
+        <!-- budget -->
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" color="accent">
+              <mat-label>Total budget</mat-label>
+              <input matInput formControlName="total_budget" type="number">
+              <mat-icon matSuffix>money</mat-icon>
+              <mat-hint></mat-hint>
+            </mat-form-field>
+          </div>
+        </div>        
+        <div class="row">
+          <div class="col">
+            <mat-divider [inset]="true"></mat-divider>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col" style="margin:0">
+            <h3 mat-subheader>Templates</h3>
+            <div class="alert alert-dark" style="padding-bottom: 0;">Inside name templates you can use the following
+              macros:
+              <ul>
+                <li>{{ '{' }}row_name{{ '}' }} - name column's value of feed row</li>
+                <li>{{ '{' }}tier_name{{ '}' }} - rule name</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>Display Insertion Order name template</mat-label>
+              <input matInput formControlName="io_template">
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>Display Line Item name template</mat-label>
+              <input matInput formControlName="li_template">
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>TrueView Insertion Order name template</mat-label>
+              <input matInput formControlName="yt_io_template">
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>TrueView Line Item name template</mat-label>
+              <input matInput formControlName="yt_li_template">
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>TrueView Ad Group name template</mat-label>
+              <input matInput formControlName="adgroup_template">
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>TrueView Ad name template</mat-label>
+              <input matInput formControlName="ad_template">
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-divider [inset]="true"></mat-divider>
+          </div>
+        </div>
+        <!-- activate -->
+        <div class="row">
+          <div class="col">
+            <mat-slide-toggle formControlName="activateCampaign">Activate campaign</mat-slide-toggle>
+          </div>
+        </div>
+        <!-- date range -->
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="fill" color="accent">
+              <mat-label>Enter a date range for new campaign</mat-label>
+              <mat-date-range-input formGroupName="newCampaignPeriod" [rangePicker]="picker">
+                <input matStartDate formControlName="start" placeholder="Start date">
+                <input matEndDate formControlName="end" placeholder="End date">
+              </mat-date-range-input>
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-date-range-picker #picker></mat-date-range-picker>
+
+              <mat-error *ngIf="formSdf.get('newCampaignPeriod.start').hasError('matStartDateInvalid')">Invalid start
+                date</mat-error>
+              <mat-error *ngIf="formSdf.get('newCampaignPeriod.start').hasError('matEndDateInvalid')">Invalid end date
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+        <!-- destination folder -->
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>Destination path</mat-label>
+              <input matInput formControlName="destination_folder">
+              <mat-hint>Destination for generated SDFs: either "gs://" (GCS) or "drive://" (Google Drive) path</mat-hint>
+            </mat-form-field>
+          </div>
+        </div>        
+        <!-- Operations -->
+        <div class="row">
+          <div class="col">
+            <button mat-raised-button (click)="generateSdf()" color="accent" class="mat-elevation-z2">
+              <mat-icon>bolt</mat-icon> Generate SDF
+            </button>
+            <button mat-raised-button (click)="updateSdf()" color="accent" class="mat-elevation-z2 ml-4">
+              <mat-icon>bolt</mat-icon> Update SDF
+            </button>
+          </div>
+        </div>
+      </mat-card>
+    </form>
+  </mat-tab>
+  <!-- FEEDS tab -->
+  <mat-tab label="Feeds & Rules">
+    <form [formGroup]="formFeeds" novalidate>
+      <mat-card>
+        <div class="row">
+          <div class="col" style="margin:0">
+            <h3 mat-subheader color="primary">Feeds</h3>
+          </div>
+        </div>
+        <!-- Feeds -->
+        <div class="row">
+          <div class="col">
+            <mat-table [dataSource]="dataSourceFeeds" class="mat-elevation-z8 editable-table table-with-actions">
+              <!-- Name Column -->
+              <ng-container matColumnDef="name">
+                <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+                <mat-cell *matCellDef="let element">{{element.name}}</mat-cell>
+              </ng-container>
+              <!-- Type Column -->
+              <ng-container matColumnDef="type">
+                <mat-header-cell *matHeaderCellDef> Type </mat-header-cell>
+                <mat-cell *matCellDef="let element"> {{element.type}} </mat-cell>
+              </ng-container>
+              <!-- URL Column -->
+              <ng-container matColumnDef="url">
+                <mat-header-cell *matHeaderCellDef> URL </mat-header-cell>
+                <mat-cell *matCellDef="let element" [matTooltip]="element.url">
+                  <a href="{{element.url}}" target="_blank"> {{element.url}} </a>
+                </mat-cell>
+              </ng-container>
+              <!-- Encoding Column -->
+              <ng-container matColumnDef="charset">
+                <mat-header-cell *matHeaderCellDef> Encoding </mat-header-cell>
+                <mat-cell *matCellDef="let element"> {{element.charset}} </mat-cell>
+              </ng-container>
+              <!-- Unique Key Column -->
+              <ng-container matColumnDef="key_column">
+                <mat-header-cell *matHeaderCellDef> Unique Key </mat-header-cell>
+                <mat-cell *matCellDef="let element"> {{element.key_column}} </mat-cell>
+              </ng-container>
+              <!-- External Key Column -->
+              <ng-container matColumnDef="external_key">
+                <mat-header-cell *matHeaderCellDef> External Key </mat-header-cell>
+                <mat-cell *matCellDef="let element"> {{element.external_key}} </mat-cell>
+              </ng-container>
+              <ng-container [matColumnDef]="'actions'">
+                <mat-header-cell *matHeaderCellDef> Actions </mat-header-cell>
+                <mat-cell *matCellDef="let element">
+                  <button mat-icon-button (click)="loadFeed(element)" matTooltip="Load">
+                    <mat-icon mat-icon-button>refresh</mat-icon>
+                  </button>
+                  <button mat-icon-button (click)="deleteFeed(element)">
+                    <mat-icon mat-icon-button color="warn">delete</mat-icon>
+                  </button>
+                </mat-cell>
+              </ng-container>
+              <mat-header-row *matHeaderRowDef="feedsColumns"></mat-header-row>
+              <mat-row *matRowDef="let row; let e = index; columns: feedsColumns;" class="remove-background"
+                (mouseover)="mouseOverIndex = e" (mouseout)="mouseOverIndex=-1"
+                [ngClass]="{'mat-elevation-z8' : e == mouseOverIndex}" (click)="onFeedRowClick($event, row)"></mat-row>
+              <ng-template matNoDataRow>
+                <div class="alert">No feeds yet, ready to <a href="#" (click)="createFeed();$event.preventDefault()">create</a>?</div>
+              </ng-template>              
+            </mat-table>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col text-left">
+            <button mat-raised-button (click)="loadAllFeeds()" [disabled]="!this.dataSourceFeeds.data?.length" color="accent" class="mat-elevation-z2"
+              matTooltip="Load combined feed (with join)">
+              <mat-icon>bolt</mat-icon> Preview
+            </button>
+            <mat-checkbox [checked]="evaluateRulesWithFeeds" 
+            (change)="this.evaluateRulesWithFeeds=!this.evaluateRulesWithFeeds" 
+            matTooltip="Evaluate rules (see below) with for every row in joined feed data"
+            class="ml-3" >Evaluate rules</mat-checkbox>
+          </div>
+          <div class="col text-right">
+            <button mat-raised-button color="accent" (click)='createFeed()'>
+              <mat-icon>add</mat-icon> &nbsp;Create
+            </button>
+          </div>
+        </div>
+
+        <!-- feed data -->
+        <div class="row">
+          <div class="col">
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <mat-panel-title>Feed data</mat-panel-title>
+                <mat-panel-description>Click to expand</mat-panel-description>
+              </mat-expansion-panel-header>
+              <!-- Tabs with feed data sources -->
+              <mat-tab-group animationDuration="0ms" dynamicHeight color="accent" #FeedData
+                [selectedIndex]="tabsFeedDataSelected">
+                <mat-tab *ngFor="let tab of tabsFeedData; let index = index" [label]="tab">
+                  <mat-table [dataSource]="dataSourceFeedData[tab]">
+                    <ng-container *ngFor="let disCol of feedDataColumns[tab]; let colIndex = index"
+                      matColumnDef="{{disCol}}">
+                      <mat-header-cell *matHeaderCellDef>{{disCol}}</mat-header-cell>
+                      <mat-cell *matCellDef="let element">{{element[disCol]}}</mat-cell>
+                    </ng-container>
+                    <mat-header-row *matHeaderRowDef="(feedDataColumns[tab] )"></mat-header-row>
+                    <mat-row *matRowDef="let row; columns: (feedDataColumns[tab] )"></mat-row>
+                    <ng-template matNoDataRow>
+                      <div class="alert">Load a feed or click Preview to load a combined feed</div>
+                    </ng-template>
+                  </mat-table>
+                  <mat-paginator #feedDataPaginator pageSize=5 [pageSizeOptions]="[5, 10, 20, 50, 100]"
+                    showFirstLastButtons>
+                  </mat-paginator>
+                  <button mat-raised-button *ngIf="index !== 0" (click)='removeFeedDataTab(tab)'>Remove</button>
+                </mat-tab>
+              </mat-tab-group>
+            </mat-expansion-panel>
+          </div>
+        </div>
+        <div class="row divider">
+          <div class="col">
+            <mat-divider [inset]="true"></mat-divider>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col" style="margin:0">
+            <h3 mat-subheader>Columns</h3>
+          </div>
+        </div>
+        <!-- name_column -->
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" color="accent">
+              <mat-label>Name column</mat-label>
+              <input matInput formControlName="name_column" [matAutocomplete]="autoNameColumn">
+              <mat-autocomplete #autoNameColumn="matAutocomplete">
+                <mat-option *ngFor="let option of feedDataColumns['Result']" [value]="option">
+                  {{option}}
+                </mat-option>
+              </mat-autocomplete>
+              <mat-hint>Feed row name column</mat-hint>
+              <mat-error *ngIf="formFeeds.get('name_column').errors?.required">
+                Column name is missing
+              </mat-error>
+              <mat-error *ngIf="formFeeds.get('name_column').errors?.unknownColumn">
+                Unknown column (it does not exist in the joined feed data)
+              </mat-error>
+            </mat-form-field>
+            <mat-icon color="accent" *ngIf="formFeeds.get('name_column').valid">check</mat-icon>
+          </div>
+        </div>
+        <!-- geo_code_column -->
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" color="accent">
+              <mat-label>GEO code column</mat-label>
+              <input matInput formControlName="geo_code_column" [matAutocomplete]="autoGeoColumn">
+              <mat-autocomplete #autoGeoColumn="matAutocomplete">
+                <mat-option *ngFor="let option of feedDataColumns['Result']" [value]="option">
+                  {{option}}
+                </mat-option>
+              </mat-autocomplete>
+              <mat-hint>Name of column containing geo code</mat-hint>
+              <mat-error *ngIf="formFeeds.get('geo_code_column').errors?.required">
+                Column name is missing
+              </mat-error>
+              <mat-error *ngIf="formFeeds.get('geo_code_column').errors?.unknownColumn">
+                Unknown column (it does not exist in the joined feed data)
+              </mat-error>
+            </mat-form-field>
+            <mat-icon color="accent" *ngIf="formFeeds.get('geo_code_column').valid">check</mat-icon>
+          </div>
+        </div>
+        <!-- budget_factor_column -->
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" color="accent">
+              <mat-label>Budget factor column</mat-label>
+              <input matInput formControlName="budget_factor_column" [matAutocomplete]="autoBudgetColumn">
+              <mat-autocomplete #autoBudgetColumn="matAutocomplete">
+                <mat-option *ngFor="let option of feedDataColumns['Result']" [value]="option">
+                  {{option}}
+                </mat-option>
+              </mat-autocomplete>
+              <mat-hint>Name of column containing budget factor</mat-hint>
+              <mat-error *ngIf="formFeeds.get('budget_factor_column').errors?.required">
+                Column name is missing
+              </mat-error>
+              <mat-error *ngIf="formFeeds.get('budget_factor_column').errors?.unknownColumn">
+                Unknown column (it does not exist in the joined feed data)
+              </mat-error>
+            </mat-form-field>
+            <mat-icon color="accent" *ngIf="formFeeds.get('budget_factor_column').valid">check</mat-icon>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col text-left">
+            <button mat-raised-button (click)="validateFeedColumns()" color="accent" class="mat-elevation-z2"
+              matTooltip="Validate the correctness of column names using feed data (you need to load feed data first)">
+              <mat-icon>check</mat-icon> Validate
+            </button>
+          </div>
+        </div>
+        <div class="row divider">
+          <div class="col">
+            <mat-divider [inset]="true"></mat-divider>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col" style="margin:0">
+            <h3 mat-subheader>Rules</h3>
+          </div>
+        </div>
+        <!-- Rules -->
+        <div class="row">
+          <div class="col">
+            <tr-rules-list [data]="config" [appId]="appId" [parent]="this"></tr-rules-list>
+          </div>
+        </div>
+      </mat-card>
+    </form>
+  </mat-tab>
+</mat-tab-group>
+<p></p>
+<div class="row full-width" style="text-align: right;">
+  <div class="col">
+    <button mat-raised-button color="primary" (click)="save()" class="ml-4">
+      <mat-icon>save</mat-icon> Save
+    </button>
+  <button mat-raised-button (click)="refresh()" class="ml-4">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  <button mat-raised-button (click)="close()" class="ml-4">
+      <mat-icon>cancel</mat-icon> Close
+    </button>
+</div>
+</div>

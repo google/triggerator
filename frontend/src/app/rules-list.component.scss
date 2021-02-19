@@ -1,0 +1,32 @@
+.element-row td {
+  border-bottom-width: 0;
+}
+// tr.element-row:not(.expanded-row):hover {
+//   background: rgb(138, 134, 134);
+//   cursor: pointer;
+// }
+.element-detail.expanded-row {
+  height: 68px;
+}
+// tr.element-row:not(.expanded-row):active {
+//   background: #efefef;
+// }
+// tr.detail-row {
+//   height: 0;
+// }
+// .element-detail {
+//   overflow: hidden;
+//   display: flex;
+// }
+td.mat-cell {
+  padding-right: 20px;
+}
+.mat-table {
+  width: 100%
+}
+th.mat-header-cell[actions] {
+  width: 100px;
+}
+tr .mat-cell:last-child {
+  padding-right: 0;
+}

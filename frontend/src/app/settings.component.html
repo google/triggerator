@@ -1,0 +1,40 @@
+<form novalidate>
+<fieldset>
+  <legend>Basic Information</legend>
+
+  <div class="form-group row">
+    <label class="col-md-2 col-form-label" for="spreadsheetUrl">Master Spreadsheet Url</label>
+    <div class="col-md-8">
+      <input class="form-control"
+             id="spreadsheetUrl"
+             type="text"
+             placeholder="Url or spreadsheet id"
+             required
+             [(ngModel)]=settings.spreadsheetUrl
+             name="spreadsheetUrl"
+             #spreadsheetUrlVar="ngModel"
+             [ngClass]="{'is-invalid': (spreadsheetUrlVar.touched || 
+                                      spreadsheetUrlVar.dirty ) && 
+                                      !spreadsheetUrlVar.valid }" />
+      <span class="invalid-feedback">
+        <span *ngIf="spreadsheetUrlVar.errors?.required">
+          Master spreadsheet url is required.
+        </span>
+      </span>
+    </div>
+  </div>
+</fieldset>
+</form>
+
+<div class="row mb-2">
+  <div class="col-md-4">
+    <button class="btn btn-primary mr-3"
+            style="width:80px"
+            type="button"
+            [title]="isValid() ? 'Save your entered data' : 'Disabled until the form data is valid'"
+            [disabled]="!isValid()"
+            (click)="save()">
+      Save
+    </button>
+  </div>
+</div>
