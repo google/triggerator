@@ -15,17 +15,23 @@ export interface GenerateSdfOptions {
    * Generation mode: generate a new campaign (false) or update an existing (true).
    */
   update?: boolean,
-  autoActivateCampaign?: boolean,
+  autoActivate?: boolean,
+  startDate?: Date,
+  endDate?: Date,
   fileName?: string
 }
-
 export default class SdfService {
 
   constructor(private config: Config, private ruleEvaluator: RuleEvaluator,
     private dv_facade: DV360Facade) { }
 
   async generateSdf(feedData: FeedData, options: GenerateSdfOptions): Promise<string> {
-    let sdf = await this.generateFromTemplate(feedData, options.update || false, options.autoActivateCampaign || false);
+    let sdf = await this.generateFromTemplate(feedData, 
+      options.update || false, 
+      options.autoActivate || false,
+      options.startDate,
+      options.endDate
+    );
     let filepath = await this.exportSdf(sdf, options.fileName);
     return filepath;
   }
@@ -67,10 +73,10 @@ export default class SdfService {
    * Generate an SDF (as structure) for the specified data and configuration.
    * @param feedData A feed data
    * @param update true for updating an existing campaign
-   * @param autoActivateCampaign true for activating all created campaign
+   * @param autoActivate true for activating all created campaign
    * @returns 
    */
-  async generateFromTemplate(feedData: FeedData, update: boolean, autoActivateCampaign: boolean): Promise<SdfFull> {
+  async generateFromTemplate(feedData: FeedData, update: boolean, autoActivate: boolean, startDate?: Date, endDate?: Date): Promise<SdfFull> {
     // NOTE: we assume that config has been validated already (via ConfigService)
     const feedInfo = this.config.feedInfo!;
     if (feedInfo.budget_factor_column) {
@@ -98,8 +104,10 @@ export default class SdfService {
       }
     }
     let generator = new SdfGenerator(this.config, this.ruleEvaluator, feedData, tmplSdf, currentSdf);
-    generator.autoActivate = autoActivateCampaign;
-
+    generator.autoActivate = autoActivate;
+    generator.startDate = startDate;
+    generator.endDate = endDate;
+    
     return generator.generate();
   }
 

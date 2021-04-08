@@ -7,15 +7,23 @@ import SdfService, { GenerateSdfOptions } from './sdf-service';
 import { FeedData } from '../types/types';
 
 export default class SdfController {
-  constructor(private configService: ConfigService, 
+  constructor(private configService: ConfigService,
     private ruleEvaluator: RuleEvaluator,
-    private feedService: FeedService, 
+    private feedService: FeedService,
     private dvFacade: DV360Facade) {
   }
   config?: Config;
 
   async generateSdf(configId: string, options: GenerateSdfOptions): Promise<string> {
     options = options || {};
+    console.log(`[SdfController] Generating SDF for configuration ${configId} with options:\n ${JSON.stringify(options, null, 2)}`);
+    if (!options.update) {
+      if (!options.startDate)
+        throw new Error(`[SdfController] Campaign start date should be specified`);
+      if (!options.endDate)
+        throw new Error(`[SdfController] Campaign end date should be specified`);
+    }
+
     // #1 Fetch configuration
     let config: Config;
     try {
@@ -26,13 +34,14 @@ export default class SdfController {
     }
     this.config = config;
 
+    // #2 Validate configuration
     let errors = this.configService.validateGeneratingConfiguration(config, !!options.update);
     if (errors && errors.length)
       throw new Error(`[SdfController] There are errors in configuration that prevents from generating SDFs:\n` +
         errors.map(e => e.message).join(',\n')
       );
 
-    // #2 Load data from feed(s)
+    // #3 Load data from feed(s)
     let sdfSvc = new SdfService(config, this.ruleEvaluator, this.dvFacade);
     let feedData: FeedData;
     try {
@@ -45,10 +54,10 @@ export default class SdfController {
       throw new Error(`[SdfController] Combined feed contains no rows, cannot proceed with SDF generation`);
     }
 
-    // #3 Generate SDF
+    // #4 Generate SDF
     let filepath: string;
     if (!options.fileName) {
-      options.fileName = "sdf-" + new Date().toISOString().replace(/\-/g,"").replace(/\:/g,"").replace(".","") + ".zip";
+      options.fileName = "sdf-" + new Date().toISOString().replace(/\-/g, "").replace(/\:/g, "").replace(".", "") + ".zip";
     }
     try {
       filepath = await sdfSvc.generateSdf(feedData, options);

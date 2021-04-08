@@ -4,6 +4,9 @@ import FeedService from './feed-service';
 import RuleEngine, { RuleEvaluator } from './rule-engine';
 import DV360Facade from './dv360-facade';
 
+export interface ProcessingOptions {
+  sendNotificationsOnError: boolean
+}
 export default class RuleEngineController {
   constructor(private configService: ConfigService, 
     private ruleEvaluator: RuleEvaluator,
@@ -11,19 +14,11 @@ export default class RuleEngineController {
     private dv_facade: DV360Facade) {
   }
 
-  // async loadFeed(config: Config): Promise<FeedData> {
-  //   return this.feedService.loadAll(config.feedInfo);
-  // }
-
-  async run(configSpreadsheetId: string) {
-    let config: Config;
-    try {
-      config = await this.configService.loadConfiguration(configSpreadsheetId);
-
-    } catch (e) {
-      this.logError(e);
-      throw e;
-    }
+  async run(configSpreadsheetId: string, options: ProcessingOptions) {
+    options = options || {};
+    if (!configSpreadsheetId) throw new Error(`[RuleEngineController] Configuration was not specified`);
+    // NOTE: we can't handle errors in loadConfigration because w/o Config we can't send notifications
+    let config = await this.configService.loadConfiguration(configSpreadsheetId);
     try {
       let errors = this.configService.validateRuntimeConfiguration(config);
       if (errors && errors.length) {
@@ -37,22 +32,22 @@ export default class RuleEngineController {
       let feedDataPromise = this.feedService.loadAll(config.feedInfo!);
       let sdfPromise = this.dv_facade.downloadSdf(advertiserId, campaignId);
       let [feedData, sdf] = await Promise.all([feedDataPromise, sdfPromise]);
+      if (!sdf.campaigns)
+        throw new Error(`[RuleEngineController] Campaign ${campaignId} wasn't found`);
+      if (!sdf.insertionOrders) 
+        throw new Error(`[RuleEngineController] Campaign ${campaignId} has no insersion orders`);
+
       await engine.run(feedData, sdf);
     } catch (e) {
-      this.notifyOnError(e, config);
-      this.logError(e, config);
+      if (options.sendNotificationsOnError)
+        this.notifyOnError(e, config);
       throw e;
     }
   }
 
-  notifyOnError(e: any, config: Config) {
-    //throw new Error('Method not implemented.');
+  notifyOnError(e: Error, config: Config) {
     if (config.execution!.notificationEmails) {
       // TODO: send an email
     }
-  }
-  
-  logError(e: any, config?: Config) {
-    console.log(e);
   }
 }

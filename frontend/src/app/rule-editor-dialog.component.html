@@ -12,7 +12,6 @@
   </div>
 </div>
 <form [formGroup]="form" novalidate>
-
   <div class="row">
     <div class="col">
       <mat-form-field appearance="outline" class="full-width" color="accent">
@@ -28,7 +27,7 @@
       <mat-form-field appearance="outline" class="full-width" color="accent">
         <mat-label>Condition</mat-label>
         <input matInput formControlName="condition" required>
-        <mat-hint>Expression for condition</mat-hint>
+        <mat-hint>Expression for condition, <a href="https://mathjs.org/docs/expressions/syntax.html" target="_blank">learn more</a> about the supported syntax</mat-hint>
         <mat-error *ngIf="form.get('condition').invalid">Condition is required</mat-error>
       </mat-form-field>
     </div>
@@ -189,7 +188,7 @@
   <div class="row">
     <div class="col text-right">
       <button mat-raised-button color="accent" (click)='save()' [disabled]="!form.valid">Save</button>
-      <button mat-raised-button mat-dialog-close>Cancel</button>
+      <button mat-raised-button mat-dialog-close class="ml-4">Cancel</button>
     </div>
   </div>
 

@@ -37,7 +37,7 @@ export function tryParseNumber(str: any): number | undefined {
   }
 }
 
-export function parseBool(params: any) {
+export function parseBool(params: any): boolean {
   return !(
     params === "false" ||
     params === "0" ||
@@ -45,6 +45,12 @@ export function parseBool(params: any) {
     params === undefined
   );
 };
+
+export function parseDate(params: any): Date {
+  if (_.isDate(params))
+    return params;
+  return new Date(params);
+}
 
 export function difference(object: any, base: any) {
   function changes(object: any, base: any) {

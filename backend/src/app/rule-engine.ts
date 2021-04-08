@@ -104,7 +104,8 @@ export default class RuleEngine {
     if (!this.config.rules || !this.config.rules.length)
       throw new Error(`[RuleEngine] There no rules in configuration to process`);
     let advertiserId = sdf.advertiserId;
-
+    if (!sdf.insertionOrders) throw new Error(`[RuleEngine] Camapign has no insersion orders`);
+    
     for (let i = 0; i < sdf.insertionOrders.rowCount; i++) {
       let io = sdf.insertionOrders.getRow(i);
       // extract a reference to a rule from the IO (it's kept in Detail field)
@@ -128,7 +129,7 @@ export default class RuleEngine {
       });
     }
     let lisMap: Record<string, Array<{ liId: string, status: string }>> = {};
-    if ('' in iosMap && sdf.lineItems) {
+    if (sdf.lineItems && '' in iosMap && sdf.lineItems) {
       for (let item of iosMap['']) {
         let lis = sdf.lineItems.findAll(SDF.LI.IoId, item.ioId);
         for (const idx of lis) {

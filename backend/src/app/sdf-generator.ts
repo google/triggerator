@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { Config, DV360TemplateInfo, FrequencyPeriod, RuleInfo } from '../types/config';
+import { Config, DV360TemplateInfo, FrequencyPeriod, RuleInfo, SdfElementType } from '../types/config';
 import RuleEngine, { RuleEvaluator } from './rule-engine';
 import { FeedData, RecordSet, SDF, SdfFull } from '../types/types';
 
@@ -147,6 +147,8 @@ export default class SdfGenerator {
   sourceToDestAdGroup: Record<string, number> = {};
   recalculateStatus = false;
   autoActivate = false;
+  startDate?: Date;
+  endDate?: Date;
 
   constructor(private config: Config, private ruleEvaluator: RuleEvaluator,
     private feedData: FeedData,
@@ -207,6 +209,12 @@ export default class SdfGenerator {
     }
     if (this.autoActivate)
       new_campaign[SDF.Campaign.Status] = 'Active';
+    if (this.startDate) {
+      new_campaign[SDF.Campaign.CampaignStartDate] = this.formatDate(this.startDate);
+    }
+    if (this.endDate) {
+      new_campaign[SDF.Campaign.CampaignEndDate] = this.formatDate(this.endDate);
+    }
     this.recalculateStatus = new_campaign[SDF.Campaign.Status] == 'Active';
 
     // template campaign can be empty, or contains only IOs, or IOs and LIs, or IOs/LIs and AdGroups (for TrueView only)
@@ -442,7 +450,7 @@ export default class SdfGenerator {
     return status == 'Draft' ? 'Paused' : status;
   }
 
-  private setCustomFields(row: Record<string, string>, sdfType: string, tierName: string,
+  private setCustomFields(row: Record<string, string>, sdfType: SdfElementType, tierName: string,
     media: 'YouTube' | 'Display', feedRow: Record<string, string> | null) {
     if (!this.config.customFields)
       return;
@@ -452,10 +460,10 @@ export default class SdfGenerator {
         && (cf.media == media || cf.media == '')) {
         var value = cf.feed_column;
         // TODO: here is a problem: unsafe check for column name
-        if (feedRow && typeof value == 'string' && /^[a-zA-Z]+\.\w+$/i.test(value.trim())) {
+        if (feedRow && typeof value == 'string' && /^[a-zA-Z0-9_\-\[\]]+\.\w+$/i.test(value.trim())) {
           value = feedRow[cf.feed_column];
           if (value === undefined)
-            throw new Error("Feed column " + cf.feed_column + " not found");
+            throw new Error(`[SdfGenerator] setCustomFields: Feed column '${cf.feed_column}' not found`);
         }
         row[cf.sdf_field] = value;
       }
@@ -516,6 +524,19 @@ export default class SdfGenerator {
       new_io[SDF.IO.BudgetSegments] = new_io[SDF.IO.BudgetSegments].replace(/\([0-9.]+;/, '(' + budget + ';');
       // NOTE: otherwise new_io's budget will have a value from tempalte IO
     }
+    if (!this.currentSdf) {
+      // generating a new SDF, we need adjust dates in Budget Segmets of IOs
+      // BudgetSegments format:
+      // (Budget, Start Date, End Date). 
+      // Budget is in currency floating format. Dates are in MM/DD/YYYY format. 
+      // Example: "(100.50;01/01/2016;03/31/2016;);(200.00;04/01/2016;06/30/2016;);"
+      //  "(1.0; 04/05/2021; 05/05/2021;);"
+      let matches = /\([0-9.]+;/.exec(new_io[SDF.IO.BudgetSegments]);
+      if (matches !== null) {
+        new_io[SDF.IO.BudgetSegments] = 
+          `${matches[0]} ${this.formatDateOnly(this.startDate!)}; ${this.formatDateOnly(this.endDate!)};);`
+      }
+    }
 
     if (tier) {
       var f = tmpl.getFrequency(isTrueView, tier);
@@ -529,7 +550,7 @@ export default class SdfGenerator {
       }
     }
 
-    this.setCustomFields(new_io, 'Insertion Orders', tierName, isTrueView ? 'YouTube' : 'Display', feedRow);
+    this.setCustomFields(new_io, SdfElementType.IO, tierName, isTrueView ? 'YouTube' : 'Display', feedRow);
     return new_io;
   }
 
@@ -663,7 +684,7 @@ export default class SdfGenerator {
       }
     }
 
-    this.setCustomFields(new_li, 'Line Items', tierName, isTrueView ? 'YouTube' : 'Display', feedRow);
+    this.setCustomFields(new_li, SdfElementType.LI, tierName, isTrueView ? 'YouTube' : 'Display', feedRow);
     return new_li;
   }
 
@@ -718,7 +739,7 @@ export default class SdfGenerator {
     if (tier.youtube_state && tier.youtube_state.bid)
       new_adgroup[SDF.AdGroup.MaxCost] = tier.youtube_state.bid.toString();
 
-    this.setCustomFields(new_adgroup, 'Ad Groups', tierName, 'YouTube', feedRow);
+    this.setCustomFields(new_adgroup, SdfElementType.AdGroup, tierName, 'YouTube', feedRow);
     return new_adgroup;
   }
 
@@ -766,7 +787,22 @@ export default class SdfGenerator {
     new_ad[SDF.Ad.Name] = tmpl.ad_name(new_ad[SDF.Ad.Name], rowName, ruleName);
     new_ad[SDF.Ad.VideoId] = rule.youtube_state.creatives;
 
-    this.setCustomFields(new_ad, 'Ads', ruleName, 'YouTube', feedRow);
+    this.setCustomFields(new_ad, SdfElementType.Ad, ruleName, 'YouTube', feedRow);
     return new_ad;
+  }
+
+  /** Formats a date in SDF format for date: MM/DD/YYYY HH:mm */
+  formatDateOnly(date: Date): string {
+    // MM/DD/YYYY HH:mm
+    // e.g.: 04/05/2021 00:00
+    let month = date.getMonth() + 1;
+    let day = date.getDate();
+    let year = date.getFullYear();
+    return (month <= 9 ? "0" : "") + month.toString() + "/" + 
+      (day <=9 ? "0" : "") + `${day}/${year}`
+  }
+
+  formatDate(date: Date): string {
+    return this.formatDateOnly(date) + " 00:00";
   }
 }

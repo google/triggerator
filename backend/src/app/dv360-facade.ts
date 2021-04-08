@@ -182,6 +182,7 @@ export default class DV360Facade {
   }
 
   private async _downloadSdf(advertiserId: string, campaignId: string, opt: DownloadOptionsRuntime): Promise<{ fileName: string, resourceName: string }> {
+    console.log(`[DV360Facade] Starting downloading SDF for advertiser/campaign ${advertiserId}/${campaignId}`);
     let op = (await this.dv_api.sdfdownloadtasks.create({
       requestBody: {
         "advertiserId": advertiserId, //"506732",
@@ -205,6 +206,7 @@ export default class DV360Facade {
     const op_name = op.name!;
 
     // #2 wait for the task to complete, polling for operation status
+    console.log(`[DV360Facade] Waiting for the SDF to be exported by DV360 and ready to donwload (please expect >30 sec to wait)`);
     let started = Date.now();
     while (true) {
       op = (await this.dv_api.sdfdownloadtasks.operations.get({ name: op_name })).data;
