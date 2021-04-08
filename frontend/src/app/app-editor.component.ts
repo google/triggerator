@@ -14,6 +14,11 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatTabGroup } from '@angular/material/tabs';
 import { ComponentBase } from './component-base';
 import { EditValueDialogComponent } from './components/edit-value-dialog.component';
+import { EventListComponent } from './event-list.component';
+import { formatDate } from '@angular/common';
+import timezones from './timezones';
+import { Observable } from 'rxjs';
+import { map, startWith } from 'rxjs/operators';
 
 @Component({
   selector: 'app-app-editor',
@@ -32,12 +37,14 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   formFeeds: FormGroup;
   formExecution: FormGroup;
   scheduleLink: string;
+  timeZones: string[] = timezones;
+  timeZonesFiltered: Observable<string[]>;
 
   dataSourceFeeds: MatTableDataSource<FeedInfo>;
   feedsColumns: string[] = ['name', 'type', 'url', 'charset', 'key_column', 'external_key', 'actions'];
   dataSourceFeedData: Record<string, MatTableDataSource<any>>;
   feedDataColumns: Record<string, string[]>;
-  @ViewChild(MatExpansionPanel) feedDataPanel: MatExpansionPanel;
+  @ViewChild("feedDataPanel") feedDataPanel: MatExpansionPanel;
   @ViewChildren('feedDataPaginator') paginatorFeedData: QueryList<MatPaginator>;
   @ViewChild(MatTabGroup) tabGroup: MatTabGroup;
 
@@ -66,8 +73,8 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       notificationEmails: [null],
     }, { updateOn: 'blur' });
     this.formExecution = this.fb.group({
-      schedule: null,
-      timeZone: null,
+      schedule: {value: null, disabled: true},
+      timeZone: {value: null, disabled: true},
       enable: null
     });
     this.formSdf = this.fb.group({
@@ -107,13 +114,21 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         this.scheduleLink = schedule.replace(/ /g, "_");
       }
       if (values['enable']) {
-        this.formExecution.get('schedule').enable({emitEvent: false, onlySelf: true});
-        this.formExecution.get('timeZone').enable({emitEvent: false, onlySelf: true});
+        this.formExecution.get('schedule').enable({ emitEvent: false, onlySelf: true });
+        this.formExecution.get('timeZone').enable({ emitEvent: false, onlySelf: true });
       } else {
-        this.formExecution.get('schedule').disable({emitEvent: false, onlySelf: true});
-        this.formExecution.get('timeZone').disable({emitEvent: false, onlySelf: true});
+        this.formExecution.get('schedule').disable({ emitEvent: false, onlySelf: true });
+        this.formExecution.get('timeZone').disable({ emitEvent: false, onlySelf: true });
       }
     });
+    this.timeZonesFiltered = this.formExecution.controls['timeZone'].valueChanges.pipe(
+      startWith(''),
+      map((value) => {
+        const filterValue = value.toLowerCase();
+        return this.timeZones.filter(option => option.toLowerCase().indexOf(filterValue) >= 0);
+      })
+    );
+
     this.formSdf.valueChanges.subscribe(values => {
       if (this.autoSave) {
         let updated = _.cloneDeep(this.config);
@@ -235,7 +250,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
     dialogRef.afterClosed().subscribe(result => {
       if (result && result !== this.config?.title) {
-        this.configService.saveConfig(this.appId, {title: result}, {title:this.config?.title}).then(() => {
+        this.configService.saveConfig(this.appId, { title: result }, { title: this.config?.title }).then(() => {
           this.config.title = result;
           this.showSnackbar("Saved");
         });
@@ -250,7 +265,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   switchToTab(tabName) {
     this.tabGroup._tabs.some(
       (tab, index) => {
-        if (tab.textLabel === tabName)  {
+        if (tab.textLabel === tabName) {
           this.tabGroup.selectedIndex = index;
           return true;
         }
@@ -267,7 +282,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         schedule: this.formExecution.get('schedule').value,
         timeZone: this.formExecution.get('timeZone').value,
       });
-      this.showSnackbar('Configuration updated');      
+      this.showSnackbar('Configuration updated');
     } catch (e) {
       this.handleApiError('Schedule failed to save', e);
     } finally {
@@ -297,13 +312,41 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     }
   }
 
-  async runExecution() {
+  executing: boolean;
+  @ViewChild(EventListComponent) eventList: EventListComponent;
+  runExecution() {
     // TODO: save
-    // Validate
+    //       validate
+    // try {
+    //   await this.configService.backendService.postApi(`/engine/${this.appId}/run`);
+    // } catch (e) {
+    //   this.handleApiError('fail', e);
+    // }
+    // return;
     try {
-      await this.configService.runExecution(this.appId);
-    } catch (e) {
-      this.handleApiError('Execution failed', e);
+      this.executing = true;
+      this.eventList.addMessage(`Starting execution`);
+      this.eventList.open();
+      this.configService.runExecution(this.appId).subscribe({
+        next: (msg) => {
+          this.eventList.addMessage(msg);
+        },
+        error: (msg) => {
+          this.executing = false;
+          this.eventList.addMessage(msg);
+          this.eventList.addMessage("Execution failed");
+          this.showSnackbar("Execution failed");
+        },
+        complete: () => {
+          this.executing = false;
+          this.eventList.addMessage("Execution completed");
+          this.showSnackbar("Execution completed");
+        }
+      });
+    } catch(e) {
+      // we don't expect an error here, but just in case
+    } finally {
+      this.executing = false;
     }
   }
 
@@ -330,10 +373,28 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
   private async _generateSdf(update: boolean) {
     const autoActivate = this.formSdf.get('activateCampaign').value;
+    const dates = this.formSdf.get('newCampaignPeriod').value;
+    if (!update) {
+      // start/end dates are mandatory for a campaign creation
+      if (!dates.start || Date.now > dates.start) {
+        this.formSdf.get('newCampaignPeriod.start').setErrors({ invalid: true });
+        return;
+      }
+      if (!dates.end || Date.now > dates.end) {
+        this.formSdf.get('newCampaignPeriod.end').setErrors({ invalid: true });
+        return;
+      }
+    }
+
     this.errorMessage = null;
     this.loading = true;
     try {
-      await this.configService.generateSdf(this.appId, update, autoActivate);
+      await this.configService.generateSdf(this.appId, {
+        update,
+        autoActivate: !!autoActivate,
+        startDate: dates?.start?.toISOString(),
+        endDate: dates?.end?.toISOString()
+      });
       //await this.configService.downloadFile(this.appId, 'sdf-20210325T172548091Z.zip');
     } catch (e) {
       this.handleApiError('SDF generation failed', e);

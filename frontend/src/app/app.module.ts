@@ -22,12 +22,15 @@ import { RulesListComponent } from './rules-list.component';
 import { RuleEditorDialogComponent } from './rule-editor-dialog.component';
 import { NewAppDialogComponent } from './new-app-dialog.component';
 import { EditValueDialogComponent } from './components/edit-value-dialog.component';
+import { EventListComponent } from './event-list.component';
 
 @NgModule({
   declarations: [
     AppComponent, 
     NavbarComponent, AppsListComponent, AppEditorComponent, SettingsComponent, 
-    AboutComponent, LoginComponent, ErrorComponent, FeedEditorDialogComponent, RulesListComponent, RuleEditorDialogComponent, NewAppDialogComponent, EditValueDialogComponent,
+    AboutComponent, LoginComponent, ErrorComponent, FeedEditorDialogComponent, 
+    RulesListComponent, RuleEditorDialogComponent, NewAppDialogComponent, 
+    EditValueDialogComponent, EventListComponent
   ],
   imports: [
     BrowserModule,

@@ -1,7 +1,7 @@
 import { sheets_v4, google } from 'googleapis';
 import { dataproc } from 'googleapis/build/src/apis/dataproc';
 import _ from 'lodash';
-import ConfigInfo, { FeedInfo, FeedType, RuleInfo, RuleState, Config, AppList, CustomFields, AppInfo, FeedConfig } from '../types/config';
+import ConfigInfo, { FeedInfo, FeedType, RuleInfo, RuleState, Config, AppList, CustomFields, AppInfo, FeedConfig, SdfElementType } from '../types/config';
 import { RuleEvaluator } from './rule-engine';
 
 export const CONFIG_SHEETS = {
@@ -18,7 +18,7 @@ function combineErrors(errorsSrc: ValidationError[], errorsAdd: ValidationError[
     return errorsAdd || [];
   if (!errorsAdd || !errorsAdd.length)
     return errorsSrc || [];
-  if (!_.isArray(errorsSrc) || !_.isArray(errorsAdd)) 
+  if (!_.isArray(errorsSrc) || !_.isArray(errorsAdd))
     throw new Error(`ArgumentException: combineErrors expects arrays`);
   errorsSrc.push(...errorsAdd);
   return errorsSrc;
@@ -262,10 +262,18 @@ export default class ConfigService {
     if (!values) return;
     let fields: CustomFields[] = [];
     for (const row of values) {
+      let sdf_type: SdfElementType|undefined = undefined;
+      switch (row[2]) {
+        case "Campaigns": sdf_type = SdfElementType.Campaign; break;
+        case "Insertion Orders": sdf_type = SdfElementType.IO; break;
+        case "Line Items": sdf_type = SdfElementType.LI; break;
+        case "Ad Groups": sdf_type = SdfElementType.AdGroup; break;
+        case "Ads": sdf_type = SdfElementType.AdGroup; break;
+      }
       fields.push({
         element_state: row[0],
         media: row[1],
-        sdf_type: row[2],
+        sdf_type: sdf_type,
         sdf_field: row[3],
         feed_column: row[4]
       });
@@ -277,7 +285,8 @@ export default class ConfigService {
    * Loads a configuration from Google Spreadsheet by its id.
    */
   async loadConfiguration(spreadsheetId: string): Promise<Config> {
-    let config = new ConfigInfo();
+    let config: Config = {};// = new ConfigInfo();
+    if (!spreadsheetId) throw new Error(`[ConfigService] spreadsheetId was not specified`);
     // load title (have to do it via separate call)
     try {
       let props = (await this.sheetsAPI.spreadsheets.get({
@@ -285,7 +294,7 @@ export default class ConfigService {
         fields: "properties"
       })).data.properties;
       config.title = props?.title || "";
-    } catch(e) {
+    } catch (e) {
       console.error(`[ConfigService] Error on loading spreadsheet ${spreadsheetId}: `, e.message);
       throw e;
     }
@@ -306,7 +315,7 @@ export default class ConfigService {
       const valueRanges = (await this.sheetsAPI.spreadsheets.values.batchGet(request)).data.valueRanges!;
       for (const range of valueRanges) {
         let sheetName = range.range?.substring(0, range.range.indexOf('!'));
-        switch (sheetName) {
+        switch (sheetName?.replace(/["']/g, "")) {
           case CONFIG_SHEETS.General:
             this.loadGeneralSettings(range.values!, config);
             break;
@@ -456,7 +465,7 @@ export default class ConfigService {
     return appList;
   }
 
-  async createApplication(masterSpreadsheetId: string, userEmail: string|null|undefined, name: string, appId?: string): Promise<AppInfo> {
+  async createApplication(masterSpreadsheetId: string, userEmail: string | null | undefined, name: string, appId?: string): Promise<AppInfo> {
     let app_ids = await this.validateMasterSpreadsheet(masterSpreadsheetId);
     // if appId is specified we need just connect master Spreadsheet and the referenced doc,
     // otherwise we need to create a new spreadsheet
@@ -498,7 +507,7 @@ export default class ConfigService {
         appId = response.spreadsheetId!;
         if (userEmail) {
           console.log(`[ConfigService] Sharing created doc (${appId}) with user '${userEmail}'`);
-          let driveAPI = google.drive({version:"v3"});
+          let driveAPI = google.drive({ version: "v3" });
           try {
             (await driveAPI.permissions.create({
               fileId: appId,
@@ -509,7 +518,7 @@ export default class ConfigService {
                 emailAddress: userEmail
               }
             }));
-          } catch(e) {
+          } catch (e) {
             console.error(`Failed to change permissions on doc ${appId} for user ${userEmail}: ${e.message}`);
             console.error(e);
             // throw e; or not to throw?
@@ -574,12 +583,12 @@ export default class ConfigService {
     }
     app_ids.splice(app_ids.indexOf(appId), 1);
     this.updateApplicationList(masterSpreadsheetId, app_ids);
-    let driveAPI = google.drive({version:"v3"});
+    let driveAPI = google.drive({ version: "v3" });
     try {
       await driveAPI.files.delete({
         fileId: appId
       })
-    } catch(e) {
+    } catch (e) {
       console.error(`[ConfigService] An error occured on deleting spreadsheet ${appId}: `, e.message);
       throw e;
     }
@@ -606,10 +615,10 @@ export default class ConfigService {
           values: app_ids.map(id => [id])
         }
       })).data;
-    } catch(e) {
+    } catch (e) {
       console.error(`[ConfigService] Couldn't update master spreadsheet with new application: `, e.message);
       throw e;
-    }    
+    }
   }
 
   private validateConfigurationBase(config: Config): ValidationError[] {
@@ -715,22 +724,22 @@ export default class ConfigService {
     let data: sheets_v4.Schema$ValueRange[] = [];
     if (diff.title) {
       try {
-      await this.sheetsAPI.spreadsheets.batchUpdate({
-        spreadsheetId: spreadsheetId,
-        requestBody: {
-          includeSpreadsheetInResponse: false,
-          responseIncludeGridData: false,
-          requests: [{
-            updateSpreadsheetProperties: {
-              fields: "title",
-              properties: {
-                title: diff.title
+        await this.sheetsAPI.spreadsheets.batchUpdate({
+          spreadsheetId: spreadsheetId,
+          requestBody: {
+            includeSpreadsheetInResponse: false,
+            responseIncludeGridData: false,
+            requests: [{
+              updateSpreadsheetProperties: {
+                fields: "title",
+                properties: {
+                  title: diff.title
+                }
               }
-            }
-          }]
-        }
-      });
-      } catch(e) {
+            }]
+          }
+        });
+      } catch (e) {
         console.error(`[ConfigService] Updating title (${diff.title}) in spreadsheet ${spreadsheetId} failed: `, e.message);
         throw e;
       }
@@ -843,8 +852,8 @@ export default class ConfigService {
       for (let feed of diff.feedInfo.feeds) {
         values.push([feed.name, feed.type, feed.url, feed.charset, feed.key_column, feed.external_key]);
       }
-      for(let i=0;i<10;i++) {
-        values.push(["","","","","","",""]);
+      for (let i = 0; i < 10; i++) {
+        values.push(["", "", "", "", "", "", ""]);
       }
       data.push({
         majorDimension: 'ROWS',
@@ -868,8 +877,8 @@ export default class ConfigService {
       if (errors.length) {
         throw new Error(`Rules validation failed:\n` + errors.join(", "));
       }
-      for(let i=0;i<10;i++) {
-        values.push(["","","","","","",""]);
+      for (let i = 0; i < 10; i++) {
+        values.push(["", "", "", "", "", "", ""]);
       }
       data.push({
         majorDimension: 'ROWS',
@@ -883,8 +892,8 @@ export default class ConfigService {
       for (let field of diff.customFields) {
         values.push([field.element_state, field.media, field.sdf_type, field.sdf_field, field.feed_column]);
       }
-      for(let i=0;i<10;i++) {
-        values.push(["","","","","","",""]);
+      for (let i = 0; i < 10; i++) {
+        values.push(["", "", "", "", "", "", ""]);
       }
       data.push({
         majorDimension: 'ROWS',
@@ -906,7 +915,7 @@ export default class ConfigService {
       })).data;
       console.log(`[ConfigService][applyChanges] Updated ${res.totalUpdatedCells} cells`);
       return <number>res.totalUpdatedCells;
-    } catch(e) {
+    } catch (e) {
       console.error(`[ConfigService] Updating configuration ${spreadsheetId} failed: `, e.message);
       throw e;
     }

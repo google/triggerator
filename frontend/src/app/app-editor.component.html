@@ -21,7 +21,10 @@
       </div>
     </div>
   </mat-card-title>
-  <mat-card-subtitle class="editable-title" (click)="editTitle()">{{config?.title}}<a href="" (click)="editTitle();$event.preventDefault()"><mat-icon class="float-edit-icon">edit</mat-icon></a></mat-card-subtitle>
+  <mat-card-subtitle class="editable-title" (click)="editTitle()">{{config?.title}}<a href=""
+      (click)="editTitle();$event.preventDefault()">
+      <mat-icon class="float-edit-icon">edit</mat-icon>
+    </a></mat-card-subtitle>
 </mat-card>
 <p></p>
 
@@ -31,7 +34,7 @@
     <form [formGroup]="formGeneral" novalidate>
       <mat-card>
         <div class="row">
-          <div class="col">    
+          <div class="col">
             <mat-form-field appearance="outline" color="accent">
               <mat-label>Advertiser Id</mat-label>
               <input matInput formControlName="advertiserId">
@@ -47,7 +50,8 @@
             <mat-form-field appearance="outline" class="full-width" color="accent">
               <mat-label>Campaign Id</mat-label>
               <input matInput formControlName="campaignId">
-              <mat-hint>DV360 campaign's id that Triggerator manages (you'll know it after you import a generated SDF - see <a href="#" (click)="switchToTab('DV360 Generation');$event.preventDefault()">DV360 Generation</a>)
+              <mat-hint>DV360 campaign's id that Triggerator manages (you'll know it after you import a generated SDF -
+                see <a href="#" (click)="switchToTab('DV360 Generation');$event.preventDefault()">DV360 Generation</a>)
               </mat-hint>
             </mat-form-field>
           </div>
@@ -90,25 +94,35 @@
             <mat-form-field appearance="outline" color="accent" class="full-width">
               <mat-label>Schedule (Frequency)</mat-label>
               <input matInput formControlName="schedule">
-              <mat-hint>Schedules are specified using unix-cron format. E.g. every minute: "* * * * *", every 3 hours: "0 */3 * * *", every monday at 9:00: "0 9 * * 1"</mat-hint>
-              <mat-icon matSuffix>schedule</mat-icon>              
+              <mat-hint>Schedules are specified using unix-cron format. E.g. every minute: "* * * * *", every 3 hours:
+                "0 */3 * * *", every monday at 9:00: "0 9 * * 1"</mat-hint>
+              <mat-icon matSuffix>schedule</mat-icon>
             </mat-form-field>
           </div>
           <div class="col pt-1">
             <div class="alert alert-dark">
-              See description of the cron format <a href="https://crontab.guru/#{{this.scheduleLink}}" target="_blank">here</a><br>
-              Format is "* * * * *", "*"" - any value, "," - value list separator, "-" - range of values, "/" - step values
+              See description of the cron format <a href="https://crontab.guru/#{{this.scheduleLink}}"
+                target="_blank">here</a><br>
+              Format is "* * * * *", "*"" - any value, "," - value list separator, "-" - range of values, "/" - step
+              values
             </div>
           </div>
-        </div>        
+        </div>
         <!-- timeZone -->
         <div class="row">
           <div class="col-5 mb-4">
             <mat-form-field appearance="outline" color="accent" class="full-width">
               <mat-label>Timezone</mat-label>
-              <input matInput formControlName="timeZone">
-              <mat-hint>Name of a timezone from <a href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones">tz database</a>, e.g. Europe/Moscow, America/Los_Angeles, UTC</mat-hint>
-              <mat-icon matSuffix>globe</mat-icon>
+              <input matInput formControlName="timeZone" [matAutocomplete]="autoTimezones">
+              <mat-autocomplete #autoTimezones="matAutocomplete">
+                <mat-option *ngFor="let option of timeZonesFiltered | async" [value]="option">
+                  {{option}}
+                </mat-option>
+              </mat-autocomplete>
+              <mat-hint>Name of a timezone from <a
+                  href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones">tz database</a>, e.g.
+                Europe/Moscow, America/Los_Angeles, UTC</mat-hint>
+              <mat-icon matSuffix>language</mat-icon>
             </mat-form-field>
           </div>
         </div>
@@ -122,7 +136,7 @@
             </button>
           </div>
         </div>
-        <div class="row">
+        <div class="row divider">
           <div class="col">
             <mat-divider [inset]="true"></mat-divider>
           </div>
@@ -134,9 +148,15 @@
         </div>
         <div class="row">
           <div class="col">
-            <button mat-raised-button (click)="runExecution()" color="accent" class="mat-elevation-z2">
+            <button mat-raised-button (click)="runExecution()" [disabled]="executing" color="accent"
+              class="mat-elevation-z2">
               <mat-icon>bolt</mat-icon> Run
             </button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-12 full-width">
+            <tr-event-list></tr-event-list>
           </div>
         </div>
       </mat-card>
@@ -176,8 +196,8 @@
               <mat-hint></mat-hint>
             </mat-form-field>
           </div>
-        </div>        
-        <div class="row">
+        </div>
+        <div class="row divider">
           <div class="col">
             <mat-divider [inset]="true"></mat-divider>
           </div>
@@ -259,17 +279,20 @@
             <mat-form-field appearance="fill" color="accent">
               <mat-label>Enter a date range for new campaign</mat-label>
               <mat-date-range-input formGroupName="newCampaignPeriod" [rangePicker]="picker">
-                <input matStartDate formControlName="start" placeholder="Start date">
-                <input matEndDate formControlName="end" placeholder="End date">
+                <input matStartDate formControlName="start" placeholder="Start date" required>
+                <input matEndDate formControlName="end" placeholder="End date" required>
               </mat-date-range-input>
               <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
               <mat-date-range-picker #picker></mat-date-range-picker>
 
-              <mat-error *ngIf="formSdf.get('newCampaignPeriod.start').hasError('matStartDateInvalid')">Invalid start
-                date</mat-error>
-              <mat-error *ngIf="formSdf.get('newCampaignPeriod.start').hasError('matEndDateInvalid')">Invalid end date
+              <mat-error *ngIf="formSdf.get('newCampaignPeriod.start').hasError('invalid')">Invalid start date
+              </mat-error>
+              <mat-error *ngIf="formSdf.get('newCampaignPeriod.start').hasError('invalid')">Invalid end date
               </mat-error>
             </mat-form-field>
+          </div>
+          <div class="col">
+            <div class="alert alert-dark">Please keep in mind that we'll need to import the generated SDF till the specified start date ({{formSdf.get('newCampaignPeriod.start').value| date  }})</div>
           </div>
         </div>
         <!-- destination folder -->
@@ -278,17 +301,20 @@
             <mat-form-field appearance="outline" class="full-width" color="accent">
               <mat-label>Destination path</mat-label>
               <input matInput formControlName="destination_folder">
-              <mat-hint>Destination for generated SDFs: either "gs://" (GCS) or "drive://" (Google Drive) path</mat-hint>
+              <mat-hint>Destination for generated SDFs: either "gs://" (GCS) or "drive://" (Google Drive) path
+              </mat-hint>
             </mat-form-field>
           </div>
-        </div>        
+        </div>
         <!-- Operations -->
         <div class="row">
           <div class="col">
-            <button mat-raised-button (click)="generateSdf()" color="accent" class="mat-elevation-z2">
+            <button mat-raised-button (click)="generateSdf()" [disabled]="executing" color="accent"
+              class="mat-elevation-z2">
               <mat-icon>bolt</mat-icon> Generate SDF
             </button>
-            <button mat-raised-button (click)="updateSdf()" color="accent" class="mat-elevation-z2 ml-4">
+            <button mat-raised-button (click)="updateSdf()" [disabled]="executing" color="accent"
+              class="mat-elevation-z2 ml-4">
               <mat-icon>bolt</mat-icon> Update SDF
             </button>
           </div>
@@ -357,21 +383,22 @@
                 (mouseover)="mouseOverIndex = e" (mouseout)="mouseOverIndex=-1"
                 [ngClass]="{'mat-elevation-z8' : e == mouseOverIndex}" (click)="onFeedRowClick($event, row)"></mat-row>
               <ng-template matNoDataRow>
-                <div class="alert">No feeds yet, ready to <a href="#" (click)="createFeed();$event.preventDefault()">create</a>?</div>
-              </ng-template>              
+                <div class="alert">No feeds yet, ready to <a href="#"
+                    (click)="createFeed();$event.preventDefault()">create</a>?</div>
+              </ng-template>
             </mat-table>
           </div>
         </div>
         <div class="row">
           <div class="col text-left">
-            <button mat-raised-button (click)="loadAllFeeds()" [disabled]="!this.dataSourceFeeds.data?.length" color="accent" class="mat-elevation-z2"
-              matTooltip="Load combined feed (with join)">
+            <button mat-raised-button (click)="loadAllFeeds()" [disabled]="!this.dataSourceFeeds.data?.length"
+              color="accent" class="mat-elevation-z2" matTooltip="Load combined feed (with join)">
               <mat-icon>bolt</mat-icon> Preview
             </button>
-            <mat-checkbox [checked]="evaluateRulesWithFeeds" 
-            (change)="this.evaluateRulesWithFeeds=!this.evaluateRulesWithFeeds" 
-            matTooltip="Evaluate rules (see below) with for every row in joined feed data"
-            class="ml-3" >Evaluate rules</mat-checkbox>
+            <mat-checkbox [checked]="evaluateRulesWithFeeds"
+              (change)="this.evaluateRulesWithFeeds=!this.evaluateRulesWithFeeds"
+              matTooltip="Evaluate rules (see below) with for every row in joined feed data" class="ml-3">Evaluate rules
+            </mat-checkbox>
           </div>
           <div class="col text-right">
             <button mat-raised-button color="accent" (click)='createFeed()'>
@@ -383,7 +410,7 @@
         <!-- feed data -->
         <div class="row">
           <div class="col">
-            <mat-expansion-panel>
+            <mat-expansion-panel #feedDataPanel>
               <mat-expansion-panel-header>
                 <mat-panel-title>Feed data</mat-panel-title>
                 <mat-panel-description>Click to expand</mat-panel-description>
@@ -518,16 +545,17 @@
   </mat-tab>
 </mat-tab-group>
 <p></p>
+<!-- form buttons -->>
 <div class="row full-width" style="text-align: right;">
   <div class="col">
     <button mat-raised-button color="primary" (click)="save()" class="ml-4">
       <mat-icon>save</mat-icon> Save
     </button>
-  <button mat-raised-button (click)="refresh()" class="ml-4">
+    <button mat-raised-button (click)="refresh()" class="ml-4">
       <mat-icon>refresh</mat-icon> Refresh
     </button>
-  <button mat-raised-button (click)="close()" class="ml-4">
+    <button mat-raised-button (click)="close()" class="ml-4">
       <mat-icon>cancel</mat-icon> Close
     </button>
-</div>
+  </div>
 </div>

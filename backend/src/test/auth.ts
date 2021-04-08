@@ -61,7 +61,7 @@ export function getAuthenticatedClient(oAuth2Client: OAuth2Client): Promise<OAut
           let token = r.tokens;
           // Make sure to set the credentials on the OAuth2 client.
           oAuth2Client.setCredentials(token);
-          console.info('Tokens acquired: ' + token);
+          console.info('Token acquired: ' + token);
 
           // Store the token to disk for later program executions
           fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {

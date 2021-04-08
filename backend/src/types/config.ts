@@ -95,7 +95,7 @@ export enum SdfElementType {
 export type CustomFields = {
   element_state: string,
   media: ''|'Display'|'YouTube',
-  sdf_type: SdfElementType,
+  sdf_type: SdfElementType|undefined,
   sdf_field: string,
   feed_column: string
 }

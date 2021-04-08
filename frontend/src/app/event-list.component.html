@@ -1,0 +1,12 @@
+<mat-expansion-panel #executionLogPanel>
+  <mat-expansion-panel-header> 
+    <mat-panel-title>Execution log</mat-panel-title>
+    <mat-panel-description>Click to expand</mat-panel-description>
+  </mat-expansion-panel-header>
+  <div style="max-height: 400px; overflow: auto;">
+    <ul #eventList style="list-style-type:none; padding:0; margin:0;"></ul>
+  </div>
+  <mat-action-row>
+    <button mat-button (click)="clearExecutionLog()">Clear</button>
+  </mat-action-row>
+</mat-expansion-panel>            

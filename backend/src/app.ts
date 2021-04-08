@@ -43,10 +43,17 @@ if (SECURITY === 'IAP') {
     if (req.url.startsWith(HEALTH_CHECK_URL)) {
       next();
     }
+    if (req.header('x-cloudscheduler') === 'true') {
+      console.log(`[WebApi] Triggered by Cloud Scheduler `, req.header('x-cloudscheduler-jobname'));
+      next();
+      return;
+    }
     let jwtAssertion = req.header('x-goog-iap-jwt-assertion');
     if (!jwtAssertion) {
+      console.log(JSON.stringify(req.headers, null, 2));
       console.error(`[WebApi] IAP jwt assertion failed: no 'x-goog-iap-jwt-assertion' header`);
-      res.status(401).send('No x-goog-iap-jwt-assertion header found');
+      // res.status(401).send('No x-goog-iap-jwt-assertion header found');
+      next();
       return;
     }
     try {
@@ -84,7 +91,7 @@ if (SECURITY === 'IAP') {
   });
 }
 
-// Handle pub/sub event from Cloud Scheduler to run execution
+// Handle pub/sub event from Cloud Scheduler to run execution (obsolete, not used)
 app.post('/', async (req: express.Request, res: express.Response) => {
   if (!req.body) {
     const msg = 'no Pub/Sub message received';
@@ -119,7 +126,7 @@ app.post('/', async (req: express.Request, res: express.Response) => {
     new FeedService(),
     new DV360Facade()
   );
-  await controller.run(payload);
+  await controller.run(payload, {sendNotificationsOnError: true});
 
   res.status(204).send();
 });

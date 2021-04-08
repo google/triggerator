@@ -4,8 +4,9 @@ import http from 'http';
 import 'mocha';
 import assert from 'assert';
 import ConfigService, { CONFIG_SHEETS } from '../app/config-service';
-import ConfigInfo, { FeedType, Config } from '../types/config';
+import ConfigInfo, { FeedType, Config, SdfElementType } from '../types/config';
 import { sheets_v4, google } from 'googleapis';
+import { difference } from '../app/utils';
 
 const spreadsheetId = "1fOjOPQ9TKnoGGXPbG5d34YrkxivwePegLrVhtjbaoFA";
 suite('ConfigService', () => {
@@ -14,6 +15,7 @@ suite('ConfigService', () => {
     let config = await svc.loadConfiguration(spreadsheetId);
     console.log(JSON.stringify(config, null, 2));
     let expected: Config = {
+      title: '[DEBUG][segy] Triggerator v2 Unit-Test Configuration',
       execution: {
         advertiserId: "506732",
         campaignId: "3242703",
@@ -43,7 +45,13 @@ suite('ConfigService', () => {
           external_key: "main.city.id"
         }]
       },
-      customFields: [],
+      customFields: [{
+        element_state:'All',
+        feed_column:'value',
+        media:'Display',
+        sdf_field:'Budget Type',
+        sdf_type: SdfElementType.IO
+      }],
       dv360Template: {
         template_campaign: "3237246",
         campaign_name: "New campaign",
@@ -88,9 +96,9 @@ suite('ConfigService', () => {
         }
       }]
     };
-
+    console.log('difference:\n', difference(config, expected));
     assert.strictEqual(config.execution!.advertiserId!, "506732");
-    assert.deepStrictEqual((<ConfigInfo>config).toJSON(), expected);
+    assert.deepStrictEqual(config, expected);
   });
 
   test('create a new spreadsheet, save and load data', async function () {
@@ -120,10 +128,11 @@ suite('ConfigService', () => {
         },
       })).data;
       let spreadsheetId = response.spreadsheetId!;
-      console.log(spreadsheetId);
-      console.log(JSON.stringify(response, null, 2));
+      console.log('Created a new spreadsheet ', spreadsheetId);
+      //console.log(JSON.stringify(response, null, 2));
 
       let config: Config = {
+        title: 'TRGR:[Debug][Unit-tests]create a new spreadsheet, save and load data',
         execution: {
           advertiserId: "506732",
           campaignId: "3242703",
@@ -201,6 +210,7 @@ suite('ConfigService', () => {
       let rowcount = await svc.applyChanges(spreadsheetId, config);
 
       let loadedConfig = await svc.loadConfiguration(spreadsheetId);
+      console.log('difference', difference(config, loadedConfig));
       assert.deepStrictEqual(loadedConfig, config);
       
     } catch (err) {

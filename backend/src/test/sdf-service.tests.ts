@@ -77,7 +77,7 @@ suite('SdfService', function() {
     let ruleEvaluator = new RuleEvaluator();
     let sdf_svc = new SdfService(config, ruleEvaluator, dv_facade);
     let dataFeed = getFeedData();
-    let sdf = await sdf_svc.generateFromTemplate(dataFeed, false, true);
+    let sdf = await sdf_svc.generateFromTemplate(dataFeed, false, true, new Date(), new Date());
     assert.strictEqual(sdf.insertionOrders.rowCount, dataFeed.rowCount, "Expect IO by feed row");
   });
 
@@ -113,7 +113,7 @@ suite('SdfService', function() {
     let ruleEvaluator = new RuleEvaluator();
     let sdf_svc = new SdfService(config, ruleEvaluator, dv_facade);
     let dataFeed = getFeedData();
-    let sdf = await sdf_svc.generateFromTemplate(dataFeed, false, true);
+    let sdf = await sdf_svc.generateFromTemplate(dataFeed, false, true, new Date(), new Date());
     assert.strictEqual(sdf.insertionOrders.rowCount, dataFeed.rowCount * 2, "Expect one IO per feed row count and rules multiplication");
   });
 
@@ -149,7 +149,7 @@ suite('SdfService', function() {
     let ruleEvaluator = new RuleEvaluator();
     let sdf_svc = new SdfService(config, ruleEvaluator, dv_facade);
     let dataFeed = getFeedData();
-    let sdf = await sdf_svc.generateFromTemplate(dataFeed, false, true);
+    let sdf = await sdf_svc.generateFromTemplate(dataFeed, false, true, new Date(), new Date());
     let filePath = await sdf_svc.exportSdf(sdf);
     assert.strictEqual(fs.existsSync(filePath), true);
 

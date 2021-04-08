@@ -1,6 +1,9 @@
+import { PORT, IS_GAE } from './env';
+if (IS_GAE) {
+  require('@google-cloud/debug-agent').start({serviceContext: {enableCanary: false}});
+}
 let argv = require('yargs/yargs')(process.argv.slice(2)).argv;
 import { google } from 'googleapis';
-import { PORT } from './env';
 import { OAUTH_SCOPES } from './consts';
 import app from './app';
 

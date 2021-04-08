@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { saveAs } from 'file-saver';
-import { Observable, throwError } from 'rxjs';
+import { Observable, Subject, throwError } from 'rxjs';
 import { catchError, tap, map } from 'rxjs/operators';
 //node-only: import { OAuth2Client } from 'google-auth-library';
 //node-only: import { GoogleSpreadsheet } from 'google-spreadsheet';
@@ -31,6 +31,42 @@ export class BackendService {
     if (!url) throw new Error(`[BackendService] url must be specified`);
     if (!url.startsWith('/')) url = '/' + url;
     return this.baseUrl + url;
+  }
+
+  getEvents(url: string, params?: Record<string, any>): Observable<string> {
+    let subject = new Subject<string>();
+    if (params) {
+      if (!url.includes("?")) url += "?";
+      for (const key of Object.keys(params)) {
+        url += (key + "=" + params[key] + "&")
+      }
+      if (url[url.length-1] === "&") 
+        url = url.substring(0, url.length-2);
+    }
+    var evtSource = new EventSource(this.getUrl(url));
+    evtSource.onmessage = (e) => {
+      if (!e) {
+        evtSource.close();
+        subject.complete();
+      } else {
+        if (e.data.startsWith("error:")) {
+          evtSource.close();
+          subject.error(e.data.substring("error:".length));
+        } else {
+          subject.next(e.data);
+        }
+      }
+    };
+    evtSource.onerror = (e) => {
+      if (e.eventPhase == EventSource.CLOSED) {
+        evtSource.close();
+        subject.complete();
+      } else {
+        subject.error(e);
+      }
+    };
+    
+    return subject;
   }
 
   async getApi<T>(url: string, params?: Record<string, any>): Promise<T> {

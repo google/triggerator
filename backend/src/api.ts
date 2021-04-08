@@ -2,19 +2,16 @@ import path from 'path';
 import _, { result } from 'lodash';
 import express from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { cloudscheduler_v1, google } from 'googleapis';
 import { Storage } from '@google-cloud/storage';
-import Scheduler from '@google-cloud/scheduler';
 import ConfigService from './app/config-service';
 import GoogleDriveFacade from './app/google-drive-facade';
 import DV360Facade from './app/dv360-facade';
 import FeedService from './app/feed-service';
 import { RuleEvaluator } from './app/rule-engine';
 import SdfController from './app/sdf-controller';
-import { difference, parseBool } from './app/utils';
+import { difference, parseBool, parseDate } from './app/utils';
 import { GAE_LOCATION, MASTER_SPREADSHEET } from './env';
 import { Config, JobInfo } from './types/config';
-import { GoogleAuth } from 'google-auth-library';
 import RuleEngineController from './app/rule-engine-controller';
 import SchedulerService from './app/cloud-scheduler-service';
 
@@ -226,19 +223,22 @@ router.get('/config/:id/sdf/download', (req: express.Request, res: express.Respo
 
 router.get('/config/:id/sdf/generate', async (req: express.Request, res: express.Response) => {
   let appId = <string>req.params.id;
-  console.log(`[WebApi][GenerateSdf] Generating SDF for configuration ${appId}`);
+  console.log(`[WebApi] Generating SDF for configuration ${appId}`);
 
   let controller = new SdfController(
     new ConfigService(), new RuleEvaluator(), new FeedService(),
+    // TODO: remove { useLocalCache: true }
     new DV360Facade({ useLocalCache: true }));
   let filepath: string;
   try {
     filepath = await controller.generateSdf(appId, {
       update: parseBool(req.query.update),
-      autoActivateCampaign: parseBool(req.query.autoActivate)
+      autoActivate: parseBool(req.query.autoActivate),
+      startDate: req.query.startDate ? parseDate(req.query.startDate) : undefined,
+      endDate: req.query.endDate ? parseDate(req.query.endDate) : undefined
     });
   } catch (e) {
-    console.error(`[WebApi][GenerateSdf] Generating SDF failed: ${e.message}`);
+    console.error(`[WebApi][ Generating SDF failed: ${e.message}`);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message, details: JSON.stringify(e) });
     return;
   }
@@ -308,8 +308,9 @@ router.post('/config/:id/schedule/edit', async (req: express.Request, res: expre
   let jobInfo = <JobInfo>req.body;
   console.log(`[WebApi] Updating schedule for configuration ${appId}`);
   try {
+    // TODO: should we pass a controller's URL (/engine/:id/run)
     await SchedulerService.updateJob(appId, jobInfo);
-    res.send({status: 'OK'});
+    res.send({ status: 'OK' });
   } catch (e) {
     console.error(`[WebApi] Job creation failed: `, e.message);
     console.error(e);
@@ -343,21 +344,65 @@ router.post('/config/:id/schedule/edit', async (req: express.Request, res: expre
  */
 });
 
+/**
+ * Endpoint for automated running engine execution (from Cloud Scheduler)
+ */
 router.post('/engine/:id/run', async (req: express.Request, res: express.Response, next) => {
   let appId = <string>req.params.id;
   let controller = new RuleEngineController(
     new ConfigService(),
     new RuleEvaluator(),
     new FeedService(),
-    new DV360Facade()
+    // TODO: remove { useLocalCache: true }
+    new DV360Facade({ useLocalCache: true })
   );
   try {
-    let result = await controller.run(appId);
+    await controller.run(appId, {sendNotificationsOnError: true});
     res.status(StatusCodes.OK).send(result);
   } catch (e) {
     console.error(`[WebApi] Execution (${appId}) failed: `, e.message);
     console.error(e);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message });
+  }
+});
+
+/**
+ * Endpoint for manual running engine execution (from the client) with streaming logs back to client.
+ */
+router.get('/engine/:id/run/stream', async (req: express.Request, res: express.Response) => {
+  let started = new Date();
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-control": "no-cache"
+  });
+  let originalLog = console.log;  
+  console.log = (...args: any[]) => {
+    originalLog.apply(console, args);
+    let str = args.join("");
+    res.write(`data: ${str}\n\n`);
+  }
+
+  let appId = <string>req.params.id;
+  let controller = new RuleEngineController(
+    new ConfigService(),
+    new RuleEvaluator(),
+    new FeedService(),
+    // TODO: remove { useLocalCache: true }
+    new DV360Facade({ useLocalCache: true })
+  );
+  try {
+    await controller.run(appId, {sendNotificationsOnError: false});
+    console.log = originalLog;
+    res.write('data: Done. Elapsed: ' + (new Date().valueOf() - started.valueOf()) + '\n\n');
+    res.end();
+    //res.status(StatusCodes.OK).send(result);
+  } catch (e) {
+    console.error(`[WebApi] Execution (${appId}) failed: `, e.message);
+    console.log = originalLog;
+    console.error(e);
+    res.write(`data: error:${e.message}\n\n`);
+    res.end();
+    //res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message });
   }
 });
 
