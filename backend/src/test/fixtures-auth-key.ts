@@ -2,9 +2,9 @@ import path from 'path';
 import { google } from 'googleapis';
 import { OAUTH_SCOPES } from '../consts';
 
-export async function mochaGlobalSetup() {
+export function mochaGlobalSetup() {
   let file = path.resolve('./keys/triggerator-sd-sa.json');
-  const auth = await new google.auth.GoogleAuth({
+  const auth = new google.auth.GoogleAuth({
     keyFile: file,
     scopes: OAUTH_SCOPES
   });

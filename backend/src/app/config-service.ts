@@ -582,7 +582,7 @@ export default class ConfigService {
       throw new Error(`[ConfigService] Application with id ${appId} doesn't exist`);
     }
     app_ids.splice(app_ids.indexOf(appId), 1);
-    this.updateApplicationList(masterSpreadsheetId, app_ids);
+    await this.updateApplicationList(masterSpreadsheetId, app_ids);
     let driveAPI = google.drive({ version: "v3" });
     try {
       await driveAPI.files.delete({
@@ -612,7 +612,7 @@ export default class ConfigService {
         valueInputOption: "USER_ENTERED",
         requestBody: {
           majorDimension: 'ROWS',
-          values: app_ids.map(id => [id])
+          values: rows
         }
       })).data;
     } catch (e) {

@@ -4,7 +4,6 @@ import { AboutComponent } from './about.component';
 import { AppEditorComponent } from './app-editor.component';
 import { AppsListComponent } from './apps-list.component';
 import { ErrorComponent } from './error.component';
-import { LoginComponent } from './login.component';
 import { SettingsComponent } from './settings.component';
 
 const routes: Routes = [
@@ -12,7 +11,6 @@ const routes: Routes = [
   { path: 'apps/:id/edit', component: AppEditorComponent },
   { path: 'settings', component: SettingsComponent },
   { path: 'about', component: AboutComponent },
-  { path: 'login', component: LoginComponent },
   { path: 'error', component: ErrorComponent },
   { path: '', redirectTo: 'apps', pathMatch: 'full' },
   //{ path: '**', component: PageNotFoundComponent }

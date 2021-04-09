@@ -737,7 +737,7 @@ export default class SdfGenerator {
 
     new_adgroup[SDF.AdGroup.Name] = tmpl.adgroup_name(new_adgroup[SDF.AdGroup.Name], rowName, tierName);
     if (tier.youtube_state && tier.youtube_state.bid)
-      new_adgroup[SDF.AdGroup.MaxCost] = tier.youtube_state.bid.toString();
+      new_adgroup[SDF.AdGroup.BidCost] = <any>tier.youtube_state.bid;
 
     this.setCustomFields(new_adgroup, SdfElementType.AdGroup, tierName, 'YouTube', feedRow);
     return new_adgroup;

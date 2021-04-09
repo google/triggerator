@@ -13,12 +13,6 @@ export class BackendService {
   constructor(private http: HttpClient) { }
   baseUrl = '/api/v1';
 
-  // private addAuthorization(headers?: HttpHeaders): HttpHeaders {
-  //   headers = headers || new HttpHeaders();
-  //   let token = gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().id_token;
-  //   return headers.set('Authorization', token);
-  // }
-
   private getBaseHeaders(): HttpHeaders {
     let headers = new HttpHeaders({
       'Accept': 'application/json',

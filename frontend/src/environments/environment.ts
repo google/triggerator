@@ -2,12 +2,8 @@
 // `ng build --prod` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
-const CLIENT_ID = '685425631282-kisohqm6rgl36grec172pnqsn6v6ql67.apps.googleusercontent.com'; // personal: triggerator-sd
-const IAP_CLIENT_ID = '685425631282-6cbqlp8i3bg0rou7n47c8fh8q2fi7sv0.apps.googleusercontent.com';
-
 export const environment = {
-  production: false,
-  clientId: CLIENT_ID
+  production: false
 };
 
 /*

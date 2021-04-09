@@ -1,7 +1,6 @@
 import { formatDate } from '@angular/common';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MatExpansionPanel } from '@angular/material/expansion';
-import { ComponentBase } from './component-base';
 
 @Component({
   selector: 'tr-event-list',

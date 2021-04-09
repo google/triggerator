@@ -3,6 +3,7 @@ import _, { result } from 'lodash';
 import express from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { Storage } from '@google-cloud/storage';
+import { google } from 'googleapis';
 import ConfigService from './app/config-service';
 import GoogleDriveFacade from './app/google-drive-facade';
 import DV360Facade from './app/dv360-facade';
@@ -10,7 +11,7 @@ import FeedService from './app/feed-service';
 import { RuleEvaluator } from './app/rule-engine';
 import SdfController from './app/sdf-controller';
 import { difference, parseBool, parseDate } from './app/utils';
-import { GAE_LOCATION, MASTER_SPREADSHEET } from './env';
+import { GAE_LOCATION, IS_GAE, MASTER_SPREADSHEET } from './env';
 import { Config, JobInfo } from './types/config';
 import RuleEngineController from './app/rule-engine-controller';
 import SchedulerService from './app/cloud-scheduler-service';
@@ -29,6 +30,7 @@ router.get('/apps/list', async (req: express.Request, res: express.Response) => 
     console.log(`[WebApi] Fetched app list: ` + JSON.stringify(apps));
     res.status(200).send(apps);
   } catch (e) {
+    console.error(e);
     res.status(500).send({ error: e.message });
   }
 });
@@ -42,6 +44,7 @@ router.post('/apps/create', async (req: express.Request, res: express.Response) 
     let result = await cfgSvc.createApplication(MASTER_SPREADSHEET, req.user, name, appId);
     res.status(200).send(result);
   } catch (e) {
+    console.error(e);
     res.status(500).send({ error: e.message });
   }
 });
@@ -54,6 +57,7 @@ router.post('/apps/:id/delete', async (req: express.Request, res: express.Respon
     let result = await cfgSvc.deleteApplication(MASTER_SPREADSHEET, appId);
     res.status(200).send(result);
   } catch (e) {
+    console.error(e);
     res.status(500).send({ error: e.message });
   }
 });
@@ -67,6 +71,7 @@ router.get('/config/:id', async (req: express.Request, res: express.Response) =>
     console.log(`[WebApi] Loaded configuration: \n` + JSON.stringify(config));
     res.status(200).send(config);
   } catch (e) {
+    console.error(e);
     res.status(500).send({ error: e.message });
   }
 });
@@ -92,6 +97,7 @@ router.post('/config/:id', async (req: express.Request, res: express.Response) =
       res.sendStatus(StatusCodes.OK);
     }
   } catch (e) {
+    console.error(e);
     res.status(e.httpStatus || StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message });
   }
 });
@@ -133,6 +139,7 @@ async function getConfig(configId: string, res: express.Response) {
   try {
     config = await cfgSvc.loadConfiguration(configId);
   } catch (e) {
+    console.error(e);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message });
     return;
   }
@@ -239,6 +246,7 @@ router.get('/config/:id/sdf/generate', async (req: express.Request, res: express
     });
   } catch (e) {
     console.error(`[WebApi][ Generating SDF failed: ${e.message}`);
+    console.error(e);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message, details: JSON.stringify(e) });
     return;
   }
@@ -299,6 +307,7 @@ router.get('/config/:id/schedule', async (req: express.Request, res: express.Res
     }
     res.send(jobInfo);
   } catch (e) {
+    console.error(e);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message });
   }
 });
@@ -404,6 +413,29 @@ router.get('/engine/:id/run/stream', async (req: express.Request, res: express.R
     res.end();
     //res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message });
   }
+});
+
+router.get('/settings', async (req: express.Request, res: express.Response) => {
+  let projectId = await google.auth.getProjectId();
+  
+  let settings = {
+    "Master Spreadsheet": MASTER_SPREADSHEET,
+    "Is GAE": IS_GAE,
+    "GCP Project Id": projectId,
+    user: req.user,
+    env: {
+      GAE_APPLICATION: process.env.GAE_APPLICATION,// 	The ID of your App Engine application. This ID is prefixed with 'region code~' such as 'e~' for applications deployed in Europe.
+      GAE_DEPLOYMENT_ID: process.env.GAE_DEPLOYMENT_ID,// 	The ID of the current deployment.
+      GAE_ENV: process.env.GAE_ENV, // 	The App Engine environment. Set to standard.
+      GAE_INSTANCE: process.env.GAE_INSTANCE, // 	The ID of the instance on which your service is currently running.
+      GAE_MEMORY_MB: process.env.GAE_MEMORY_MB, // 	The amount of memory available to the application process, in MB.
+      GAE_RUNTIME: process.env.GAE_RUNTIME, // 	The runtime specified in your app.yaml file.
+      GAE_SERVICE: process.env.GAE_SERVICE, // 	The service name specified in your app.yaml file. If no service name is specified, it is set to default.
+      GAE_VERSION: process.env.GAE_VERSION, // 	The current version label of your service.
+      GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT
+    }
+  };
+  res.send({settings});
 });
 
 export = router;
