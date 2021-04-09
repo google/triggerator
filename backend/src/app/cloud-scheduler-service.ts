@@ -1,3 +1,18 @@
+/**
+ * Copyright 2021 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { cloudscheduler_v1, google } from 'googleapis';
 import { GAE_LOCATION } from '../env';
 import { JobInfo } from '../types/config';
@@ -33,7 +48,7 @@ export async function getJob(jobName: string): Promise<JobInfo | null> {
 
 export async function getLocationId(projectId: string) {
   // fetch AppEngine's location via Admin API
-  // TODO[segy]: I'm not sure we should do this, as anyway here's some sort of hard-code (adding "1" to region)
+  // TODO: I'm not sure we should do this, as anyway here's some sort of hard-code (adding "1" to region)
   // Then currently (at 2021 April) there're just two locations for Scheduler: us-west1 and europe-west1.
   // Maybe it's easier to get from ENV always: 
   if (GAE_LOCATION)
