@@ -32,5 +32,5 @@ fixture module is needed for setting up auth globally.
 
 See npm scripts in package.json for shorhands:
 * "test"
-* "test-coverage"
-* "test-prod"
+* "test:coverage"
+* "test:prod"

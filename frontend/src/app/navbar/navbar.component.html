@@ -1,24 +1,9 @@
 <mat-toolbar>
-  <button mat-icon-button class="example-icon" aria-label="Example icon-button with menu icon">
+  <button mat-icon-button class="example-icon">
     <mat-icon>menu</mat-icon>
   </button>
   <span>Triggerator</span>
   <a mat-button routerLink="/apps" routerLinkActive="active">Applications</a>
   <a mat-button routerLink="/settings" routerLinkActive="active">Settings</a>
   <span class="toolbar-spacer"></span>
-
-  <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="User menu">
-    <mat-icon>account_circle</mat-icon>
-  </button>
-  <mat-menu #menu="matMenu">
-    <span mat-menu-item *ngIf="isAuthenticated">{{userName}}</span>
-    <button mat-menu-item *ngIf="!isAuthenticated" (click)="loginOrOut()">
-      <mat-icon>login</mat-icon>
-      <span>Login</span>
-    </button>
-    <button mat-menu-item *ngIf="isAuthenticated" (click)="loginOrOut()">
-      <mat-icon>logout</mat-icon>
-      <span>Logout</span>
-    </button>
-  </mat-menu>
 </mat-toolbar>

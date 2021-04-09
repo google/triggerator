@@ -2,18 +2,15 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
-
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { AuthService } from './shared/auth.service';
 import { BackendService } from './shared/backend.service';
 import { NavbarComponent } from './navbar/navbar.component';
 import { AppsListComponent } from './apps-list.component';
 import { SettingsComponent } from './settings.component';
 import { AboutComponent } from './about.component';
 import { AppMaterialModule } from './app-material.module';
-import { LoginComponent } from './login.component';
 import { AppEditorComponent } from './app-editor.component';
 import { ErrorComponent } from './error.component';
 import { CoreModule } from './core.module';
@@ -28,7 +25,7 @@ import { EventListComponent } from './event-list.component';
   declarations: [
     AppComponent, 
     NavbarComponent, AppsListComponent, AppEditorComponent, SettingsComponent, 
-    AboutComponent, LoginComponent, ErrorComponent, FeedEditorDialogComponent, 
+    AboutComponent, ErrorComponent, FeedEditorDialogComponent, 
     RulesListComponent, RuleEditorDialogComponent, NewAppDialogComponent, 
     EditValueDialogComponent, EventListComponent
   ],
@@ -42,7 +39,7 @@ import { EventListComponent } from './event-list.component';
     AppRoutingModule,
     CoreModule
   ],
-  providers: [BackendService, AuthService],
+  providers: [BackendService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -15,13 +15,13 @@ suite('ConfigService', () => {
     let config = await svc.loadConfiguration(spreadsheetId);
     console.log(JSON.stringify(config, null, 2));
     let expected: Config = {
-      title: '[DEBUG][segy] Triggerator v2 Unit-Test Configuration',
+      title: '[DEBUG] Triggerator v2 Unit-Test Configuration',
       execution: {
         advertiserId: "506732",
         campaignId: "3242703",
         //adjustBids: false,
         //reallocateBudgets: false,
-        notificationEmails: "segy@google.com",
+        notificationEmails: "me@example.com",
         //dv360ApiVersion: "",
         //run_at: ""
       },

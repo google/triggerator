@@ -1,4 +1,3 @@
-/// <reference types="gapi.client.sheets" />
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { Config, AppList, FeedConfig, FeedInfo, JobInfo } from '../../../../backend/src/types/config';
@@ -16,12 +15,18 @@ export interface GenerateSdfOptions {
 export class ConfigService {
   constructor(public backendService: BackendService) { }
 
+  getSettings() {
+    return this.backendService.getApi<{settings:Record<string,string>}>('/settings');
+  }
+
   getAppList(): Promise<AppList> {
     return this.backendService.getApi<AppList>('/apps/list');
   }
+
   createApp(name: string, appId?: string) {
     return this.backendService.postApi(`/apps/create`, {name, appId});
   }
+
   deleteApp(appId: string) {
     return this.backendService.postApi(`/apps/${appId}/delete`);
   }
@@ -74,44 +79,4 @@ export class ConfigService {
   runExecution(configId: string): Observable<string> {
     return this.backendService.getEvents(`/engine/${configId}/run/stream`);
   }
-
-  // async loadAppList(): Promise<{ apps?: IAppConfig[], error?: string }> {
-  //   let settings = this.settingsService.get();
-  //   if (!settings || !settings.spreadsheetUrl) {
-  //     return { error: 'Master spreadsheet id isn\'t specified' };
-  //   }
-  //   return new Promise((resolve) => {
-  //     gapi.client.sheets.spreadsheets.values.get({
-  //       spreadsheetId: settings.spreadsheetUrl,
-  //       range: 'Main!A2:H',
-  //     }).then((response) => {
-  //       var range = response.result;
-  //       let apps: IAppConfig[] = [];
-  //       if (range.values.length > 0) {
-  //         for (let i = 0; i < range.values.length; i++) {
-  //           var row = range.values[i];
-  //           let app: IAppConfig = {
-  //             name: row[0],
-  //             spreadsheetId: row[1],
-  //             version: row[2]
-  //           };
-  //           apps.push(app);
-  //         }
-  //       }
-  //       resolve({ apps: apps });;
-  //     }, (response) => {
-  //       let error = response.result.error;
-  //       let errorMessage: string;
-  //       console.log(`Fetch of ${settings.spreadsheetUrl} failed: ${error.message}`);
-  //       if (error.status === 'PERMISSION_DENIED') {
-  //         let userName = this.authService.currentUser?.getBasicProfile().getEmail();
-  //         errorMessage = `You don\'t have access permissions for the Spreadsheet (${settings.spreadsheetUrl}). Please choose a different one in <a href="/settings">Settings</a> or add permissions for your account ${userName}`;
-  //       } else {
-  //         errorMessage = error.message;
-  //       }
-
-  //       resolve({ error: errorMessage });
-  //     });
-  //   });
-  // }
 }

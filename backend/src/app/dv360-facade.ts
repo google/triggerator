@@ -149,7 +149,7 @@ export default class DV360Facade {
     // Convert files' string content to structured SDF
     let sdf: Record<string, RecordSet> = {};
     Object.keys(files).forEach(entity => {
-      // Campaigns, InsertionOrders, LineItems, AdGroupAds, AdGroupAds
+      // Campaigns, InsertionOrders, LineItems, AdGroups, AdGroupAds
       const csv = csv_parse(files[entity], {
         columns: true,
         skip_empty_lines: true
@@ -166,7 +166,7 @@ export default class DV360Facade {
         case 'LineItems':
           sdf['lineItems'] = rs;
           break;
-        case 'AdGroupAds':
+        case 'AdGroups':
           sdf['adGroups'] = rs;
           break;
         case 'AdGroupAds':
@@ -195,8 +195,9 @@ export default class DV360Facade {
             "FILE_TYPE_AD"
           ],
           "filterType": "FILTER_TYPE_CAMPAIGN_ID",
-          "filterIds": [campaignId]
+          "filterIds": [campaignId]          
         },
+        //version: "SDF_VERSION_5_3" //SDF_VERSION_UNSPECIFIED
       },
     })).data;
     if (op.error) {

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import yazl from 'yazl';
 import csv_stringify from 'csv-stringify/lib/sync';
+import csvStringify from 'csv-stringify';
 import _ from 'lodash';
 import { Config } from '../types/config';
 import { RuleEvaluator } from './rule-engine';
@@ -21,6 +22,10 @@ export interface GenerateSdfOptions {
   fileName?: string
 }
 export default class SdfService {
+  static CsvExportOptions: csvStringify.Options = {
+    header: true ,
+    quoted: true
+  };
 
   constructor(private config: Config, private ruleEvaluator: RuleEvaluator,
     private dv_facade: DV360Facade) { }
@@ -44,14 +49,14 @@ export default class SdfService {
   async exportSdf(sdf: SdfFull, fileName: string = 'sdf.zip'): Promise<string> {
     var zipfile = new yazl.ZipFile();
 
-    zipfile.addBuffer(Buffer.from(csv_stringify(sdf.campaigns.values, { header: true })), "SDF-Campaigns.csv");
-    zipfile.addBuffer(Buffer.from(csv_stringify(sdf.insertionOrders.values, { header: true })), "SDF-InsertionOrders.csv");
+    zipfile.addBuffer(Buffer.from(csv_stringify(sdf.campaigns.values, SdfService.CsvExportOptions)), "SDF-Campaigns.csv");
+    zipfile.addBuffer(Buffer.from(csv_stringify(sdf.insertionOrders.values, SdfService.CsvExportOptions)), "SDF-InsertionOrders.csv");
     if (sdf.lineItems)
-      zipfile.addBuffer(Buffer.from(csv_stringify(sdf.lineItems.values, { header: true })), "SDF-LineItems.csv");
+      zipfile.addBuffer(Buffer.from(csv_stringify(sdf.lineItems.values, SdfService.CsvExportOptions)), "SDF-LineItems.csv");
     if (sdf.adGroups)
-      zipfile.addBuffer(Buffer.from(csv_stringify(sdf.adGroups.values, { header: true })), "SDF-AdGroups.csv");
+      zipfile.addBuffer(Buffer.from(csv_stringify(sdf.adGroups.values, SdfService.CsvExportOptions)), "SDF-AdGroups.csv");
     if (sdf.ads)
-      zipfile.addBuffer(Buffer.from(csv_stringify(sdf.ads.values, { header: true })), "SDF-AdGroupAds.csv");
+      zipfile.addBuffer(Buffer.from(csv_stringify(sdf.ads.values, SdfService.CsvExportOptions)), "SDF-AdGroupAds.csv");
 
     let outputFile = path.join(path.resolve(getTempDir()), fileName);
     let promise = new Promise<string>((resolve, reject) => {
@@ -63,8 +68,6 @@ export default class SdfService {
       });
     })
     zipfile.end();
-
-    // TODO: save the file to GCS/Google Drive
 
     return promise;
   }

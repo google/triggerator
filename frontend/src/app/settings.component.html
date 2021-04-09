@@ -1,40 +1,36 @@
-<form novalidate>
-<fieldset>
-  <legend>Basic Information</legend>
+<app-progress-spinner [backdropEnabled]="true" [positionGloballyCenter]="true" [displayProgressSpinner]="loading">
+</app-progress-spinner>
 
-  <div class="form-group row">
-    <label class="col-md-2 col-form-label" for="spreadsheetUrl">Master Spreadsheet Url</label>
-    <div class="col-md-8">
-      <input class="form-control"
-             id="spreadsheetUrl"
-             type="text"
-             placeholder="Url or spreadsheet id"
-             required
-             [(ngModel)]=settings.spreadsheetUrl
-             name="spreadsheetUrl"
-             #spreadsheetUrlVar="ngModel"
-             [ngClass]="{'is-invalid': (spreadsheetUrlVar.touched || 
-                                      spreadsheetUrlVar.dirty ) && 
-                                      !spreadsheetUrlVar.valid }" />
-      <span class="invalid-feedback">
-        <span *ngIf="spreadsheetUrlVar.errors?.required">
-          Master spreadsheet url is required.
-        </span>
-      </span>
-    </div>
-  </div>
-</fieldset>
-</form>
-
-<div class="row mb-2">
-  <div class="col-md-4">
-    <button class="btn btn-primary mr-3"
-            style="width:80px"
-            type="button"
-            [title]="isValid() ? 'Save your entered data' : 'Disabled until the form data is valid'"
-            [disabled]="!isValid()"
-            (click)="save()">
-      Save
+<div *ngIf="errorMessage">
+  <div class="alert alert-danger alert-dismissible" #errorMessageAlert>
+    <div [innerHTML]="errorMessage"></div>
+    <button type="button" class="close" aria-label="Close" (click)="closeErrorMessage()">
+      <span aria-hidden="true">&times;</span>
     </button>
   </div>
 </div>
+
+<form novalidate>
+  <fieldset>
+    <legend>Basic Information</legend>
+
+    <mat-table [dataSource]="dataSource" class="mat-elevation-z8 editable-table">
+
+      <!-- Name Column -->
+      <ng-container matColumnDef="name">
+        <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+        <mat-cell *matCellDef="let element">{{element.name}}</mat-cell>
+      </ng-container>
+
+      <!-- Version Column -->
+      <ng-container matColumnDef="value">
+        <mat-header-cell *matHeaderCellDef> Value </mat-header-cell>
+        <mat-cell *matCellDef="let element"> {{element.value}} </mat-cell>
+      </ng-container>
+
+      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+      <mat-row *matRowDef="let row; let e = index; columns: displayedColumns;"></mat-row>
+
+    </mat-table>
+  </fieldset>
+</form>
