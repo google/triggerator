@@ -1,3 +1,18 @@
+/**
+ * Copyright 2021 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Overlay } from '@angular/cdk/overlay';
 import { Component, Input, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
@@ -37,11 +52,10 @@ export class RulesListComponent implements OnInit {
   ngOnInit(): void {
   }
 
-  validate() {
-    // TODO: execute rules
-    //let result = this.configService.validateRules(this.appId);
-
-  }
+  // validate() {
+  //   // TODO: execute rules
+  //   //let result = this.configService.validateRules(this.appId);
+  // }
 
   createRule() {
     const dialogRef = this.dialog.open(RuleEditorDialogComponent, {
@@ -86,8 +100,6 @@ export class RulesListComponent implements OnInit {
     });
   }
 
-
-
   deleteRule(rule: RuleInfo) {
     const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
@@ -115,10 +127,4 @@ export class RulesListComponent implements OnInit {
       }
     });
   }
-
-  // saveRules() {
-  //   let rules = this._data.rules.slice();
-  //   this.configService.saveConfig(this.appId, { rules: rules }, null);
-  // }
-
 }

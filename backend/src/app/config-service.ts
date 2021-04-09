@@ -1,3 +1,18 @@
+/**
+ * Copyright 2021 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { sheets_v4, google } from 'googleapis';
 import { dataproc } from 'googleapis/build/src/apis/dataproc';
 import _ from 'lodash';
@@ -116,51 +131,9 @@ export default class ConfigService {
           break;
       }
     }
-    /* General tab:
-      Feed row label column:: main.city.name
-      GEO code column:: extra.geo_code
-      Budget factor column:: extra.budget
-      
-      DV360 Generation: 
-      SDF Version:: 4.1
-      Template campaign ID:: 3799005
-      New campaign name:: New campaign 22
-      Total budget:: 1000000
-      Display Insertion Order name template:: {base_name}-{row_name}
-      Display Line Item name template:: {base_name}-{row_name}-{tier_name}
-      TrueView Insertion Order name template:: {base_name}-{row_name}-{tier_name}
-      TrueView Line Item name template:: {base_name}-{row_name}-{tier_name}
-      TrueView Ad Group name template:: {base_name}-{row_name}-{tier_name}
-      TrueView Ad name template:: {base_name}-{row_name}-{tier_name}
-      Destination folder:: drive://14yfXjbrnVI11BnmvAzieOCnpsmSG0T5m
-      
-      Trigger Execution:
-      Campaing ID:: undefined
-      Run daily at (Europe/Moscow):: 09:00
-      DV360 API version: 2.0 or 1.0
-      API Key: AIzaSyC-1ekthho3fPFHilnStYl6ZfLr8tc84qg
-      Reallocate Budgets: FALSE
-      Adjust Bids: FALSE
-      DV360 non-TrV Report ID: 649720425
-      DV360 TrV Report ID: 649720509
-      Run optimisation every: Friday
-      Send notifications to: alipatov@google.com
-      Process reports at (Europe/Moscow):: 06:00
-      Download reports: FALSE
-
-     */
   }
 
   private loadStates(values: any[][], config: Config) {
-    // const request = {
-    //   spreadsheetId: spreadsheetId,
-    //   range: CONFIG_SHEETS.States + '!A2:Z', // skipping the first row with headers
-    //   majorDimension: 'ROWS'
-    // };
-    // const valueRange = (await this.sheetsAPI.spreadsheets.values.get(request)).data;
-    // if (!valueRange.values || valueRange.values.length === 0) {
-    //   throw new Error(`BAD_CONFIG_SPREADSHEET: Spreadsheet ${spreadsheetId} doesn't contain any values on 'States' sheet`);
-    // }
     if (!values) return;
     let rules_map: Record<string, RuleInfo> = {};
     let rules: RuleInfo[] = [];
@@ -203,15 +176,6 @@ export default class ConfigService {
   }
 
   private loadFeeds(values: any[][], config: Config) {
-    // const request = {
-    //   spreadsheetId: spreadsheetId,
-    //   range: CONFIG_SHEETS.Feeds + '!A2:Z', // skipping the first row with headers
-    //   majorDimension: 'ROWS'
-    // };
-    // const valueRange = (await this.sheetsAPI.spreadsheets.values.get(request)).data;
-    // if (!valueRange.values || valueRange.values.length === 0) {
-    //   throw new Error(`BAD_CONFIG_SPREADSHEET: Spreadsheet ${spreadsheetId} doesn't contain any values on 'States' sheet`);
-    // }
     config.feedInfo = config.feedInfo || {};
 
     if (!values) return;
@@ -652,11 +616,26 @@ export default class ConfigService {
         if (!feed.name)
           errors.push({ message: 'A feed\'s name is not specified' });
         if (!feed.url)
-          errors.push({ message: `${feed.name}' feed's url  is not specified` });
+          errors.push({ message: `The '${feed.name}' feed's url is not specified` });
         // TODO: key_columns задана если больше 2
+        if (!feed.type)
+          errors.push({ message: `The '${feed.name}' feed's type is not specified` });
+        if (!feed.key_column && feedInfo.feeds.length > 1)
+          errors.push({ message: `The '${feed.name}' feed has no key column specified while there more than 1 feed` });
+        if (feed.external_key) {
+          let ext_feed_name = feed.external_key.substring(0, feed.external_key.indexOf("."));
+          let ext_feed = feedInfo.feeds.find(f => f.name === ext_feed_name);
+          if (!ext_feed) {
+            errors.push({ message: `The '${feed.name}' feed refers to unknown feed by external key ${ext_feed_name}` });
+          } else if (ext_feed.name === feed.name) {
+            errors.push({ message: `The '${feed.name}' feed refers to itself by its external key` });
+          }
+        }
       }
-      // TODO: у всех фидов кроме одного задан вншний ключ и всех задан ключ
-      // TODO: внешние ключи ссылаются на ключи других фидов (и не ссылаются на себя)
+      if (feedInfo.feeds.length > 1 && feedInfo.feeds.filter(f => !f.external_key).length > 1) {
+        // there can be only one feed without external_key
+        errors.push({ message: `Found several feeds without external key` });
+      }
       // TODO: ссылки ключами не образуют циклов (надо построить граф)
     }
     return errors;
@@ -693,30 +672,7 @@ export default class ConfigService {
   }
 
   async updateConfiguration(spreadsheetId: string, config: Config) {
-    throw new Error(`Not implemented`);
-    // Update "Standard Columns" (General)
-    // let res = (await this.sheetsAPI.spreadsheets.values.update({
-    //   range: CONFIG_SHEETS.General + '!B2',
-    //   spreadsheetId: spreadsheetId,
-    //   valueInputOption: "USER_ENTERED",
-    //   requestBody: {
-    //     //range: CONFIG_SHEETS.General + '!A1:Z',
-    //     majorDimension: 'ROWS',
-    //     values: [
-    //       [config.feedInfo.name_column],
-    //       [config.feedInfo.geo_code_column],
-    //       [config.feedInfo.budget_factor_column]
-    //     ]
-    //   },
-    // })).data;
-    // Update "DV360 Generation" (General)
-    // Update "Trigger Execution" (General)
-
-    // Update "States" (States)
-
-    // Update "Feeds"
-
-    // Update "SDF Fields"
+    return this.applyChanges(spreadsheetId, config);
   }
 
   async applyChanges(spreadsheetId: string, diff: Config): Promise<number> {
