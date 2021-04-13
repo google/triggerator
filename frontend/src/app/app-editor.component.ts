@@ -263,8 +263,10 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
     dialogRef.afterClosed().subscribe(result => {
       if (result && result !== this.config?.title) {
+        this.loading = true;
         this.configService.saveConfig(this.appId, { title: result }, { title: this.config?.title }).then(() => {
           this.config.title = result;
+          this.loading = false;
           this.showSnackbar("Saved");
         });
       }

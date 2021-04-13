@@ -144,7 +144,7 @@ export default class RuleEngine {
       });
     }
     let lisMap: Record<string, Array<{ liId: string, status: string }>> = {};
-    if (sdf.lineItems && '' in iosMap && sdf.lineItems) {
+    if (sdf.lineItems && '' in iosMap) {
       for (let item of iosMap['']) {
         let lis = sdf.lineItems.findAll(SDF.LI.IoId, item.ioId);
         for (const idx of lis) {

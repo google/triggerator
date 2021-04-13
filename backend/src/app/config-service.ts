@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import { sheets_v4, google } from 'googleapis';
-import { dataproc } from 'googleapis/build/src/apis/dataproc';
 import _ from 'lodash';
+import { SERVICE_ACCOUNT } from '../env';
 import ConfigInfo, { FeedInfo, FeedType, RuleInfo, RuleState, Config, AppList, CustomFields, AppInfo, FeedConfig, SdfElementType } from '../types/config';
 import { RuleEvaluator } from './rule-engine';
 
@@ -232,7 +232,7 @@ export default class ConfigService {
         case "Insertion Orders": sdf_type = SdfElementType.IO; break;
         case "Line Items": sdf_type = SdfElementType.LI; break;
         case "Ad Groups": sdf_type = SdfElementType.AdGroup; break;
-        case "Ads": sdf_type = SdfElementType.AdGroup; break;
+        case "Ads": sdf_type = SdfElementType.Ad; break;
       }
       fields.push({
         element_state: row[0],
@@ -439,6 +439,7 @@ export default class ConfigService {
         throw new Error(`[ConfigService] Application with id ${appId} alreday exists`);
       }
     }
+    let attachingExisting = !!appId;
     if (!appId) {
       console.log(`[ConfigService] Creating a new spreadsheet for a new app '${name}'`);
       try {
@@ -470,7 +471,7 @@ export default class ConfigService {
         })).data;
         appId = response.spreadsheetId!;
         if (userEmail) {
-          console.log(`[ConfigService] Sharing created doc (${appId}) with user '${userEmail}'`);
+          console.log(`[ConfigService] Sharing the created doc (${appId}) with user '${userEmail}'`);
           let driveAPI = google.drive({ version: "v3" });
           try {
             (await driveAPI.permissions.create({
@@ -526,6 +527,10 @@ export default class ConfigService {
       });
     } catch (e) {
       console.error(`[ConfigService] Failure on creating developer metadata: `, e.message);
+      if (attachingExisting && e.response?.data?.error?.code === 403) {
+        //console.error(`[ConfigService]`)
+        throw new Error(`Cannot update Spreadsheet ${appId}, did you share it with '${SERVICE_ACCOUNT}' user?`);
+      }
       throw e;
     }
 
@@ -591,9 +596,9 @@ export default class ConfigService {
     if (!config.dv360Template)
       throw new Error(`[validateConfiguration] Config object doesn't have dv360Template section`);
     if (!config.feedInfo)
-      throw new Error(`[validateConfiguration] config.feedInfo section is missing`);
+      throw new Error(`[validateConfiguration] Feeds are missing`);
     if (!config.rules)
-      throw new Error(`[validationConfiguraton] config.rules section is missing`);
+      throw new Error(`[validateConfiguration] Rules are missing`);
 
     let errors: ValidationError[] = this.validateFeeds(config.feedInfo);
     if (!config.execution.advertiserId)

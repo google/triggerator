@@ -14,8 +14,10 @@
 # limitations under the License.
 
 cd ../backend
+npm install
 npm run clean
 cd ../frontend
+npm install
 npm run build
 cd ../backend
 npm run build
