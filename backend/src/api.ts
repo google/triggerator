@@ -30,6 +30,7 @@ import { GAE_LOCATION, IS_GAE, MASTER_SPREADSHEET } from './env';
 import { Config, JobInfo } from './types/config';
 import RuleEngineController from './app/rule-engine-controller';
 import SchedulerService from './app/cloud-scheduler-service';
+import { GoogleAuth, OAuth2Client } from 'google-auth-library';
 
 let router = express.Router();
 
@@ -432,9 +433,9 @@ router.get('/engine/:id/run/stream', async (req: express.Request, res: express.R
 
 router.get('/settings', async (req: express.Request, res: express.Response) => {
   let projectId = await google.auth.getProjectId();
-  
   let settings = {
     "Master Spreadsheet": MASTER_SPREADSHEET,
+    "Service Account": `${projectId}@appspot.gserviceaccount.com`,
     "Is GAE": IS_GAE,
     "GCP Project Id": projectId,
     user: req.user,

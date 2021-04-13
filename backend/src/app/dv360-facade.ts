@@ -198,23 +198,28 @@ export default class DV360Facade {
 
   private async _downloadSdf(advertiserId: string, campaignId: string, opt: DownloadOptionsRuntime): Promise<{ fileName: string, resourceName: string }> {
     console.log(`[DV360Facade] Starting downloading SDF for advertiser/campaign ${advertiserId}/${campaignId}`);
-    let op = (await this.dv_api.sdfdownloadtasks.create({
-      requestBody: {
-        "advertiserId": advertiserId, //"506732",
-        "parentEntityFilter": {
-          "fileType": [
-            "FILE_TYPE_CAMPAIGN",
-            "FILE_TYPE_INSERTION_ORDER",
-            "FILE_TYPE_LINE_ITEM",
-            "FILE_TYPE_AD_GROUP",
-            "FILE_TYPE_AD"
-          ],
-          "filterType": "FILTER_TYPE_CAMPAIGN_ID",
-          "filterIds": [campaignId]          
+    let op:dv360.Schema$Operation;
+    try {
+      op = (await this.dv_api.sdfdownloadtasks.create({
+        requestBody: {
+          "advertiserId": advertiserId,
+          "parentEntityFilter": {
+            "fileType": [
+              "FILE_TYPE_CAMPAIGN",
+              "FILE_TYPE_INSERTION_ORDER",
+              "FILE_TYPE_LINE_ITEM",
+              "FILE_TYPE_AD_GROUP",
+              "FILE_TYPE_AD"
+            ],
+            "filterType": "FILTER_TYPE_CAMPAIGN_ID",
+            "filterIds": [campaignId]          
+          },
+          //version: "SDF_VERSION_5_3" //SDF_VERSION_UNSPECIFIED
         },
-        //version: "SDF_VERSION_5_3" //SDF_VERSION_UNSPECIFIED
-      },
-    })).data;
+      })).data;
+    } catch(e) {
+      throw new Error(`[DV360Facade] sdfdownloadtasks.create for campaign ${campaignId} failed: code=${e.error!.code}, message=${e.error!.message}`);
+    }
     if (op.error) {
       // TODO: should we log error.details as well?
       throw new Error(`[DV360Facade] sdfdownloadtasks.create for campaign ${campaignId} failed: code=${op.error!.code}, message=${op.error!.message}`);

@@ -1,5 +1,4 @@
 <h1 mat-dialog-title>New Application</h1>
-<h3 mat-dialog-subtitle style="margin-bottom: 0;">Formerly known as State and Tier</h3>
 <form [formGroup]="form" novalidate>
 
   <div class="row">
@@ -21,11 +20,15 @@
       </mat-form-field>
     </div>
   </div>
-
+  <div class="row">
+    <div class="col">
+      <div class="alert alert-dark">If you're connecting an existing spreadsheet don't forget to share it with your Cloud project's service account.</div>
+    </div>
+  </div>
   <div class="row">
     <div class="col text-right" style="margin-top: 10px">
       <button mat-raised-button color="accent" (click)='save()' [disabled]="!form.valid">Save</button>
       <button mat-raised-button mat-dialog-close style="margin-left: 20px">Cancel</button>
     </div>
-  </div>  
+  </div>
 </form>

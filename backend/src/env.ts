@@ -38,3 +38,5 @@ export function getTempDir() {
   else
     return '.tmp';
 }
+
+export const SERVICE_ACCOUNT = IS_GAE ? process.env.GOOGLE_CLOUD_PROJECT + '@appspot.gserviceaccount.com' : ''
