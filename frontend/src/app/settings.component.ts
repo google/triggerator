@@ -34,18 +34,12 @@ export class SettingsComponent extends ComponentBase implements OnInit {
 
   errorMessage: string;
 
-  constructor(private route: ActivatedRoute, private configService: ConfigService,
+  constructor(private configService: ConfigService,
     dialog: MatDialog, snackBar: MatSnackBar) { 
     super(dialog, snackBar);
   }
 
   async ngOnInit() {
-    this.route.parent.data.subscribe(data => {
-      // if (this.settingsForm) {
-      //   this.settingsForm.reset();
-      // }
-      //this.product = data['resolvedData'].spreadsheetUrl;
-    });
     this.loading = true;
     this.dataSource = new MatTableDataSource<{name: string, value: any}>();
     try {

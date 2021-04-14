@@ -52,10 +52,6 @@ export class RulesListComponent implements OnInit {
   ngOnInit(): void {
   }
 
-  // validate() {
-  //   // TODO: execute rules
-  //   //let result = this.configService.validateRules(this.appId);
-  // }
 
   createRule() {
     const dialogRef = this.dialog.open(RuleEditorDialogComponent, {
@@ -68,14 +64,7 @@ export class RulesListComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        // let rule: RuleInfo = {
-        //   name: '',
-        //   condition: ''
-        // };
-        //this.updateRuleWithEditorResults(rule, result);
-        //this._data.rules.push(rule);
         this.dataSource.data = this._data.rules;
-        //this.saveRules()
       }
     });
   }
@@ -94,8 +83,6 @@ export class RulesListComponent implements OnInit {
       if (result) {
         console.log(result);
         this.dataSource.data = this._data.rules;
-        //this.updateRuleWithEditorResults(rule, result);
-        //this.saveRules();
       }
     });
   }
@@ -123,7 +110,6 @@ export class RulesListComponent implements OnInit {
         // if server save successful then update load data
         this._data.rules.splice(idx2del, 1);
         this.dataSource.data = this._data.rules;
-        //this.saveRules();
       }
     });
   }

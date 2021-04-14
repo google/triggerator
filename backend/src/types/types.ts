@@ -204,23 +204,24 @@ export interface SdfRuntime {
  * Constants of all SDF fields
  */
 export var SDF = {
-  Campaign: {
+  Campaign: { // validated for SDF v5.3
+    // See https://developers.google.com/display-video/api/structured-data-file/v5-3/Campaign
     CampaignId: "Campaign Id",
     AdvertiserId: "Advertiser Id",
     Name: "Name",
     Timestamp: "Timestamp",
-    Status: "Status",
+    Status: "Status", // Active, Paused, Archived
     CampaignGoal: "Campaign Goal",
     CampaignGoalKPI: "Campaign Goal KPI",
     CampaignGoalKPIValue: "Campaign Goal KPI Value",
-    CreativeTypes: "Creative Types",
-    CampaignBudget: "Campaign Budget",
-    CampaignStartDate: "Campaign Start Date",
-    CampaignEndDate: "Campaign End Date",
-    FrequencyEnabled: "Frequency Enabled",
-    FrequencyExposures: "Frequency Exposures",
-    FrequencyPeriod: "Frequency Period",
-    FrequencyAmount: "Frequency Amount",
+    CreativeTypes: "Creative Types",  // Display, Video, Audio
+    CampaignBudget: "Campaign Budget",  // float
+    CampaignStartDate: "Campaign Start Date", // MM/DD/YYYY HH:mm
+    CampaignEndDate: "Campaign End Date",     // MM/DD/YYYY HH:mm
+    FrequencyEnabled: "Frequency Enabled",    // TRUE, FALSE
+    FrequencyExposures: "Frequency Exposures",// int
+    FrequencyPeriod: "Frequency Period",      // Minutes, Hours, Days, Weeks, Months, Lifetime
+    FrequencyAmount: "Frequency Amount",      // int 
     DemographicTargetingGender: "Demographic Targeting Gender",
     DemographicTargetingAge: "Demographic Targeting Age",
     DemographicTargetingHouseholdIncome: "Demographic Targeting Household Income",
@@ -235,38 +236,42 @@ export var SDF = {
     ThirdPartyVerificationServices: "Third Party Verification Services",
     ThirdPartyVerificationLabels: "Third Party Verification Labels",
     ViewabilityTargetingActiveView: "Viewability Targeting Active View",
-    ViewabilityTargetingAdPosition_Include: "Viewability Targeting Ad Position - Include",
-    ViewabilityTargetingAdPosition_Exclude: "Viewability Targeting Ad Position - Exclude",
+    PositionTargeting_DisplayOnScreen: "Position Targeting - Display On Screen",
+    PositionTargeting_VideoOnScreen: "Position Targeting - Video On Screen",
+    PositionTargeting_DisplayPositionInContent: "Position Targeting - Display Position In Content",
+    PositionTargeting_VideoPositionInContent: "Position Targeting - Video Position In Content",
     InventorySourceTargeting_AuthorizedSellerOnly: "Inventory Source Targeting - Authorized Seller Only",
     InventorySourceTargeting_Include: "Inventory Source Targeting - Include",
     InventorySourceTargeting_Exclude: "Inventory Source Targeting - Exclude",
     InventorySourceTargeting_TargetNewExchanges: "Inventory Source Targeting - Target New Exchanges",
     EnvironmentTargeting: "Environment Targeting"
   },
-  IO: {
+  IO: { // validated for SDF v5.3
+    // See https://developers.google.com/display-video/api/structured-data-file/v5-3/InsertionOrder
     IoId: "Io Id",
     CampaignId: "Campaign Id",
     Name: "Name",
     Timestamp: "Timestamp",
     Status: "Status",
     IoType: "Io Type",
+    BillableOutcome: "Billable Outcome",
     Fees: "Fees",
     IntegrationCode: "Integration Code",
     Details: "Details",
     Pacing: "Pacing",
     PacingRate: "Pacing Rate",
     PacingAmount: "Pacing Amount",
-    FrequencyEnabled: "Frequency Enabled",
-    FrequencyExposures: "Frequency Exposures",
-    FrequencyPeriod: "Frequency Period",
-    FrequencyAmount: "Frequency Amount",
+    FrequencyEnabled: "Frequency Enabled",  // "TRUE" or "FALSE"
+    FrequencyExposures: "Frequency Exposures",  // number
+    FrequencyPeriod: "Frequency Period", // Minutes, Hours, Days, Weeks, Months, Lifetime
+    FrequencyAmount: "Frequency Amount",  // number
     PerformanceGoalType: "Performance Goal Type",
     PerformanceGoalValue: "Performance Goal Value",
     MeasureDAR: "Measure DAR",
     MeasureDARChannel: "Measure DAR Channel",
-    BudgetType: "Budget Type",
-    BudgetSegments: "Budget Segments",
-    AutoBudgetAllocation: "Auto Budget Allocation",
+    BudgetType: "Budget Type",  // Amount, Impressions
+    BudgetSegments: "Budget Segments",  // (Budget, Start Date, End Date)
+    AutoBudgetAllocation: "Auto Budget Allocation",  // "TRUE, "FALSE"
     GeographyTargeting_Include: "Geography Targeting - Include",
     GeographyTargeting_Exclude: "Geography Targeting - Exclude",
     LanguageTargeting_Include: "Language Targeting - Include",
@@ -317,9 +322,15 @@ export var SDF = {
     DemographicTargetingParentalStatus: "Demographic Targeting Parental Status",
     ConnectionSpeedTargeting: "Connection Speed Targeting",
     CarrierTargeting_Include: "Carrier Targeting - Include",
-    CarrierTargeting_Exclude: "Carrier Targeting - Exclude"
+    CarrierTargeting_Exclude: "Carrier Targeting - Exclude",
+    InsertionOrderOptimization: "Insertion Order Optimization",  // "TRUE", "FALSE"
+    BidStrategyUnit: "Bid Strategy Unit",
+    BidStrategyDoNotExceed: "Bid Strategy Do Not Exceed", // float
+    ApplyFloorPriceForDeals: "Apply Floor Price For Deals", // "TRUE", "FALSE"
+    AlgorithmId: "Algorithm Id",  // integer
   },
   LI: {
+    // See https://developers.google.com/display-video/api/structured-data-file/v5-3/LineItem
     LineItemId: "Line Item Id",
     IoId: "Io Id",
     Type: "Type",
