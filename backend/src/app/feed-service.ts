@@ -175,7 +175,7 @@ export default class FeedService {
           } else {
             // file entry
             const outStream = new Writable({
-              write(chunk, encoding, callback) {                
+              write(chunk, encoding, callback) {
                 binaryString = Buffer.concat([binaryString, chunk]);
                 //strData += chunk.toString();
                 callback();
@@ -234,7 +234,7 @@ export default class FeedService {
     //       but let's wait till client-side implementation.
     let parsedUrl = new URL(feedInfo.url);
     let slashIdx = parsedUrl.pathname.lastIndexOf('/');
-    let binaryString: Buffer|undefined;
+    let binaryString: Buffer | undefined;
     if (slashIdx > -1) {
       let fileName = parsedUrl.pathname.substring(slashIdx + 1);
       // NOTE: zip != gz those are two different formats
@@ -268,7 +268,7 @@ export default class FeedService {
     // should ungzip response stream automatically
     let parsedUrl = new URL(feedInfo.url);
     let slashIdx = parsedUrl.pathname.lastIndexOf('/');
-    let binaryString: Buffer|undefined;
+    let binaryString: Buffer | undefined;
     if (slashIdx > -1) {
       let fileName = parsedUrl.pathname.substring(slashIdx + 1);
       // NOTE: zip != gz those are two different formats
@@ -527,6 +527,7 @@ export default class FeedService {
           }
           return srcVal;
         });
+        newRow['$' + feedRight.name] = Object.values(rightRow)
         _.forIn(duplicates, (val, key) => { newRow[feedRight.name + "." + key] = val });
 
         result.push(newRow);
@@ -552,23 +553,28 @@ export default class FeedService {
     // }
     return new FeedData(result);
   }
-
+  private initArrayFields(feedName: string, feed: FeedData) {
+    let rs = feed.recordSet;
+    for (let row = 0; row < rs.rowCount; row++) {
+      let obj = rs.getRow(row);
+      obj['$' + feedName] = Object.values(obj);
+    }
+  }
   async loadAll(feedConfig: FeedConfig): Promise<FeedData> {
     if (!feedConfig.feeds || !feedConfig.feeds.length) {
       throw new Error("Feed configuration contains no feeds");
     }
     // load all feeds in parallel and wait for all to compelete
-    // let feeds: FeedInfoData[] = await Promise.all(
-    //   feedConfig.feeds.map((feedInfo) => this.loadFeed(feedInfo))
-    // );
     let feeds: FeedInfoData[] = _.zip(
       feedConfig.feeds,
       await Promise.all(
         feedConfig.feeds.map((feedInfo) => this.loadFeed(feedInfo))
       )
     ).map(arr => ({ info: arr[0]!, feed: arr[1]! }));
-    if (feeds.length === 1)
+    if (feeds.length === 1) {
+      this.initArrayFields(feeds[0].info.name, feeds[0].feed);
       return feeds[0].feed;
+    }
     // we have two or more feeds, need joining
 
     // build a map: feed name => feed data
@@ -590,6 +596,8 @@ export default class FeedService {
       }
     }
     if (!finalFeedName) { throw new Error(`[FeedService] Could find a feed with an external key`); } // shouldn't ever happen
+    // for each row copy all fields into an array-field with name of the feed prepended by '$'
+    this.initArrayFields(finalFeedName, feeds_dst[finalFeedName].feed);
 
     // loop though all other feeds
     for (const feed_ of feeds) {
@@ -603,10 +611,10 @@ export default class FeedService {
         throw new Error(`[FeedService] Feed ${feedName} refers to itself in its external_key (${ext_key})`);
       }
       let left_src = feeds_dst[ext_feed]?.feed || feeds_src[ext_feed];
-      let right_src = feeds_dst[feedName]?.feed || feed;
       if (!left_src) {
         throw new Error(`[FeedService] Feed ${feedName} refers to unknown feed ${ext_feed} in its external_key (${ext_key})`);
       }
+      let right_src = feeds_dst[feedName]?.feed || feed;
       let new_src = this.join(left_src, { feed: right_src, name: feedInfo.name, key: feedInfo.key_column!, ext_key: feedInfo.external_key });
 
       let new_feed = { feed: new_src, sources: new Set([ext_feed, feedName]) };

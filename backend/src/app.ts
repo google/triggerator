@@ -71,6 +71,10 @@ if (SECURITY === 'IAP') {
       next();
       return;
     }
+    if (!EXPECTED_AUDIENCE) {
+      next();
+      return;
+    }
     try {
       let ticket = await verifyJwtToken(jwtAssertion, EXPECTED_AUDIENCE);
       const userId = ticket.getUserId();
@@ -81,7 +85,7 @@ if (SECURITY === 'IAP') {
     } catch (e) {
       console.error(`[WebApi] IAP jwt verification failed: `, e.message);
       console.error(e);
-      next(e);
+      res.status(StatusCodes.UNAUTHORIZED).send({error: `IAP JWT token verification failed (${e.message}), please contact your system administator`});
       return;
     }
     // TODO: where is a tiket (to use with setupOAuth)?

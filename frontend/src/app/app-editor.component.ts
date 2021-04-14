@@ -30,8 +30,8 @@ import { ComponentBase } from './component-base';
 import { EditValueDialogComponent } from './components/edit-value-dialog.component';
 import { EventListComponent } from './event-list.component';
 import timezones from './timezones';
-import { Observable } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
+import { Observable, Subject } from 'rxjs';
+import { map, startWith, takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-app-editor',
@@ -60,6 +60,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   @ViewChild("feedDataPanel") feedDataPanel: MatExpansionPanel;
   @ViewChildren('feedDataPaginator') paginatorFeedData: QueryList<MatPaginator>;
   @ViewChild(MatTabGroup) tabGroup: MatTabGroup;
+  ngUnsubscribe: Subject<void> = new Subject<void>();
 
   constructor(
     private fb: FormBuilder,
@@ -86,8 +87,8 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       notificationEmails: [null],
     }, { updateOn: 'blur' });
     this.formExecution = this.fb.group({
-      schedule: {value: null, disabled: true},
-      timeZone: {value: null, disabled: true},
+      schedule: { value: null, disabled: true },
+      timeZone: { value: null, disabled: true },
       enable: null
     });
     this.formSdf = this.fb.group({
@@ -114,63 +115,72 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     }, { updateOn: 'blur' });
 
     this.appId = this.route.snapshot.paramMap.get('id');
-    this.formGeneral.valueChanges.subscribe(values => {
-      if (this.autoSave) {
-        let updated = _.cloneDeep(this.config);
-        _.extend(updated.execution, values);
-        this.reactiveSave(updated);
-      }
-    });
-    this.formExecution.valueChanges.subscribe(values => {
-      let schedule = values['schedule'];
-      if (schedule) {
-        this.scheduleLink = schedule.replace(/ /g, "_");
-      }
-      if (values['enable']) {
-        this.formExecution.get('schedule').enable({ emitEvent: false, onlySelf: true });
-        this.formExecution.get('timeZone').enable({ emitEvent: false, onlySelf: true });
-      } else {
-        this.formExecution.get('schedule').disable({ emitEvent: false, onlySelf: true });
-        this.formExecution.get('timeZone').disable({ emitEvent: false, onlySelf: true });
-      }
-    });
-    this.timeZonesFiltered = this.formExecution.controls['timeZone'].valueChanges.pipe(
-      startWith(''),
-      map((value) => {
-        const filterValue = value.toLowerCase();
-        return this.timeZones.filter(option => option.toLowerCase().indexOf(filterValue) >= 0);
-      })
-    );
+    this.formGeneral.valueChanges
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(values => {
+        if (this.autoSave) {
+          let updated = _.cloneDeep(this.config);
+          _.extend(updated.execution, values);
+          this.reactiveSave(updated);
+        }
+      });
+    this.formExecution.valueChanges
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(values => {
+        let schedule = values['schedule'];
+        if (schedule) {
+          this.scheduleLink = schedule.replace(/ /g, "_");
+        }
+        if (values['enable']) {
+          this.formExecution.get('schedule').enable({ emitEvent: false, onlySelf: true });
+          this.formExecution.get('timeZone').enable({ emitEvent: false, onlySelf: true });
+        } else {
+          this.formExecution.get('schedule').disable({ emitEvent: false, onlySelf: true });
+          this.formExecution.get('timeZone').disable({ emitEvent: false, onlySelf: true });
+        }
+      });
+    this.timeZonesFiltered = this.formExecution.controls['timeZone'].valueChanges
+      .pipe(
+        startWith(''),
+        map((value) => {
+          const filterValue = value.toLowerCase();
+          return this.timeZones.filter(option => option.toLowerCase().indexOf(filterValue) >= 0);
+        })
+      );
 
-    this.formSdf.valueChanges.subscribe(values => {
-      if (this.autoSave) {
-        let updated = _.cloneDeep(this.config);
-        _.extend(updated.dv360Template, values);
-        this.reactiveSave(updated);
-      }
-    });
-    this.formFeeds.valueChanges.subscribe(values => {
-      if (values.hasOwnProperty('name_column')) {
-        setTimeout(() => {
-          this.formFeeds.controls['name_column'].markAsPending({ emitEvent: false, onlySelf: true });
-        }, 0);
-      }
-      if (values.hasOwnProperty('geo_code_column')) {
-        setTimeout(() => {
-          this.formFeeds.controls['geo_code_column'].markAsPending({ emitEvent: false, onlySelf: true });
-        }, 0);
-      }
-      if (values.hasOwnProperty('budget_factor_column')) {
-        setTimeout(() => {
-          this.formFeeds.controls['budget_factor_column'].markAsPending({ emitEvent: false, onlySelf: true });
-        }, 0);
-      }
-      if (this.autoSave) {
-        let updated = _.cloneDeep(this.config);
-        _.extend(updated.feedInfo, values);
-        this.reactiveSave(updated);
-      }
-    });
+    this.formSdf.valueChanges
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(values => {
+        if (this.autoSave) {
+          let updated = _.cloneDeep(this.config);
+          _.extend(updated.dv360Template, values);
+          this.reactiveSave(updated);
+        }
+      });
+    this.formFeeds.valueChanges
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(values => {
+        if (values.hasOwnProperty('name_column')) {
+          setTimeout(() => {
+            this.formFeeds.controls['name_column'].markAsPending({ emitEvent: false, onlySelf: true });
+          }, 0);
+        }
+        if (values.hasOwnProperty('geo_code_column')) {
+          setTimeout(() => {
+            this.formFeeds.controls['geo_code_column'].markAsPending({ emitEvent: false, onlySelf: true });
+          }, 0);
+        }
+        if (values.hasOwnProperty('budget_factor_column')) {
+          setTimeout(() => {
+            this.formFeeds.controls['budget_factor_column'].markAsPending({ emitEvent: false, onlySelf: true });
+          }, 0);
+        }
+        if (this.autoSave) {
+          let updated = _.cloneDeep(this.config);
+          _.extend(updated.feedInfo, values);
+          this.reactiveSave(updated);
+        }
+      });
     this.load();
   }
 
@@ -179,6 +189,13 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     this.formFeeds.controls['name_column'].markAsPending({ emitEvent: false, onlySelf: true });
     this.formFeeds.controls['geo_code_column'].markAsPending({ emitEvent: false, onlySelf: true });
     this.formFeeds.controls['budget_factor_column'].markAsPending({ emitEvent: false, onlySelf: true });
+  }
+
+  ngOnDestroy() {
+    if (this.ngUnsubscribe) {
+      this.ngUnsubscribe.next();
+      this.ngUnsubscribe.complete();
+    }
   }
 
   private async load() {
@@ -358,7 +375,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
           this.showSnackbar("Execution completed");
         }
       });
-    } catch(e) {
+    } catch (e) {
       // we don't expect an error here, but just in case
     } finally {
       this.executing = false;
@@ -535,12 +552,12 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     let ds = this.dataSourceFeedData[dataSetName];
     ds.data = [];
     if (!feedData || !feedData.length) return;
-    this.feedDataColumns[dataSetName] = Object.keys(feedData[0]);
+    this.feedDataColumns[dataSetName] = Object.keys(feedData[0]).filter(name => !name.startsWith("$"));
     ds.data = feedData;
     this.feedDataPanel.open();
     this.tabsFeedDataSelected = this.tabsFeedData.indexOf(dataSetName);
-
   }
+
   removeFeedDataTab(tabName: string) {
     let index = this.tabsFeedData.indexOf(tabName);
     this.tabsFeedData.splice(index, 1);

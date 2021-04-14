@@ -24,13 +24,14 @@ export const SCROLL_CONTAINER = '.mat-drawer-content';
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.scss']
 })
-export class NavbarComponent implements OnInit, OnDestroy {
+export class NavbarComponent /*implements OnInit, OnDestroy */ {
   applyShadow: boolean;
   isCollapsed: boolean;
   private _subScroll: Subscription;
 
   constructor(private router: Router) { }
-
+  /* 
+  TODO: smart sticky header - https://egghead.io/lessons/angular-create-an-extended-header-using-angular-material-toolbars 
   ngOnInit() {
     const container = document.querySelector(SCROLL_CONTAINER);
     if (container) {
@@ -46,4 +47,5 @@ export class NavbarComponent implements OnInit, OnDestroy {
   determineHeader(top: number) {
 
   }
+  */
 }

@@ -477,7 +477,9 @@ suite('FeedService', () => {
           "sheet1.budget": 0.5362506897,
           "sheet1.city_id": 524901,
           "sheet1.city_name": "Moscow",
-          "sheet1.geo_code": 524901                
+          "sheet1.geo_code": 524901,
+          $sheet2: [524901, 'Moscow', 524901, 0.5362506897],
+          $sheet1: [524901, 'Moscow', 524901, 0.5362506897]
         }
       ]);
     });
@@ -534,7 +536,10 @@ suite('FeedService', () => {
           country: 'Russia',
           // TODO: under consideration
           "country.id": 7,
-          "id": 520494
+          "id": 520494,
+          $main: [520494, -40],
+          $city: [520494, 'Nizhniy Tagil', 7],
+          $country: [7, 'Russia']
         }, {
           city_id: 524901,
           temp: -10,
@@ -545,7 +550,10 @@ suite('FeedService', () => {
           country: 'Russia',
           // TODO: under consideration
           "country.id": 7,
-          "id": 524901
+          "id": 524901,
+          $main: [524901, -10],
+          $city: [524901, 'Moscow', 7],
+          $country: [7, 'Russia']
         }
       ]);
     });
