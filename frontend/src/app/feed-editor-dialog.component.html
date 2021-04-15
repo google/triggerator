@@ -31,7 +31,7 @@
         <mat-label>URL</mat-label>
         <input matInput formControlName="url" required>
         <mat-icon matSuffix>link</mat-icon>
-        <mat-hint>Feed URL. Please note the resource you specify here should be accessing for server's service account
+        <mat-hint>Feed URL. Please note a resource you specify here should be accessible for server's service account
         </mat-hint>
         <mat-error *ngIf="form.get('url').invalid">URL is required</mat-error>
       </mat-form-field>

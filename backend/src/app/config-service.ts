@@ -177,7 +177,8 @@ export default class ConfigService {
 
   private loadFeeds(values: any[][], config: Config) {
     config.feedInfo = config.feedInfo || {};
-
+    config.feedInfo.feeds = config.feedInfo.feeds || [];
+    
     if (!values) return;
     let feeds: FeedInfo[] = [];
     for (const row of values) {

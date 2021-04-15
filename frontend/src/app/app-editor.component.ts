@@ -213,6 +213,9 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     config.execution = config.execution || {};
     config.dv360Template = config.dv360Template || {};
     config.feedInfo = config.feedInfo || {};
+    config.feedInfo.feeds = config.feedInfo.feeds || [];
+    config.rules = config.rules || [];
+    config.customFields = config.customFields || [];
     this.config = config;
     this.updateFormValues();
     this.loading = false;
