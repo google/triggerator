@@ -15,4 +15,4 @@
 
 ./build.sh
 cd ../backend
-gcloud app deploy
+gcloud app deploy --quiet

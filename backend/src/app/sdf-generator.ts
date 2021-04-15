@@ -529,14 +529,16 @@ export default class SdfGenerator {
       if (feedRow) {
         if (feedInfo.budget_factor_column) {
           budget = tmpl.info.total_budget * Number(feedRow[feedInfo.budget_factor_column]);
-        }
-        else {
-          budget = tmpl.info.total_budget / (this.feedData.rowCount - 1);
+        } else {
+          // NOTE: in v1 it was: total_budget/(rowCount-1)
+          budget = tmpl.info.total_budget / this.feedData.rowCount;
         }
       } else {
         budget = tmpl.info.total_budget;
       }
-      new_io[SDF.IO.BudgetSegments] = new_io[SDF.IO.BudgetSegments].replace(/\([0-9.]+;/, '(' + budget + ';');
+      if (_.isFinite(budget)) {
+        new_io[SDF.IO.BudgetSegments] = new_io[SDF.IO.BudgetSegments].replace(/\([0-9.]+;/, '(' + budget + ';');
+      }
       // NOTE: otherwise new_io's budget will have a value from tempalte IO
     }
     if (!this.currentSdf) {
