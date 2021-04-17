@@ -23,60 +23,33 @@ ask() {
 }
 
 enable_apis() {
-  echo -e "${COLOR}enabling APIs...${NC}"
+  echo -e "${COLOR}Enabling APIs:${NC}"
   # Google Sheets
-  echo -e "${COLOR}Google Sheets API...${NC}"
+  echo -e "${COLOR}\tGoogle Sheets API...${NC}"
   gcloud services enable sheets.googleapis.com
   # Google Drive
-  echo -e "${COLOR}Google Drive API...${NC}"
+  echo -e "${COLOR}\tGoogle Drive API...${NC}"
   gcloud services enable drive.googleapis.com
+  # Cloud Build API
+  echo -e "${COLOR}\tCloud Build API...${NC}"
+  gcloud services enable cloudbuild.googleapis.com
+  # Cloud Resource Manager API (it's needed for `gcloud alpha iap web add-iam-policy-binding`)
+  echo -e "${COLOR}\tCloud Resource Manager API...${NC}"
+  gcloud services enable cloudresourcemanager.googleapis.com
   # Identity-Aware Proxy
+  echo -e "${COLOR}\tIAP...${NC}"
   gcloud services enable iap.googleapis.com
   # DV360
-  echo -e "${COLOR}Google DV360 API...${NC}"
+  echo -e "${COLOR}\tGoogle DV360 API...${NC}"
   gcloud services enable displayvideo.googleapis.com
   # create GAE
-  echo -e "${COLOR}creating App Engine application...${NC}"
+  echo -e "${COLOR}Creating App Engine application...${NC}"
   gcloud app create --region europe-west
 }
 
 urlencode() {
   python3 -c 'from urllib.parse import quote; import sys; print(quote(sys.argv[1], sys.argv[2]))' \
     "$1" "$urlencode_safe"
-}
-
-create_spreadsheet() {
-  local userEmail
-  userEmail=$1
-  echo -e "${COLOR}Creating a master spreadsheet${NC}"
-  # hardcoded client id and secret of a GCP project to use during 
-  client_id='563173416479-1kdbiqghrujkjmuevpv2orqt539ocej3.apps.googleusercontent.com'
-  client_secret='9vuHv3JKIki47a34z-18Dx9d'
-  scope=$(urlencode "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file")
-  url="https://accounts.google.com/o/oauth2/auth?client_id=$client_id&redirect_uri=urn:ietf:wg:oauth:2.0:oob&scope=$scope&response_type=code"
-  python3 -mwebbrowser $url
-  echo -e "${COLOR}🔑 Authorize the script by visiting this url:\n${NC}$url \n ${COLOR}authorize and copy an authorization code back here\n${NC}"
-  read -p "Enter the authorization code: " code
-  token=$(curl --silent -X POST --data "code=$code&client_id=$client_id&client_secret=$client_secret&redirect_uri=urn:ietf:wg:oauth:2.0:oob&grant_type=authorization_code" https://accounts.google.com/o/oauth2/token | \
-    python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
-  #echo "Aquired auth token '$token'"
-  echo $token > .token
-
-  spreadsheetId=$(curl --silent -X POST \
-    --header "Content-Type: application/json" \
-    --header "Authorization: Bearer $token" \
-    --data '{"sheets":[{"properties":{"title":"Main"}}],"properties":{"title":"Master doc"}}' \
-    https://sheets.googleapis.com/v4/spreadsheets?alt=json | python3 -c "import sys, json; print(json.load(sys.stdin)['spreadsheetId'])")
-
-  echo -e "${COLOR}Created a spreadsheet '$spreadsheetId'${NC}"
-  echo -e "${COLOR}Adding permissions for $userEmail ${NC}"
-  curl -X POST \
-    --header "Content-Type: application/json" \
-    --header "Authorization: Bearer $token" \
-    --data "{\"role\": \"writer\", \"type\": \"user\", \"emailAddress\": \"$userEmail\"}" \
-    https://www.googleapis.com/drive/v3/files/$spreadsheetId/permissions?alt=json
-
-  echo -e "${COLOR}Added write permissions for $userEmail ${NC}"
 }
 
 # enable required APIs
@@ -97,54 +70,96 @@ while :; do
     esac
   shift
 done
-# create IAP
-ask PROJECT_TITLE "$PROJECT_TITLE" "Project title:"
-ask USER_EMAIL "$USER_EMAIL" "Project owner's Google account (email):"
-gcloud alpha iap oauth-brands create --application_title="$PROJECT_TITLE" --support_email=$USER_EMAIL
 
-#TODO: gcloud alpha iap oauth-clients create projects/757798051795/brands/757798051795 --display_name=iap
-###
-# Created [355230337267-emurk31j1jueg7fvnnj5upck2ud9eejh.apps.googleusercontent.com].
-# displayName: iap
-# name: projects/355230337267/brands/355230337267/identityAwareProxyClients/355230337267-emurk31j1jueg7fvnnj5upck2ud9eejh.apps.googleusercontent.com
-# secret: P03zv2X_ePy6B9vk8RdGv3Qx
-###
+# detect default service account 
+PROJECT_ID=$(gcloud config get-value project) #"$(gcloud app describe --format='value(id)')"
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID | grep projectNumber | sed "s/.* '//;s/'//g")
+SERVICE_ACCOUNT=$PROJECT_ID@appspot.gserviceaccount.com
+#ask PROJECT_TITLE "$PROJECT_TITLE" "Project title (will be used for user authorization prompt):"
+#ask USER_EMAIL "$USER_EMAIL" "Project owner's Google account (email):"
+PROJECT_TITLE=Triggerator
+USER_EMAIL=$(gcloud config get-value account 2> /dev/null)
+
+
+# create a master spreadsheet and share it with the  SA
+# NOTE: to access Sheets and Drive APIs we can't use gcloud's access token, 
+# so we'll use GAE's default service account. For this we export its key and set it up in well-known envvar
+gcloud iam service-accounts keys create key.json --iam-account=$SERVICE_ACCOUNT
+export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/key.json
+spreadsheetId=$(python3 ./create-spreadsheet.py  --user $USER_EMAIL)
+
+if [ -z "$spreadsheetId" ]; then
+  echo "Spreadsheet was not created, unable to proceed"
+  exit
+fi
+echo -e "${COLOR}Created a master spreadsheet: $spreadsheetId${NC}"
 
 cd ../backend
 
 # generate app.yaml:
 cp app.yaml.copy app.yaml
 
-# detect default service account 
-PROJECT_ID=$(gcloud config get-value project) #"$(gcloud app describe --format='value(id)')"
-#PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID | grep projectNumber | sed "s/.* '//;s/'//g")
-SERVICE_ACCOUNT=$PROJECT_ID@appspot.gserviceaccount.com
-
-# create a master spreadsheet, share the doc with SA
-create_spreadsheet "$SERVICE_ACCOUNT"
-
-if [ -z "$spreadsheetId" ]; then
-  echo "unable to proceed"
-  exit
-fi
-
-# put its id into app.yaml
-echo -e "${COLOR}updating app.yaml...${NC}"
+# put spreadsheet id into app.yaml
+echo -e "${COLOR}Updating app.yaml...${NC}"
 sed -i "s/MASTER_SPREADSHEET\s*:\s*.*$/MASTER_SPREADSHEET: '$spreadsheetId'/" app.yaml
 
 
-# fill EXPECTED_AUDIENCE var in app.yaml
+# TODO: fill EXPECTED_AUDIENCE var in app.yaml
 
 # build and deploy app to GAE:
+echo -e "${COLOR}Building app...${NC}"
 cd ../scripts
-./build-n-deploy.sh
+./build.sh
+echo -e "${COLOR}Deploying app to GAE...${NC}"
+cd ../backend
+gcloud app deploy --quiet
 
-echo -e "${COLOR}Please go to IAP page\n${NC}https://pantheon.corp.google.com/security/iap\n"
-echo -e "${COLOR}and enable IAP for App Engine app"
-echo -e "${COLOR}Then click on App Engine resource and append yourself as a user with 'IAP-secured Web App User' role"
-# [Manual] go to https://console.cloud.google.com/security/iap and enable IAP for AppEngine app
+
+# create IAP
+echo -e "${COLOR}Creating oauth brand (consent screen) for IAP...${NC}"
+gcloud alpha iap oauth-brands create --application_title="$PROJECT_TITLE" --support_email=$USER_EMAIL
+# Output example: 
+# Created [964442731935].
+# applicationTitle: Triggerator
+# name: projects/964442731935/brands/964442731935
+
+# create OAuth client for IAP
+echo -e "${COLOR}Creating OAuth client for IAP...${NC}"
+# TODO: ideally we need to parse the response from the previous command to get brand full name
+gcloud alpha iap oauth-clients create projects/$PROJECT_NUMBER/brands/$PROJECT_NUMBER --display_name=iap \
+  --format=json 2> /dev/null |\
+  python3 -c "import sys, json; res=json.load(sys.stdin); i = res['name'].rfind('/'); print(res['name'][i+1:]); print(res['secret'])" \
+  > .oauth
+readarray -t lines < .oauth
+
+IAP_CLIENT_ID=${lines[0]}
+IAP_CLIENT_SECRET=${lines[1]}
+# Output example: 
+# {
+#  "displayName": "iap",
+#  "name": "projects/964442731935/brands/964442731935/identityAwareProxyClients/964442731935-tdkmgnvv296bcsr2ic04rl31o2ih0drv.apps.googleusercontent.com",
+#  "secret": "gI4O6va8vVj8eYSduWgIUAN5"
+# }
+
+TOKEN=$(gcloud auth print-access-token)
+
+# Enable IAP for AppEngine
+echo -e "${COLOR}Enabling IAP for App Engine...${NC}"
+curl -X PATCH -H "Content-Type: application/json" \
+ -H "Authorization: Bearer $TOKEN" \
+ --data "{\"iap\": {\"enabled\": true, \"oauth2ClientId\": \"$IAP_CLIENT_ID\", \"oauth2ClientSecret\": \"$IAP_CLIENT_SECRET\"} }" \
+ "https://appengine.googleapis.com/v1/apps/$PROJECT_ID?alt=json&update_mask=iap"
+
+# Grant access to the current user
+echo -e "${COLOR}Granting user $USER_EMAIL access to the app through IAP...${NC}"
+gcloud alpha iap web add-iam-policy-binding --resource-type=app-engine --member="user:$USER_EMAIL" --role='roles/iap.httpsResourceAccessor'
+
+echo -e "${COLOR}Done!${NC}"
+echo -e "Add service account ${COLOR}$SERVICE_ACCOUNT ${NC} as a user to your DV360 account"
+echo -e "After than you are ready to use the application - just type ${COLOR}gcloud app browse${NC} to see its url"
+
+gcloud app browse
+
+# TODO: 
 # copy "Get GWT audience"
 # e.g. /projects/757798051795/apps/triggerator-test
-# Add youself and any other users with 'IAP-secured Web App User' role to access the app
-
-# [Manual] dd your SA to your DV360 account 
