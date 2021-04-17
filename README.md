@@ -22,8 +22,11 @@ Basically you can run this project in any environment but this guide targets Goo
 git clone https://github.com/google/triggerator.git
 ```
 
-### (semi) Automated installation
+### Automated installation
 Run `scripts/setup.sh` script in Cloud Shell and follow its instructions
+
+Please note that you still need to add application service account to your DV360 account manually.
+
 
 ### Manual installation
 * Copy `backend/app.yaml.copy` to `backend/app.yaml`
@@ -35,11 +38,12 @@ https://docs.google.com/spreadsheets/d/12yocZ6MCFFwXFlBKCF9eeS80WiJk04SLuFQsX9s2
 id will be `12yocZ6MCFFwXFlBKCF9eeS80WiJk04SLuFQsX9s2xUE`
 * Paste the id into `app.yaml` file as value for `MASTER_SPREADSHEET` environment variable
 * Activate the following APIs:
-  * Sheets API
-  * Drive API
-  * Display&Video API
-  * Build API
-  * IAP API
+  * Sheets API: `gcloud services enable sheets.googleapis.com`
+  * Drive API: `gcloud services enable drive.googleapis.com`
+  * Display&Video API: `gcloud services enable displayvideo.googleapis.com`
+  * Cloud Build API: `gcloud services enable cloudbuild.googleapis.com`
+  * Cloud Resource Manager API: `gcloud services enable cloudresourcemanager.googleapis.com`
+  * IAP API: `gcloud services enable iap.googleapis.com`
 * Create a new App Engine application (`gcloud app create --region europe-west`)
 * Build and deploy application by running `build-n-deploy.sh` script in script folder in Cloud Shell
   * If you get an error like ERROR: (gcloud.app.deploy) NOT_FOUND: Unable to retrieve P4SA just execute publish one more time - run `gcloud app deploy` in backend folder (in Cloud Shell)

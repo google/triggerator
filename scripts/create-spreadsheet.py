@@ -48,7 +48,8 @@ def main(emailAddress):
         fileId=spreadsheetId,
         body={'type': 'user', 'role': 'writer',
               'emailAddress': emailAddress},
-        fields='id'
+        fields='id',
+        sendNotificationEmail=False
     ).execute()
 
     print(spreadsheetId)
