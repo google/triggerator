@@ -1,28 +1,22 @@
+"""
+Copyright 2021 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 """Create a new spreadsheet
  
-Before running, execute the following commands to set up ADC:
- 
-```
-# Install deps
-python -m pip install --upgrade \
-    google-api-python-client \
-    google-auth-httplib2 \
-    google-auth-oauthlib \
-    google-auth
-
-# Login and set project
-gcloud init
- 
-# Enable Google Sheets API
-gcloud services enable sheets.googleapis.com
- 
-# wait a few seconds for the setting to propagate
-sleep 30
- 
-# Enable sheets scope with ADC
-gcloud auth application-default login --scopes=openid,https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/drive
-```
- 
+Before running, execute we need to setup default application credentials.
+For example as environment valiable GOOGLE_APPLICATION_CREDENTIALS
 """
 
 from argparse import ArgumentParser
