@@ -24,7 +24,7 @@ import { RuleEditorDialogComponent } from './rule-editor-dialog.component';
 import { ConfigService } from './shared/config.service';
 
 @Component({
-  selector: 'tr-rules-list',
+  selector: 'app-rules-list',
   templateUrl: './rules-list.component.html',
   styleUrls: ['./rules-list.component.scss']
 })
@@ -98,12 +98,12 @@ export class RulesListComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         console.log(result);
-        let idx2del = this._data.rules.indexOf(rule);
-        let rules = this._data.rules.slice();
+        const idx2del = this._data.rules.indexOf(rule);
+        const rules = this._data.rules.slice();
         rules.splice(idx2del, 1);
         try {
-          this.configService.saveConfig(this.appId, { rules: rules }, null);
-        } catch(e) {
+          this.configService.saveConfig(this.appId, { rules }, null);
+        } catch (e) {
           this.parent.handleApiError('Deletion failed', e);
           return;
         }

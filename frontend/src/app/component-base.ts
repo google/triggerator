@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { MatSnackBar } from "@angular/material/snack-bar";
-import { ConfirmationDialogComponent, ConfirmationDialogModes } from "./components/confirmation-dialog.component";
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { ConfirmationDialogComponent, ConfirmationDialogModes } from './components/confirmation-dialog.component';
 
 export class ComponentBase {
   errorMessage: string;
@@ -50,9 +50,9 @@ export class ComponentBase {
       });
     });
   }
-  
+
   showSnackbar(message: string) {
-    let snackBarRef = this.snackBar.open(message, 'Dismiss', {
+    const snackBarRef = this.snackBar.open(message, 'Dismiss', {
       duration: 4000,
     });
     snackBarRef.onAction().subscribe(() => {
@@ -65,11 +65,12 @@ export class ComponentBase {
   }
 
   confirm(message: string) {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, { 
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
       data: {
-        message: message, 
-        mode: ConfirmationDialogModes.YesNo} 
-      });
+        message,
+        mode: ConfirmationDialogModes.YesNo
+      }
+    });
     return dialogRef;
   }
 
@@ -84,13 +85,13 @@ export class ComponentBase {
 
   onTableRowClick($event: MouseEvent): boolean {
     // ignore click on links
-    if ((<any>$event.target).tagName === "A") return false;
+    if ((<any>$event.target).tagName === 'A') { return false; }
     // ignore click on button
     let el = <any>$event.target;
     do {
-      if ((el).tagName === 'BUTTON') return false;
+      if ((el).tagName === 'BUTTON') { return false; }
       el = el.parentElement;
-    } while (el && el !== $event.currentTarget)
+    } while (el && el !== $event.currentTarget);
 
     return true;
   }

@@ -30,33 +30,33 @@ import { ConfigService } from './shared/config.service';
 export class SettingsComponent extends ComponentBase implements OnInit {
   loading: boolean;
   displayedColumns: string[] = ['name', 'value'];
-  dataSource: MatTableDataSource<{name: string, value: any}>;
+  dataSource: MatTableDataSource<{ name: string; value: any }>;
 
   errorMessage: string;
 
   constructor(private configService: ConfigService,
-    dialog: MatDialog, snackBar: MatSnackBar) { 
+    dialog: MatDialog, snackBar: MatSnackBar) {
     super(dialog, snackBar);
   }
 
   async ngOnInit() {
     this.loading = true;
-    this.dataSource = new MatTableDataSource<{name: string, value: any}>();
+    this.dataSource = new MatTableDataSource<{ name: string; value: any }>();
     try {
-      let settings = (await this.configService.getSettings()).settings;
-      let data = [];
-      for(let name of Object.keys(settings)) {
-        let value = settings[name];
+      const settings = (await this.configService.getSettings()).settings;
+      const data = [];
+      for (const name of Object.keys(settings)) {
+        const value = settings[name];
         if (_.isObject(value)) {
-          for(let subname of Object.keys(value)) {
-            data.push({name: name + '.' + subname, value: value[subname]});
+          for (const subname of Object.keys(value)) {
+            data.push({ name: name + '.' + subname, value: value[subname] });
           }
         } else {
-          data.push({name, value: value});
+          data.push({ name, value });
         }
       }
       this.dataSource.data = data;
-    } catch(e) {
+    } catch (e) {
       this.handleApiError('Failed to fetch settings', e);
     } finally {
       this.loading = false;

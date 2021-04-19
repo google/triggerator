@@ -29,10 +29,9 @@ export class ErrorComponent implements OnInit {
   constructor(private route: ActivatedRoute) { }
 
   ngOnInit(): void {
-    let error = this.route.snapshot.queryParamMap.get('error');
+    const error = this.route.snapshot.queryParamMap.get('error');
     if (error === ERRORS.AUTH_COOKIES_NOT_ENABLED) {
       this.message = 'Cookies are disabled (are you in Incognito mode?) and so Google Sign-In cannot work.';
     }
   }
-
 }

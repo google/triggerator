@@ -17,7 +17,7 @@
  * List of time zones from tz database (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
  * a.k.a. IANA time zone database.
  */
-export var timeZones = [
+export const timeZones = [
   'Africa/Abidjan',
   'Africa/Accra',
   'Africa/Addis_Ababa',

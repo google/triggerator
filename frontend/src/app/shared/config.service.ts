@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Injectable } from "@angular/core";
-import { Observable } from "rxjs";
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 import { Config, AppList, FeedConfig, FeedInfo, JobInfo } from '../../../../backend/src/types/config';
-import { BackendService } from "./backend.service";
+import { BackendService } from './backend.service';
 
 export interface GenerateSdfOptions {
-  update: boolean,
-  autoActivate: boolean,
-  startDate?: string,
-  endDate?: string,
+  update: boolean;
+  autoActivate: boolean;
+  startDate?: string;
+  endDate?: string;
 }
 @Injectable({
   providedIn: 'root'
@@ -31,7 +31,7 @@ export class ConfigService {
   constructor(public backendService: BackendService) { }
 
   getSettings() {
-    return this.backendService.getApi<{settings:Record<string,string>}>('/settings');
+    return this.backendService.getApi<{settings: Record<string,string>}>('/settings');
   }
 
   getAppList(): Promise<AppList> {
@@ -56,8 +56,8 @@ export class ConfigService {
 
   saveConfig(configId: string, updated: Config, original: Config) {
     return this.backendService.postApi(`/config/${configId}/stream`, {
-      updated: updated,
-      original: original
+      updated,
+      original
     });
   }
 
@@ -79,7 +79,7 @@ export class ConfigService {
     return this.backendService.getApi(`/config/${configId}/feeds/${feedName}`);
   }
 
-  loadAllFeeds(configId: string, evaluateRules: boolean): Promise<{data:Record<string, any>[], effeective_rules: string[]}> {
+  loadAllFeeds(configId: string, evaluateRules: boolean): Promise<{data: Record<string, any>[]; effeective_rules: string[]}> {
     return this.backendService.getApi(`/config/${configId}/feeds/_all_`, {evaluateRules});
   }
 

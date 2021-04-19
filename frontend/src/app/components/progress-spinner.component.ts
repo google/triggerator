@@ -21,13 +21,11 @@ import { OverlayService, OverlayConfig } from './overlay.service';
 import { ThemePalette } from '@angular/material/core';
 import { Observable } from 'rxjs';
 
-
-
 @Component({
   selector: 'app-progress-spinner',
   templateUrl: './progress-spinner.component.html'
 })
-export class ProgressSpinnerComponent {
+export class ProgressSpinnerComponent implements OnInit, DoCheck {
   @Input() color?: ThemePalette = 'primary';
   @Input() diameter?: number = 100;
   @Input() mode?: ProgressSpinnerMode = 'indeterminate';
@@ -50,7 +48,7 @@ export class ProgressSpinnerComponent {
       hasBackdrop: this.backdropEnabled
     };
     if (this.positionGloballyCenter) {
-      this.progressSpinnerOverlayConfig['positionStrategy'] = this.overlayService.positionGloballyCenter();
+      this.progressSpinnerOverlayConfig.positionStrategy = this.overlayService.positionGloballyCenter();
     }
     // Create Overlay for progress spinner
     this.overlayRef = this.overlayService.createOverlay(this.progressSpinnerOverlayConfig);
@@ -64,6 +62,4 @@ export class ProgressSpinnerComponent {
       this.overlayRef.detach();
     }
   }
-
-
 }

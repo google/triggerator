@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 import { Component, Input, OnInit, ViewChild, TemplateRef, ViewContainerRef, DoCheck, Inject } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 export enum ConfirmationDialogModes {
-  YesNo = "YesNo",
-  Ok = "Ok"
+  YesNo = 'YesNo',
+  Ok = 'Ok'
 }
 export interface ConfirmationDialogData {
   message: string;

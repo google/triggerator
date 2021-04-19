@@ -24,12 +24,12 @@ import { MatDialogRef } from '@angular/material/dialog';
 export class NewAppDialogComponent implements OnInit {
   form: FormGroup;
   constructor(private dialogRef: MatDialogRef<NewAppDialogComponent>,
-    private fb: FormBuilder) { 
-      this.form = this.fb.group({
-        name: [null, [Validators.required]],
-        appId: null
-      });
-    }
+    private fb: FormBuilder) {
+    this.form = this.fb.group({
+      name: [null, [Validators.required]],
+      appId: null
+    });
+  }
 
   ngOnInit(): void {
   }
