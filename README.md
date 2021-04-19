@@ -12,23 +12,31 @@ The tool support both Display and TrueView (YouTube) campaigns.
 
 ## Deployment 
 
-Basically you can run this project in any environment but this guide targets Google Cloud deployment only. Free Tier is enough for this application and you won't exceed free tier quotes if won't scale AppEngine instances.
+Basically you can run this project in any environment but this guide targets Google Cloud deployment only. Free Tier is enough for this application and you won't exceed free tier quotes if you don't scale AppEngine instances.
 
 ### Prerequisites
-* In the Google Cloud Console, on the project selector page, select or create a Google Cloud project.
-* Make sure that billing is enabled for your Cloud project.
+* In the Google Cloud Console, on the project selector page, select or create a Google Cloud project
+* Make sure that billing is enabled for your Cloud project
 * Activate Cloud Console Shell and clone the repository
 ```
 git clone https://github.com/google/triggerator.git
 ```
 
-### Automated installation
-Run `scripts/setup.sh` script in Cloud Shell and follow its instructions
+[![Try It In Google Cloud Shell](http://gstatic.com/cloudssh/images/open-btn.svg)](https://console.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgoogle%2Ftriggerator&cloudshell_tutorial=README.md)
 
-Please note that you still need to add application service account to your DV360 account manually.
+
+### Automated installation
+Run `scripts/setup.sh` script in Cloud Shell within the cloned repository. 
+
+Please note currently `setup.sh` works only on Linux (won't work on MacOS). You can run it from your local machine (just set your project `gcloud config set project PROJECT_ID` and login `glcloud auth login` as a project owner/editor), but it was not tested much. So running the script in Cloud Shell is a recommended approached.
+
+Please note that you still need to add application service account (PROJECT_ID@appspot.gserviceaccount.com) to your DV360 account manually.
+
+Open the app (you can see the url by executing `gcloud app browse`). If you get 'You don't have access' error just wait a bit.
 
 
 ### Manual installation
+You can 
 * Copy `backend/app.yaml.copy` to `backend/app.yaml`
 * Create a new spreadsheet - go http://sheet.new
 * Rename default sheet 'Sheet1' to 'Main'
@@ -54,3 +62,14 @@ User type choose External). After you create the OAuth consent screen
 * Add your project's default service account as a user to your DV360 account
 * Open the app (you can see the url by executing `gcloud app browse`)
   * If you get 'You don't have access' error just wait a bit
+
+
+## Architecture
+The solution is a classic web application with front-end built in Angular (11+) and backend for NodeJS built with TypeScript and Express. The backend is supposed to be deployed to Google App Engine
+
+Backend app doesn't have any authentication, nor any user management. For this the solution solely rely on Identity-Aware Proxy. It's a GCP service for shielding cloud apps with authentication. 
+
+Please note that IAP manages user access with its own roles. So even project owner won't have access to a shielded app by default. To allow access for a user you need to go to IAP page in your GCP project - 
+https://console.cloud.google.com/security/iap and add a member with 'IAP-secured Web App User' role. If you installed app with setup.sh script  it's already done for you, but you need to add members for all other users. You can allow access for everyone by adding "allUsers" or "allAuthenticatedUsers" as a member with the IAP role, but obviously it's not recommended from security point of view.
+
+Another thing that makes the application to depend on Google Cloud services is the usage of Cloud Scheduler. Backend create Cloud Scheduler jobs for automated engine execution. Please note that in that cases when the backend is being called by Scheduler requests are bypassing IAP.

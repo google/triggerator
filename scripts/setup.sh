@@ -102,9 +102,10 @@ cp app.yaml.copy app.yaml
 # put spreadsheet id into app.yaml
 echo -e "${COLOR}Updating app.yaml...${NC}"
 sed -i "s/MASTER_SPREADSHEET\s*:\s*.*$/MASTER_SPREADSHEET: '$spreadsheetId'/" app.yaml
-
-
-# TODO: fill EXPECTED_AUDIENCE var in app.yaml
+# put SECURITY: 'IAP'
+sed -i "s/SECURITY\s*:\s*.*$/SECURITY: 'IAP'/" app.yaml
+# put EXPECTED_AUDIENCE: '/projects/685425631282/apps/triggerator-sd'
+sed -i "s/EXPECTED_AUDIENCE\s*:\s*.*$/EXPECTED_AUDIENCE: '/projects/$PROJECT_NUMBER/apps/$PROJECT_ID'/" app.yaml
 
 # build and deploy app to GAE:
 echo -e "${COLOR}Building app...${NC}"
@@ -143,7 +144,10 @@ IAP_CLIENT_SECRET=${lines[1]}
 
 TOKEN=$(gcloud auth print-access-token)
 
-# Enable IAP for AppEngine
+# Enable IAP for AppEngine 
+# (source: 
+#   https://cloud.google.com/iap/docs/managing-access#managing_access_with_the_api
+#   https://cloud.google.com/iap/docs/reference/app-engine-apis)
 echo -e "${COLOR}Enabling IAP for App Engine...${NC}"
 curl -X PATCH -H "Content-Type: application/json" \
  -H "Authorization: Bearer $TOKEN" \
