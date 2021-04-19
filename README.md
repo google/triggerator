@@ -21,22 +21,23 @@ Basically you can run this project in any environment but this guide targets Goo
 ```
 git clone https://github.com/google/triggerator.git
 ```
-
+or use this wizard:
 [![Try It In Google Cloud Shell](http://gstatic.com/cloudssh/images/open-btn.svg)](https://console.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgoogle%2Ftriggerator&cloudshell_tutorial=README.md)
+(in this case we'll need to choose a project after the repository is cloned - `gcloud config set project YOUR_PROJECT`)
 
 
 ### Automated installation
 Run `scripts/setup.sh` script in Cloud Shell within the cloned repository. 
 
-Please note currently `setup.sh` works only on Linux (won't work on MacOS). You can run it from your local machine (just set your project `gcloud config set project PROJECT_ID` and login `glcloud auth login` as a project owner/editor), but it was not tested much. So running the script in Cloud Shell is a recommended approached.
+Please note that currently `setup.sh` works only on Linux (won't work on MacOS). You can run it from your local machine (just set your project `gcloud config set project PROJECT_ID` and login `glcloud auth login` as a project owner/editor), but it was not tested much. So running the script in Cloud Shell is a recommended approached.
 
-Please note that you still need to add application service account (PROJECT_ID@appspot.gserviceaccount.com) to your DV360 account manually.
+You still need to add application service account (PROJECT_ID@appspot.gserviceaccount.com) to your DV360 account manually.
 
-Open the app (you can see the url by executing `gcloud app browse`). If you get 'You don't have access' error just wait a bit.
+Open the app (you can see the url by executing `gcloud app browse`). If you get 'You don't have access' error just wait a little bit and retry.
 
 
 ### Manual installation
-You can 
+
 * Copy `backend/app.yaml.copy` to `backend/app.yaml`
 * Create a new spreadsheet - go http://sheet.new
 * Rename default sheet 'Sheet1' to 'Main'

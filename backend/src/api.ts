@@ -421,7 +421,7 @@ router.get('/engine/:id/run/stream', async (req: express.Request, res: express.R
   try {
     await controller.run(appId, {sendNotificationsOnError: false});
     console.log = originalLog;
-    res.write('data: Done. Elapsed: ' + (new Date().valueOf() - started.valueOf()) + '\n\n');
+    res.write('data: Done. Elapsed: ' + ((new Date().valueOf() - started.valueOf())/ 1000) + ' sec.\n\n');
     res.end();
     //res.status(StatusCodes.OK).send(result);
   } catch (e) {
