@@ -35,7 +35,7 @@ export class RuleEditorDialogComponent extends ComponentBase implements OnInit {
     { value: 'day', title: 'Day' },
     { value: 'week', title: 'Week' },
     { value: 'month', title: 'Month' }
-  ]
+  ];
   periodTypes1: ['day', 'week', 'month'];
 
   constructor(
@@ -45,18 +45,18 @@ export class RuleEditorDialogComponent extends ComponentBase implements OnInit {
     private fb: FormBuilder,
     private configService: ConfigService,
     @Inject(MAT_DIALOG_DATA) public data: { configId: string, rule: RuleInfo, config: Config }) {
-    super(dialog, snackBar)
+    super(dialog, snackBar);
     this.configId = data.configId;
     this.config = data.config;
     this.rule = data.rule;
-    let rule = data.rule || {
+    const rule = data.rule || {
       name: undefined,
       condition: undefined
     };
-    let display_io_frequency = this.parseFrequency(rule.display_state?.frequency_io);
-    let display_li_frequency = this.parseFrequency(rule.display_state?.frequency_li);
-    let yt_io_frequency = this.parseFrequency(rule.youtube_state?.frequency_io);
-    let yt_li_frequency = this.parseFrequency(rule.youtube_state?.frequency_li);
+    const display_io_frequency = this.parseFrequency(rule.display_state?.frequency_io);
+    const display_li_frequency = this.parseFrequency(rule.display_state?.frequency_li);
+    const yt_io_frequency = this.parseFrequency(rule.youtube_state?.frequency_io);
+    const yt_li_frequency = this.parseFrequency(rule.youtube_state?.frequency_li);
     this.form = this.fb.group({
       name: [rule.name, [Validators.required]],
       condition: [rule.condition, [Validators.required]],
@@ -78,13 +78,14 @@ export class RuleEditorDialogComponent extends ComponentBase implements OnInit {
   }
 
   private parseFrequency(freq: string) {
-    var f = /(\d+)\/(week|day|month)/.exec(freq);
-    if (!f)
+    const f = /(\d+)\/(week|day|month)/.exec(freq);
+    if (!f) {
       return { value: '', period: '' };
+    }
     return {
       value: f[1],
       period: f[2]
-    }
+    };
   }
 
   private getFrequency(val: any, period: string) {
@@ -101,7 +102,7 @@ export class RuleEditorDialogComponent extends ComponentBase implements OnInit {
     // TODO: validation: name, type, url
     this.loading = true;
     try {
-      let rules = this.config.rules.slice();
+      const rules = this.config.rules.slice();
       let rule = this.rule;
       let creating: boolean = false;
       if (!rule) {
@@ -120,22 +121,24 @@ export class RuleEditorDialogComponent extends ComponentBase implements OnInit {
       // NOTE: do NOT pass original config because we don't need to calc the diff for rules array, 
       // we overwrite rules (and feeds) array on every save
       try {
-        await this.configService.saveConfig(this.configId, { rules: rules }, null);
+        await this.configService.saveConfig(this.configId, { rules }, null);
       } catch (e) {
-        this.handleApiError("Rules failed to save", e);
+        this.handleApiError('Rules failed to save', e);
         return;
       }
-      if (creating) 
+      if (creating) {
         this.config.rules.push(rule);
+      }
       this.dialogRef.close(rule);
     } catch (e) {
+      console.error(e);
       // todo
     } finally {
       this.loading = false;
     }
   }
   private updateRuleData(rule: RuleInfo) {
-    let result = this.form.value;
+    const result = this.form.value;
     rule.name = result.name;
     rule.condition = result.condition;
     rule.display_state = result.display_state;
@@ -153,5 +156,4 @@ export class RuleEditorDialogComponent extends ComponentBase implements OnInit {
     rule.youtube_state.frequency_io = this.getFrequency(result.yt_io_frequency_value, result.yt_io_frequency_period);
     rule.youtube_state.frequency_li = this.getFrequency(result.yt_li_frequency_value, result.yt_li_frequency_period);
   }
-
 }

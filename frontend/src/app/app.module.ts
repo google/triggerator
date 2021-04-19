@@ -38,10 +38,10 @@ import { EventListComponent } from './event-list.component';
 
 @NgModule({
   declarations: [
-    AppComponent, 
-    NavbarComponent, AppsListComponent, AppEditorComponent, SettingsComponent, 
-    AboutComponent, ErrorComponent, FeedEditorDialogComponent, 
-    RulesListComponent, RuleEditorDialogComponent, NewAppDialogComponent, 
+    AppComponent,
+    NavbarComponent, AppsListComponent, AppEditorComponent, SettingsComponent,
+    AboutComponent, ErrorComponent, FeedEditorDialogComponent,
+    RulesListComponent, RuleEditorDialogComponent, NewAppDialogComponent,
     EditValueDialogComponent, EventListComponent
   ],
   imports: [

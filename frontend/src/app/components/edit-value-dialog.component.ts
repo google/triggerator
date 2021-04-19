@@ -39,8 +39,8 @@ export interface EditValueDialogData {
   `
 })
 export class EditValueDialogComponent {
-  value: string
-  constructor(@Inject(MAT_DIALOG_DATA) public data: EditValueDialogData) { 
+  value: string;
+  constructor(@Inject(MAT_DIALOG_DATA) public data: EditValueDialogData) {
     this.value = data.value;
   }
 }

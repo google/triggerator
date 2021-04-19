@@ -20,7 +20,7 @@ import { Subscription, fromEvent, Subject } from 'rxjs';
 export const SCROLL_CONTAINER = '.mat-drawer-content';
 
 @Component({
-  selector: 'tr-navbar',
+  selector: 'app-navbar',
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.scss']
 })
@@ -30,12 +30,12 @@ export class NavbarComponent /*implements OnInit, OnDestroy */ {
   private _subScroll: Subscription;
 
   constructor(private router: Router) { }
-  /* 
-  TODO: smart sticky header - https://egghead.io/lessons/angular-create-an-extended-header-using-angular-material-toolbars 
+  /*
+  TODO: smart sticky header - https://egghead.io/lessons/angular-create-an-extended-header-using-angular-material-toolbars
   ngOnInit() {
     const container = document.querySelector(SCROLL_CONTAINER);
     if (container) {
-      this._subScroll = fromEvent(container, 'scroll')      
+      this._subScroll = fromEvent(container, 'scroll')
         .subscribe(_ => this.determineHeader(container.scrollTop));
     }
   }

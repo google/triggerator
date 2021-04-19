@@ -28,7 +28,7 @@ export class OverlayService {
     }
 
     attachTemplatePortal(overlayRef: OverlayRef, templateRef: TemplateRef<any>, vcRef: ViewContainerRef) {
-        let templatePortal = new TemplatePortal(templateRef, vcRef);
+        const templatePortal = new TemplatePortal(templateRef, vcRef);
         overlayRef.attach(templatePortal);
     }
 

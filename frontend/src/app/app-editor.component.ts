@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import * as _ from 'lodash';
-import { AfterViewInit, Component, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Config, FeedInfo, JobInfo } from '../../../backend/src/types/config';
 import { ConfigService } from './shared/config.service';
@@ -38,7 +38,11 @@ import { map, startWith, takeUntil } from 'rxjs/operators';
   templateUrl: './app-editor.component.html',
   styleUrls: ['./app-editor.component.scss']
 })
-export class AppEditorComponent extends ComponentBase implements OnInit, AfterViewInit {
+export class AppEditorComponent extends ComponentBase implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('feedDataPanel') feedDataPanel: MatExpansionPanel;
+  @ViewChildren('feedDataPaginator') paginatorFeedData: QueryList<MatPaginator>;
+  @ViewChild(MatTabGroup) tabGroup: MatTabGroup;
+
   appId: string;
   config: Config;
   autoSave: boolean = true;
@@ -57,9 +61,6 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   feedsColumns: string[] = ['name', 'type', 'url', 'charset', 'key_column', 'external_key', 'actions'];
   dataSourceFeedData: Record<string, MatTableDataSource<any>>;
   feedDataColumns: Record<string, string[]>;
-  @ViewChild("feedDataPanel") feedDataPanel: MatExpansionPanel;
-  @ViewChildren('feedDataPaginator') paginatorFeedData: QueryList<MatPaginator>;
-  @ViewChild(MatTabGroup) tabGroup: MatTabGroup;
   ngUnsubscribe: Subject<void> = new Subject<void>();
 
   constructor(
@@ -73,11 +74,11 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     super(dialog, snackBar);
     this.dataSourceFeeds = new MatTableDataSource<FeedInfo>();
     this.dataSourceFeedData = {
-      'Result': new MatTableDataSource<any>()
-    }
+      Result: new MatTableDataSource<any>()
+    };
     this.feedDataColumns = {
-      'Result': []
-    }
+      Result: []
+    };
   }
 
   async ngOnInit(): Promise<void> {
@@ -119,7 +120,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(values => {
         if (this.autoSave) {
-          let updated = _.cloneDeep(this.config);
+          const updated = _.cloneDeep(this.config);
           _.extend(updated.execution, values);
           this.reactiveSave(updated);
         }
@@ -127,11 +128,11 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     this.formExecution.valueChanges
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(values => {
-        let schedule = values['schedule'];
+        const schedule = values.schedule;
         if (schedule) {
-          this.scheduleLink = schedule.replace(/ /g, "_");
+          this.scheduleLink = schedule.replace(/ /g, '_');
         }
-        if (values['enable']) {
+        if (values.enable) {
           this.formExecution.get('schedule').enable({ emitEvent: false, onlySelf: true });
           this.formExecution.get('timeZone').enable({ emitEvent: false, onlySelf: true });
         } else {
@@ -139,7 +140,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
           this.formExecution.get('timeZone').disable({ emitEvent: false, onlySelf: true });
         }
       });
-    this.timeZonesFiltered = this.formExecution.controls['timeZone'].valueChanges
+    this.timeZonesFiltered = this.formExecution.controls.timeZone.valueChanges
       .pipe(
         startWith(''),
         map((value) => {
@@ -152,7 +153,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(values => {
         if (this.autoSave) {
-          let updated = _.cloneDeep(this.config);
+          const updated = _.cloneDeep(this.config);
           _.extend(updated.dv360Template, values);
           this.reactiveSave(updated);
         }
@@ -162,21 +163,21 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       .subscribe(values => {
         if (values.hasOwnProperty('name_column')) {
           setTimeout(() => {
-            this.formFeeds.controls['name_column'].markAsPending({ emitEvent: false, onlySelf: true });
+            this.formFeeds.controls.name_column.markAsPending({ emitEvent: false, onlySelf: true });
           }, 0);
         }
         if (values.hasOwnProperty('geo_code_column')) {
           setTimeout(() => {
-            this.formFeeds.controls['geo_code_column'].markAsPending({ emitEvent: false, onlySelf: true });
+            this.formFeeds.controls.geo_code_column.markAsPending({ emitEvent: false, onlySelf: true });
           }, 0);
         }
         if (values.hasOwnProperty('budget_factor_column')) {
           setTimeout(() => {
-            this.formFeeds.controls['budget_factor_column'].markAsPending({ emitEvent: false, onlySelf: true });
+            this.formFeeds.controls.budget_factor_column.markAsPending({ emitEvent: false, onlySelf: true });
           }, 0);
         }
         if (this.autoSave) {
-          let updated = _.cloneDeep(this.config);
+          const updated = _.cloneDeep(this.config);
           _.extend(updated.feedInfo, values);
           this.reactiveSave(updated);
         }
@@ -186,9 +187,9 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
   ngAfterViewInit() {
     this.dataSourceFeedData['Result'].paginator = this.paginatorFeedData.first;
-    this.formFeeds.controls['name_column'].markAsPending({ emitEvent: false, onlySelf: true });
-    this.formFeeds.controls['geo_code_column'].markAsPending({ emitEvent: false, onlySelf: true });
-    this.formFeeds.controls['budget_factor_column'].markAsPending({ emitEvent: false, onlySelf: true });
+    this.formFeeds.controls.name_column.markAsPending({ emitEvent: false, onlySelf: true });
+    this.formFeeds.controls.geo_code_column.markAsPending({ emitEvent: false, onlySelf: true });
+    this.formFeeds.controls.budget_factor_column.markAsPending({ emitEvent: false, onlySelf: true });
   }
 
   ngOnDestroy() {
@@ -245,9 +246,9 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       budget_factor_column: this.config.feedInfo.budget_factor_column
     }, { emitEvent: false });
     this.dataSourceFeeds.data = this.config.feedInfo.feeds || [];
-    this.formFeeds.controls['name_column'].markAsPending({ emitEvent: false, onlySelf: true });
-    this.formFeeds.controls['geo_code_column'].markAsPending({ emitEvent: false, onlySelf: true });
-    this.formFeeds.controls['budget_factor_column'].markAsPending({ emitEvent: false, onlySelf: true });
+    this.formFeeds.controls.name_column.markAsPending({ emitEvent: false, onlySelf: true });
+    this.formFeeds.controls.geo_code_column.markAsPending({ emitEvent: false, onlySelf: true });
+    this.formFeeds.controls.budget_factor_column.markAsPending({ emitEvent: false, onlySelf: true });
   }
 
   refresh() {
@@ -287,7 +288,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         this.configService.saveConfig(this.appId, { title: result }, { title: this.config?.title }).then(() => {
           this.config.title = result;
           this.loading = false;
-          this.showSnackbar("Saved");
+          this.showSnackbar('Saved');
         });
       }
     });
@@ -305,7 +306,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
           return true;
         }
       }
-    )
+    );
   }
 
   // Execution Tab
@@ -328,7 +329,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   async loadSchedule() {
     this.loading = true;
     try {
-      let job: JobInfo = await this.configService.loadSchedule(this.appId);
+      const job: JobInfo = await this.configService.loadSchedule(this.appId);
       // this.formExecution.patchValue({
       //   enable: job.enable,
       //   schedule: job.schedule,
@@ -341,7 +342,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       });
       this.showSnackbar('Configuration loaded');
     } catch (e) {
-      this.handleApiError("Couldn't load schedule", e);
+      this.handleApiError('Couldn\'t load schedule', e);
     } finally {
       this.loading = false;
     }
@@ -360,7 +361,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     // return;
     try {
       this.executing = true;
-      this.eventList.addMessage(`Starting execution`);
+      this.eventList.addMessage('Starting execution');
       this.eventList.open();
       this.configService.runExecution(this.appId).subscribe({
         next: (msg) => {
@@ -369,13 +370,13 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         error: (msg) => {
           this.executing = false;
           this.eventList.addMessage(msg);
-          this.eventList.addMessage("Execution failed");
-          this.showSnackbar("Execution failed");
+          this.eventList.addMessage('Execution failed');
+          this.showSnackbar('Execution failed');
         },
         complete: () => {
           this.executing = false;
-          this.eventList.addMessage("Execution completed");
-          this.showSnackbar("Execution completed");
+          this.eventList.addMessage('Execution completed');
+          this.showSnackbar('Execution completed');
         }
       });
     } catch (e) {
@@ -394,7 +395,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     //  new campaign name
     //  feeds
     //  rulles
-    return this._generateSdf(false);
+    return this.doGenerateSdf(false);
   }
 
   updateSdf() {
@@ -403,10 +404,10 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       return;
     }
 
-    return this._generateSdf(true);
+    return this.doGenerateSdf(true);
   }
 
-  private async _generateSdf(update: boolean) {
+  private async doGenerateSdf(update: boolean) {
     const autoActivate = this.formSdf.get('activateCampaign').value;
     const dates = this.formSdf.get('newCampaignPeriod').value;
     if (!update) {
@@ -440,7 +441,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
   // Feeds Tab
   onFeedRowClick($event: MouseEvent, feed: FeedInfo) {
-    if (!this.onTableRowClick($event)) return;
+    if (!this.onTableRowClick($event)) { return; }
     this.editFeed(feed);
   }
 
@@ -483,7 +484,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        let feed: FeedInfo = {
+        const feed: FeedInfo = {
           name: result.name,
           type: result.type,
           url: result.url,
@@ -493,16 +494,15 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         };
         this.config.feedInfo.feeds.push(feed);
         this.dataSourceFeeds.data = this.dataSourceFeeds.data;
-        this.saveFeeds()
+        this.saveFeeds();
       }
     });
-
   }
 
   saveFeeds() {
-    let feeds = this.config.feedInfo.feeds.slice();
+    const feeds = this.config.feedInfo.feeds.slice();
     try {
-      this.configService.saveConfig(this.appId, { feedInfo: { feeds: feeds } }, null);
+      this.configService.saveConfig(this.appId, { feedInfo: { feeds } }, null);
     } catch (e) {
       this.handleApiError('Configuration failed to save', e);
     }
@@ -511,7 +511,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   async loadFeed(feed: FeedInfo) {
     try {
       this.loading = true;
-      let data = await this.configService.loadFeed(this.appId, feed.name);
+      const data = await this.configService.loadFeed(this.appId, feed.name);
       this.showFeedData(data, feed.name);
     } catch (e) {
       this.handleApiError(`Feed ${feed.name} failed to load`, e);
@@ -523,7 +523,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   async loadAllFeeds() {
     try {
       this.loading = true;
-      let result = await this.configService.loadAllFeeds(this.appId, this.evaluateRulesWithFeeds);
+      const result = await this.configService.loadAllFeeds(this.appId, this.evaluateRulesWithFeeds);
       if (!result) {
         this.showSnackbar('No data returned');
         return;
@@ -552,17 +552,17 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         this.dataSourceFeedData[dataSetName].paginator = this.paginatorFeedData.toArray()[this.tabsFeedData.indexOf(dataSetName)];
       });
     }
-    let ds = this.dataSourceFeedData[dataSetName];
+    const ds = this.dataSourceFeedData[dataSetName];
     ds.data = [];
-    if (!feedData || !feedData.length) return;
-    this.feedDataColumns[dataSetName] = Object.keys(feedData[0]).filter(name => !name.startsWith("$"));
+    if (!feedData || !feedData.length) { return; }
+    this.feedDataColumns[dataSetName] = Object.keys(feedData[0]).filter(name => !name.startsWith('$'));
     ds.data = feedData;
     this.feedDataPanel.open();
     this.tabsFeedDataSelected = this.tabsFeedData.indexOf(dataSetName);
   }
 
   removeFeedDataTab(tabName: string) {
-    let index = this.tabsFeedData.indexOf(tabName);
+    const index = this.tabsFeedData.indexOf(tabName);
     this.tabsFeedData.splice(index, 1);
     delete this.dataSourceFeedData[tabName];
     delete this.feedDataColumns[tabName];
@@ -573,35 +573,38 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   mouseOverIndex = -1;
 
   validateFeedColumns() {
-    let data = this.dataSourceFeedData['Result'].data;
+    const data = this.dataSourceFeedData['Result'].data;
     if (!data || !data.length) {
       this.showAlert('Please load feeds data first by pressing "Preview" button in the Feeds list');
       return;
     }
-    let columns = this.formFeeds.value;
-    let name_column = columns["name_column"];
-    let geo_code_column = columns["geo_code_column"];
-    let budget_factor_column = columns["budget_factor_column"];
+    const columns = this.formFeeds.value;
+    let name_column = columns.name_column;
+    let geo_code_column = columns.geo_code_column;
+    let budget_factor_column = columns.budget_factor_column;
     let row = data[0];
     // name_columns
-    this.formFeeds.controls['name_column'].setErrors(null);
-    if (!name_column)
-      this.formFeeds.controls['name_column'].setErrors({ required: true });
-    else if (!row[name_column])
-      this.formFeeds.controls['name_column'].setErrors({ unknownColumn: true });
+    this.formFeeds.controls.name_column.setErrors(null);
+    if (!name_column) {
+      this.formFeeds.controls.name_column.setErrors({ required: true });
+    } else if (!row[name_column]) {
+      this.formFeeds.controls.name_column.setErrors({ unknownColumn: true });
+    }
     this.formFeeds.getError('required')
     // geo_code_column
-    this.formFeeds.controls['geo_code_column'].setErrors(null);
-    if (!geo_code_column)
-      this.formFeeds.controls['geo_code_column'].setErrors({ required: true });
-    else if (!row[geo_code_column])
-      this.formFeeds.controls['geo_code_column'].setErrors({ unknownColumn: true });
+    this.formFeeds.controls.geo_code_column.setErrors(null);
+    if (!geo_code_column) {
+      this.formFeeds.controls.geo_code_column.setErrors({ required: true });
+    } else if (!row[geo_code_column]) {
+      this.formFeeds.controls.geo_code_column.setErrors({ unknownColumn: true });
+    }
     // budget_factor_column
-    this.formFeeds.controls['budget_factor_column'].setErrors(null);
-    if (!budget_factor_column)
-      this.formFeeds.controls['budget_factor_column'].setErrors({ required: true });
-    else if (!row[budget_factor_column])
-      this.formFeeds.controls['budget_factor_column'].setErrors({ unknownColumn: true });
+    this.formFeeds.controls.budget_factor_column.setErrors(null);
+    if (!budget_factor_column) {
+      this.formFeeds.controls.budget_factor_column.setErrors({ required: true });
+    } else if (!row[budget_factor_column]) {
+      this.formFeeds.controls.budget_factor_column.setErrors({ unknownColumn: true });
+    }
   }
 }
 

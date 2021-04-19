@@ -47,7 +47,6 @@ export class AppsListComponent extends ComponentBase implements OnInit {
     setTimeout(() => {
       this.load();
     }, 0);
-    
   }
 
   private async load() {
@@ -55,16 +54,17 @@ export class AppsListComponent extends ComponentBase implements OnInit {
     this.loading = true;
     //alert('loading');
     try {
-      let apps = await this.configService.getAppList();
-      let data = apps.configurations.slice();
+      const apps = await this.configService.getAppList();
+      const data = apps.configurations.slice();
       this.dataSource.data = data;
       this.updateRowNums();
     } catch (e) {
-      this.handleApiError("Application list failed to load", e);
+      this.handleApiError('Application list failed to load', e);
     } finally {
       this.loading = false;
     }
   }
+  
   updateRowNums() {
     let i = 1;
     this.dataSource.data.forEach(el => el["position"] = i++);
@@ -75,15 +75,15 @@ export class AppsListComponent extends ComponentBase implements OnInit {
   }
 
   onRowClick($event: MouseEvent, app: AppInfo) {
-    if (!this.onTableRowClick($event)) return;
-    if (app.status === 'invalid') return;
+    if (!this.onTableRowClick($event)) { return; }
+    if (app.status === 'invalid') { return; }
     this.router.navigate(['/apps', app.configId, 'edit']);
   }
 
   async deleteConfig(config: AppInfo) {
     this.errorMessage = null;
     const dialogRef = this.confirm(`Are you sure to delete the configuration "${config.name}"?`);
-    let result = await dialogRef.afterClosed().toPromise();
+    const result = await dialogRef.afterClosed().toPromise();
     if (result) {
       try {
         await this.configService.deleteApp(config.configId);
@@ -98,12 +98,12 @@ export class AppsListComponent extends ComponentBase implements OnInit {
   }
 
   async createConfig() {
-    let result = await this.dialog.open(NewAppDialogComponent, {}).afterClosed().toPromise();
+    const result = await this.dialog.open(NewAppDialogComponent, {}).afterClosed().toPromise();
     if (result) {
       this.errorMessage = null;
       this.loading = true;
       try {
-        let appInfo = await this.configService.createApp(result.name, result.appId);
+        const appInfo = await this.configService.createApp(result.name, result.appId);
         this.dataSource.data.push(appInfo);
         this.dataSource.data = this.dataSource.data;
         this.updateRowNums();

@@ -18,26 +18,26 @@ import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MatExpansionPanel } from '@angular/material/expansion';
 
 @Component({
-  selector: 'tr-event-list',
+  selector: 'app-event-list',
   templateUrl: './event-list.component.html'
 })
 export class EventListComponent implements OnInit {
-  @ViewChild("eventList") eventList: ElementRef;
-  @ViewChild("executionLogPanel") executionLogPanel: MatExpansionPanel;
+  @ViewChild('eventList') eventList: ElementRef;
+  @ViewChild('executionLogPanel') executionLogPanel: MatExpansionPanel;
 
-  ngOnInit(): void {}
+  ngOnInit(): void { }
 
   addMessage(msg: string, addTimestamp: boolean = true) {
-    var newElement = document.createElement("li");
+    const newElement = document.createElement("li");
     if (addTimestamp) {
-      msg = formatDate(new Date(), "dd/MM hh:mm:ss", 'en') + " " + msg;
+      msg = formatDate(new Date(), 'dd/MM hh:mm:ss', 'en') + ' ' + msg;
     }
     newElement.innerHTML = msg;
-    this.eventList.nativeElement.appendChild(newElement);    
+    this.eventList.nativeElement.appendChild(newElement);
   }
 
   clearExecutionLog() {
-    this.eventList.nativeElement.innerHTML = "";
+    this.eventList.nativeElement.innerHTML = '';
   }
 
   open() {
