@@ -49,6 +49,7 @@ def main(emailAddress):
         body={'type': 'user', 'role': 'writer',
               'emailAddress': emailAddress},
         fields='id',
+        #transferOwnership=True  - use it if you want to transfer ownership (change role  to 'owner' then, and comment out sendNotificationEmail=False)
         sendNotificationEmail=False
     ).execute()
 

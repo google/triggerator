@@ -25,7 +25,6 @@ type FrequencyInfo = {
 };
 class DV360Template {
   info: DV360TemplateInfo;
-  //isTrueView = false;
 
   constructor(template: DV360TemplateInfo) {
     if (!template)
@@ -35,6 +34,7 @@ class DV360Template {
   }
 
   private generate(tmpl: string, base: string, rowName: string, tier: string) {
+    if (!tmpl) { return '';}
     return tmpl
       .replace(/{base_name}/, base)
       .replace(/{row_name}/, rowName)
@@ -63,7 +63,7 @@ class DV360Template {
    * @param ruleName A rule name
    */
   io_name(isTrueView: boolean, base: string, rowName: string, ruleName: string) {
-    // NOTE: for assertion - you have checked nullability in constructor
+    // NOTE: for assertion - we have checked nullability in constructor
     return this.generate(
       <string>(isTrueView ? this.info.yt_io_template : this.info.io_template),
       base, rowName, ruleName);
@@ -76,7 +76,7 @@ class DV360Template {
    * @param ruleName A rule name
    */
   li_name(isTrueView: boolean, base: string, rowName: string, ruleName: string) {
-    // NOTE: for assertion - you have checked nullability in constructor
+    // NOTE: for assertion - we have checked nullability in constructor
     return this.generate(
       <string>(isTrueView ? this.info.yt_li_template : this.info.li_template),
       base, rowName, ruleName);

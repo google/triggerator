@@ -21,7 +21,7 @@ import { Storage } from '@google-cloud/storage';
 import { google } from 'googleapis';
 import ConfigService from './app/config-service';
 import GoogleDriveFacade from './app/google-drive-facade';
-import DV360Facade from './app/dv360-facade';
+import DV360Facade, { DV360FacadeOptions } from './app/dv360-facade';
 import FeedService from './app/feed-service';
 import { RuleEvaluator } from './app/rule-engine';
 import SdfController from './app/sdf-controller';
@@ -33,6 +33,12 @@ import SchedulerService from './app/cloud-scheduler-service';
 import { GoogleAuth, OAuth2Client } from 'google-auth-library';
 
 let router = express.Router();
+
+const dv_options: DV360FacadeOptions = {useLocalCache: true};
+if (process.env.NODE_ENV === "production") {
+  // disable caching in prod
+  dv_options.useLocalCache = false;
+}
 
 router.get('/apps/list', async (req: express.Request, res: express.Response) => {
   let masterSpreadsheetId = MASTER_SPREADSHEET;
@@ -250,8 +256,7 @@ router.get('/config/:id/sdf/generate', async (req: express.Request, res: express
 
   let controller = new SdfController(
     new ConfigService(), new RuleEvaluator(), new FeedService(),
-    // TODO: remove { useLocalCache: true }
-    new DV360Facade({ useLocalCache: true }));
+    new DV360Facade(dv_options));
   let filepath: string;
   try {
     filepath = await controller.generateSdf(appId, {
@@ -378,8 +383,7 @@ router.post('/engine/:id/run', async (req: express.Request, res: express.Respons
     new ConfigService(),
     new RuleEvaluator(),
     new FeedService(),
-    // TODO: remove { useLocalCache: true }
-    new DV360Facade({ useLocalCache: true })
+    new DV360Facade(dv_options)
   );
   try {
     await controller.run(appId, {sendNotificationsOnError: true});
@@ -412,8 +416,7 @@ router.get('/engine/:id/run/stream', async (req: express.Request, res: express.R
     new ConfigService(),
     new RuleEvaluator(),
     new FeedService(),
-    // TODO: remove { useLocalCache: true }
-    new DV360Facade({ useLocalCache: true })
+    new DV360Facade(dv_options)
   );
   try {
     await controller.run(appId, {sendNotificationsOnError: false});
@@ -448,7 +451,8 @@ router.get('/settings', async (req: express.Request, res: express.Response) => {
       GAE_RUNTIME: process.env.GAE_RUNTIME, // 	The runtime specified in your app.yaml file.
       GAE_SERVICE: process.env.GAE_SERVICE, // 	The service name specified in your app.yaml file. If no service name is specified, it is set to default.
       GAE_VERSION: process.env.GAE_VERSION, // 	The current version label of your service.
-      GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT
+      GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
+      NODE_ENV: process.env.NODE_ENV
     }
   };
   res.send({settings});
