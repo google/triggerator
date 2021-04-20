@@ -125,18 +125,16 @@ export default class RuleEngine {
       let io = sdf.insertionOrders.getRow(i);
       // extract a reference to a rule from the IO (it's kept in Detail field)
       let details = io[SDF.IO.Details];
-      // TODO: remove hard-code
-      let city: any = /city:(.*?)(?:\\n|$)/m.exec(details);
-      // TODO: replace 'tier' with 'rule'
-      let tier: any = /tier:(.*?)(?:\\n|$)/m.exec(details);
-      city = (city && city[1].trim());
-      tier = (tier && tier[1].trim());
+      let rowName: any = /row:(.*?)(?:\\n|$)/m.exec(details);
+      let ruleName: any = /rule:(.*?)(?:\\n|$)/m.exec(details);
+      rowName = (rowName && rowName[1].trim());
+      ruleName = (ruleName && ruleName[1].trim());
       // TODO: log
-      if (city === null || tier === null) {
-        console.log(`[RuleEngine] skipping IO ${io[SDF.IO.Details]} as its Detail field contains no city/rule`);
+      if (rowName === null || ruleName === null) {
+        console.log(`[RuleEngine] skipping IO ${io[SDF.IO.Details]} as its Detail field contains no row/rule`);
         continue;
       }
-      const key = city + tier;
+      const key = rowName + ruleName;
       iosMap[key] = iosMap[key] || [];
       iosMap[key].push({
         ioId: io[SDF.LI.IoId],
@@ -150,12 +148,12 @@ export default class RuleEngine {
         for (const idx of lis) {
           let li = sdf.lineItems.getRow(idx);
           let details = li[SDF.LI.Details];
-          let city: any = /city:(.*?)(?:\\n|$)/m.exec(details);
-          let tier: any = /tier:(.*?)(?:\\n|$)/m.exec(details);
-          city = (city && city[1].trim());
-          tier = (tier && tier[1].trim());
-          if (city === null || tier === null) continue;
-          const key = city + tier;
+          let rowName: any = /row:(.*?)(?:\\n|$)/m.exec(details);
+          let ruleName: any = /rule:(.*?)(?:\\n|$)/m.exec(details);
+          rowName = (rowName && rowName[1].trim());
+          ruleName = (ruleName && ruleName[1].trim());
+          if (rowName === null || ruleName === null) continue;
+          const key = rowName + ruleName;
           lisMap[key] = lisMap[key] || [];
           lisMap[key].push({
             liId: li[SDF.LI.LineItemId],
@@ -173,18 +171,18 @@ export default class RuleEngine {
 
     for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
       let rule = effective_rules[rowNo];
-      let city = feedData.get(nameColumn, rowNo);
+      let rowName = feedData.get(nameColumn, rowNo);
       // first deactivate
       for (let ruleInfo of this.config.rules) {
         if (!rule || ruleInfo.name != rule.name) {
-          let ioIds = iosMap[city + ruleInfo.name];
+          let ioIds = iosMap[rowName + ruleInfo.name];
           if (ioIds) {
             updatedItems += this.deactivateIos(advertiserId, ioIds);
           }
         }
       }
       // activate
-      let ioIds = iosMap[city + (rule ? rule.name : '')];
+      let ioIds = iosMap[rowName + (rule ? rule.name : '')];
       if (ioIds) {
         updatedItems += this.activateIos(advertiserId, ioIds);
       }
@@ -193,8 +191,8 @@ export default class RuleEngine {
     if (sdf.lineItems) {
       for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
         let rule = effective_rules[rowNo];
-        let city = feedData.get(nameColumn, rowNo);
-        let ioIds = iosMap[city];
+        let rowName = feedData.get(nameColumn, rowNo);
+        let ioIds = iosMap[rowName];
         if (ioIds) {
           updatedItems += this.processIoLineItems(advertiserId, rule, ioIds, sdf.lineItems);
         }
@@ -204,18 +202,18 @@ export default class RuleEngine {
     if ('' in iosMap) {
       for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
         let rule = effective_rules[rowNo];
-        let city = feedData.get(nameColumn, rowNo);
+        let rowName = feedData.get(nameColumn, rowNo);
         // first deactivate
         for (let ruleInfo of this.config.rules) {
           if (!rule || ruleInfo.name != rule.name) {
-            let liIds = lisMap[city + ruleInfo.name];
+            let liIds = lisMap[rowName + ruleInfo.name];
             if (liIds) {
               updatedItems += this.deactivateLis(advertiserId, liIds);
             }
           }
         }
         // activate
-        var liIds = lisMap[city + (rule ? rule.name : '')];
+        var liIds = lisMap[rowName + (rule ? rule.name : '')];
         if (liIds) {
           updatedItems += this.activateLis(advertiserId, liIds);
         }
@@ -297,19 +295,19 @@ export default class RuleEngine {
         
         let liId = lineItems.get('Line Item Id', index);
         let details = lineItems.get('Details', index);
-        let tier: any = /tier:(.+?)(?:\\n|$)/m.exec(details);
-        tier = (tier && tier[1].trim()) || '';
-        if (!tier) continue;
+        let ruleName: any = /rule:(.+?)(?:\\n|$)/m.exec(details);
+        ruleName = (ruleName && ruleName[1].trim()) || '';
+        if (!ruleName) continue;
 
         let status = lineItems.get('Status', index);
-        if (this.forceUpdate || (tier != activeRule?.name && status == 'Active')) {
+        if (this.forceUpdate || (ruleName != activeRule?.name && status == 'Active')) {
           console.log('deactivating LI ' + liId);
           this.dv_facade.updateLineItemStatus(advertiserId, liId, 'paused');
           changesCount++;
           this.updateLog.push(`LI:${liId}:Status=Paused`);
           console.log('success');
         }
-        else if (this.forceUpdate || (tier == activeRule?.name && status != 'Active')) {
+        else if (this.forceUpdate || (ruleName == activeRule?.name && status != 'Active')) {
           console.log('activating LI ' + liId);
           this.dv_facade.updateLineItemStatus(advertiserId, liId, 'active');
           changesCount++;
