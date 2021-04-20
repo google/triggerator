@@ -29,6 +29,12 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
   overflow-y: auto;
 }
 
+cron-time-picker  .mat-form-field-infix {
+  width: 80px;
+}
+.cron-editor-tab-content {
+  height: initial !important;
+}
 /* .mat-dialog-container {
   overflow-y: auto;
 } */

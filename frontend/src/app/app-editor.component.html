@@ -90,10 +90,15 @@
         </div>
         <!-- schedule -->
         <div class="row">
+          <div class="col-12">
+            <cron-editor formControlName="scheduleWiz" [options]="scheduleCronOptions"></cron-editor>
+          </div>
+        </div>
+        <div class="row">
           <div class="col-5 mb-3">
             <mat-form-field appearance="outline" color="accent" class="full-width">
               <mat-label>Schedule (Frequency)</mat-label>
-              <input matInput formControlName="schedule">
+              <input matInput formControlName="schedule">              
               <mat-hint>Schedules are specified using unix-cron format. E.g. every minute: "* * * * *", every 3 hours:
                 "0 */3 * * *", every monday at 9:00: "0 9 * * 1"</mat-hint>
               <mat-icon matSuffix>schedule</mat-icon>
@@ -208,8 +213,9 @@
             <div class="alert alert-dark" style="padding-bottom: 0;">Inside name templates you can use the following
               macros:
               <ul>
+                <li>{{ '{' }}base_name{{ '}' }} - entity (IO/LI/etc) name from template campaign</li>
                 <li>{{ '{' }}row_name{{ '}' }} - name column's value of feed row</li>
-                <li>{{ '{' }}tier_name{{ '}' }} - rule name</li>
+                <li>{{ '{' }}rule_name{{ '}' }} - rule name - see <a href="#" (click)="switchToTab('Feeds & Rules');$event.preventDefault()">Rules</a></li>
               </ul>
             </div>
           </div>
@@ -292,7 +298,7 @@
             </mat-form-field>
           </div>
           <div class="col">
-            <div class="alert alert-dark">Please keep in mind that you'll need to import the generated SDF till the specified start date ({{formSdf.get('newCampaignPeriod.start').value| date  }})</div>
+            <div class="alert alert-dark">Please keep in mind that you'll need to import a generated SDF for a new campaign till the specified start date ({{formSdf.get('newCampaignPeriod.start').value| date  }})</div>
           </div>
         </div>
         <!-- destination folder -->

@@ -32,6 +32,7 @@ import { EventListComponent } from './event-list.component';
 import timezones from './timezones';
 import { Observable, Subject } from 'rxjs';
 import { map, startWith, takeUntil } from 'rxjs/operators';
+import { CronOptions } from 'ngx-cron-editor';
 
 @Component({
   selector: 'app-app-editor',
@@ -62,6 +63,29 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   dataSourceFeedData: Record<string, MatTableDataSource<any>>;
   feedDataColumns: Record<string, string[]>;
   ngUnsubscribe: Subject<void> = new Subject<void>();
+  scheduleCronOptions: CronOptions = {
+    formInputClass: '', 
+    formSelectClass: '', 
+    formRadioClass: '', 
+    formCheckboxClass: '',
+
+    defaultTime: "00:00:00",
+
+    hideMinutesTab: false,
+    hideHourlyTab: false,
+    hideDailyTab: false,
+    hideWeeklyTab: false,
+    hideMonthlyTab: false,
+    hideYearlyTab: true,
+    hideAdvancedTab: true,
+    hideSpecificWeekDayTab : false,
+    hideSpecificMonthWeekTab : false,
+
+    use24HourTime: true,
+    hideSeconds: true,
+
+    cronFlavor: "standard" //standard or quartz
+  };
 
   constructor(
     private fb: FormBuilder,
@@ -89,6 +113,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     }, { updateOn: 'blur' });
     this.formExecution = this.fb.group({
       schedule: { value: null, disabled: true },
+      scheduleWiz: { value: null, disabled: true },
       timeZone: { value: null, disabled: true },
       enable: null
     });
@@ -134,12 +159,20 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         }
         if (values.enable) {
           this.formExecution.get('schedule').enable({ emitEvent: false, onlySelf: true });
+          this.formExecution.get('scheduleWiz').enable({ emitEvent: false, onlySelf: true });
           this.formExecution.get('timeZone').enable({ emitEvent: false, onlySelf: true });
         } else {
           this.formExecution.get('schedule').disable({ emitEvent: false, onlySelf: true });
+          this.formExecution.get('scheduleWiz').disable({ emitEvent: false, onlySelf: true });
           this.formExecution.get('timeZone').disable({ emitEvent: false, onlySelf: true });
         }
       });
+    // synchronize two schedule controls
+    const scheduleField = this.formExecution.get('schedule');
+    const scheduleWiz = this.formExecution.get('scheduleWiz');
+    scheduleField.valueChanges.subscribe(v => scheduleWiz.setValue(v, { emitEvent: false }));
+    scheduleWiz.valueChanges.subscribe(v => scheduleField.setValue(v, { emitEvent: false }));
+
     this.timeZonesFiltered = this.formExecution.controls.timeZone.valueChanges
       .pipe(
         startWith(''),
@@ -338,6 +371,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       this.formExecution.reset({
         enable: job.enable,
         schedule: job.schedule,
+        scheduleWiz: job.schedule,
         timeZone: job.timeZone
       });
       this.showSnackbar('Configuration loaded');
