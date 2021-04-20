@@ -15,8 +15,8 @@
  */
 import _ from 'lodash';
 import { Config, DV360TemplateInfo, FrequencyPeriod, RuleInfo, SdfElementType } from '../types/config';
-import RuleEngine, { RuleEvaluator } from './rule-engine';
-import { FeedData, RecordSet, SDF, SdfFull } from '../types/types';
+import { RuleEvaluator } from './rule-engine';
+import { FeedData, SDF, SdfFull } from '../types/types';
 
 type FrequencyInfo = {
   exposures: number,
@@ -33,12 +33,12 @@ class DV360Template {
     this.info = template;
   }
 
-  private generate(tmpl: string, base: string, rowName: string, tier: string) {
+  private generate(tmpl: string, base: string, rowName: string, ruleName: string) {
     if (!tmpl) { return '';}
     return tmpl
       .replace(/{base_name}/, base)
       .replace(/{row_name}/, rowName)
-      .replace(/{tier_name}/, tier)
+      .replace(/{rule_name}/, ruleName) // NOTE: in v1 it was tier_name
       .trim();
   }
 
@@ -50,15 +50,15 @@ class DV360Template {
   }
 
   /**
-   * Whather Display IO's template contains tier_name (tier is v1's name for rule)
+   * Whather Display IO's template contains rule_name 
    */
-  isDisplayIoPerTier(): boolean {
-    return this.info.io_template?.indexOf('{tier_name}') != -1;
+  isDisplayIoPerRule(): boolean {
+    return this.info.io_template?.indexOf('{rule_name}') != -1;
   }
 
   /**
    * Generate an IO name.
-   * @param base Campaign base name
+   * @param base IO base name
    * @param rowName A row label
    * @param ruleName A rule name
    */
@@ -71,7 +71,7 @@ class DV360Template {
 
   /**
    * Generate a LI name.
-   * @param base Campaign base
+   * @param base LI base
    * @param rowName A row label
    * @param ruleName A rule name
    */
@@ -84,7 +84,7 @@ class DV360Template {
 
   /**
    * Generate an AdGroup name.
-   * @param base Campaign base
+   * @param base adgroup base
    * @param rowName A row label
    * @param ruleName A rule name
    */
@@ -95,13 +95,13 @@ class DV360Template {
 
   /**
    * Generate an Ad name.
-   * @param base Campaign base
+   * @param base ad base name
    * @param rowName A row label
-   * @param tier A rule name
+   * @param ruleName A rule name
    */
-  ad_name(base: string, rowName: string, tier: string) {
+  ad_name(base: string, rowName: string, ruleName: string) {
     // NOTE: for assertion - you have checked nullability in constructor
-    return this.generate(<string>this.info.ad_template, base, rowName, tier);
+    return this.generate(<string>this.info.ad_template, base, rowName, ruleName);
   }
 
   getFrequency(isTrueView: boolean, ruleInfo: RuleInfo): FrequencyInfo | null {
@@ -155,7 +155,7 @@ export default class SdfGenerator {
   existingAdsMap: Record<string, boolean> = {};
   resultIosMap: Record<string, string> = {};
   /**
-   * A mapping of keys consisting of 'Line Item Id' + city + tierName (rule) 
+   * A mapping of keys consisting of 'Line Item Id' + rowName + ruleName (rule) 
    * to LI's indecies in `currentSdf.lineItems` (existing LI)
    */
   sourceToDestLineItem: Record<string, number> = {};
@@ -272,31 +272,31 @@ export default class SdfGenerator {
       for (let i = 0; i < currentSdf.insertionOrders.rowCount; i++) {
         let details = currentSdf.insertionOrders.get(SDF.IO.Details, i);
         let source: any = /source:(\d+)(?:\\n|$)/m.exec(details);
-        let city: any = /city:(.+?)(?:\\n|$)/m.exec(details);
-        let tier: any = /tier:(.+?)(?:\\n|$)/m.exec(details);
+        let rowName: any = /row:(.+?)(?:\\n|$)/m.exec(details);
+        let ruleName: any = /rule:(.+?)(?:\\n|$)/m.exec(details);
 
         source = source && source[1].trim();
-        city = (city && city[1].trim()) || '';
-        tier = (tier && tier[1].trim()) || '';
+        rowName = (rowName && rowName[1].trim()) || '';
+        ruleName = (ruleName && ruleName[1].trim()) || '';
 
         if (source) {
-          this.targetIoMap[<string>(source + city + tier)] = i;
+          this.targetIoMap[<string>(source + rowName + ruleName)] = i;
         }
       }
       if (currentSdf.lineItems) {
         for (let i = 0; i < currentSdf.lineItems.rowCount; i++) {
           let details = currentSdf.lineItems.get(SDF.LI.Details, i);
           let source: any = /source:(\d+)/.exec(details);
-          let city: any = /city:(.+?)(?:\\n|$)/m.exec(details);
-          let tier: any = /tier:(.+?)(?:\\n|$)/m.exec(details);
+          let rowName: any = /row:(.+?)(?:\\n|$)/m.exec(details);
+          let ruleName: any = /rule:(.+?)(?:\\n|$)/m.exec(details);
 
           source = source && source[1].trim();
-          city = (city && city[1].trim()) || '';
-          tier = (tier && tier[1].trim()) || '';
+          rowName = (rowName && rowName[1].trim()) || '';
+          ruleName = (ruleName && ruleName[1].trim()) || '';
 
-          if (source && city && tier) {
+          if (source && rowName && ruleName) {
             this.targetLiMap[currentSdf.lineItems.get(SDF.LI.IoId, i) +
-              source + city + tier] = i;
+              source + rowName + ruleName] = i;
           }
         }
       }
@@ -309,7 +309,7 @@ export default class SdfGenerator {
       let sourceIoId = tmplIo[SDF.IO.IoId];
       let isTrueViewIO = this.trueViewTmplIOs[sourceIoId];
       if (!isTrueViewIO && !tmpl.isDisplayIoPerFeedRow()) {
-        if (tmpl.isDisplayIoPerTier()) {
+        if (tmpl.isDisplayIoPerRule()) {
           // IO doesn't depend on feed row but depends on rules (NOTE: new v2 feature)
           for (const ruleInfo of this.config.rules!) {
             let new_io = this.sdf_io(isTrueViewIO, campaignId, tmplIo, null, ruleInfo, tmpl, no);
@@ -325,9 +325,9 @@ export default class SdfGenerator {
         // IO depends on feed row (contains row_name in name template) or it's TrueView IO (and so must depend on feed row)
         for (let i = 0; i < this.feedData.rowCount; i++) {
           let feedRow = this.feedData.getRow(i);
-          if (isTrueViewIO || tmpl.isDisplayIoPerTier()) {
+          if (isTrueViewIO || tmpl.isDisplayIoPerRule()) {
             // IO depends on rules and feed row
-            // если это TV IO или имя IO зависит от правила (есть tier_name в шаблоне имени)
+            // если это TV IO или имя IO зависит от правила (есть rule_name в шаблоне имени)
             for (const ruleInfo of this.config.rules!) {
               // TODO:
               // Left from v1
@@ -465,12 +465,12 @@ export default class SdfGenerator {
     return status == 'Draft' ? 'Paused' : status;
   }
 
-  private setCustomFields(row: Record<string, string>, sdfType: SdfElementType, tierName: string,
+  private setCustomFields(row: Record<string, string>, sdfType: SdfElementType, ruleName: string,
     media: 'YouTube' | 'Display', feedRow: Record<string, string> | null) {
     if (!this.config.customFields)
       return;
     for (const cf of this.config.customFields) {
-      if ((cf.element_state == 'All' || cf.element_state == tierName)
+      if ((cf.element_state == 'All' || cf.element_state == ruleName)
         && cf.sdf_type == sdfType
         && (cf.media == media || cf.media == '')) {
         var value = cf.feed_column;
@@ -486,13 +486,13 @@ export default class SdfGenerator {
   }
 
   private sdf_io(isTrueView: boolean, campaignId: string, tmplIo: Record<string, any>, feedRow: Record<string, string> | null,
-    tier: RuleInfo | null, tmpl: DV360Template, entryNum: number): Record<string, any> {
+    rule: RuleInfo | null, tmpl: DV360Template, entryNum: number): Record<string, any> {
     let feedInfo = this.config.feedInfo!;
     let rowName = feedRow ? feedRow[feedInfo.name_column!] : '';
-    let tierName = tier ? tier.name : '';
+    let ruleName = rule ? rule.name : '';
 
     let sourceId = tmplIo[SDF.IO.IoId];
-    let key = sourceId + rowName + tierName;
+    let key = sourceId + rowName + ruleName;
     let ioIndex = this.targetIoMap[key];
     let new_io = _.clone(tmplIo);
     new_io[SDF.IO.CampaignId] = campaignId;
@@ -511,16 +511,16 @@ export default class SdfGenerator {
     }
 
     if (this.recalculateStatus) {
-      if (tier)
-        new_io[SDF.IO.Status] = this.ruleEvaluator.getActiveRule(this.config.rules!, feedRow!)?.name == tierName ? 'Active' : 'Paused';
+      if (rule)
+        new_io[SDF.IO.Status] = this.ruleEvaluator.getActiveRule(this.config.rules!, feedRow!)?.name == ruleName ? 'Active' : 'Paused';
       else
         new_io[SDF.IO.Status] = 'Active';
     }
 
-    new_io[SDF.IO.Name] = tmpl.io_name(isTrueView, new_io[SDF.IO.Name], rowName, tierName);
+    new_io[SDF.IO.Name] = tmpl.io_name(isTrueView, new_io[SDF.IO.Name], rowName, ruleName);
     new_io[SDF.IO.Details] = 'source:' + sourceId + '\n' +
-      'city:' + rowName + '\n' +
-      'tier:' + tierName;
+      'row:' + rowName + '\n' +
+      'rule:' + ruleName;
 
     this.resultIosMap[key] = new_io[SDF.IO.IoId];
 
@@ -555,8 +555,8 @@ export default class SdfGenerator {
       }
     }
 
-    if (tier) {
-      var f = tmpl.getFrequency(isTrueView, tier);
+    if (rule) {
+      var f = tmpl.getFrequency(isTrueView, rule);
       if (f) {
         new_io[SDF.IO.FrequencyEnabled] = 'TRUE';
         new_io[SDF.IO.FrequencyExposures] = f.exposures;
@@ -567,29 +567,29 @@ export default class SdfGenerator {
       }
     }
 
-    this.setCustomFields(new_io, SdfElementType.IO, tierName, isTrueView ? 'YouTube' : 'Display', feedRow);
+    this.setCustomFields(new_io, SdfElementType.IO, ruleName, isTrueView ? 'YouTube' : 'Display', feedRow);
     return new_io;
   }
 
   private sdf_li(tmplLi: Record<string, string>, feedRow: Record<string, string>,
-    tier: RuleInfo, tmpl: DV360Template, sourceAdGroups: number[], entryNum: number): Record<string, any> {
+    rule: RuleInfo, tmpl: DV360Template, sourceAdGroups: number[], entryNum: number): Record<string, any> {
     let feedInfo = this.config.feedInfo!;
     let rowName = feedRow[feedInfo.name_column!];
-    let tierName = tier.name;
+    let ruleName = rule.name;
     let isTrueView = tmplLi[SDF.LI.Type] == 'TrueView';
 
     let sourceIoId = tmplLi[SDF.LI.IoId];
-    let ioPerTier = this.trueViewTmplIOs[sourceIoId] || tmpl.isDisplayIoPerTier();
+    let ioPerRule = this.trueViewTmplIOs[sourceIoId] || tmpl.isDisplayIoPerRule();
     let ioKey = sourceIoId +
       (isTrueView || tmpl.isDisplayIoPerFeedRow() ? rowName : '') +
-      (isTrueView || tmpl.isDisplayIoPerTier() ? tierName : '');
+      (isTrueView || tmpl.isDisplayIoPerRule() ? ruleName : '');
 
     let ioIndex = this.targetIoMap[ioKey];
     let liIndex = -1;
     if (ioIndex > -1) {
       // Updating IO (note: while updating this.currentSdf is not null)
       let key = this.currentSdf!.insertionOrders.get(SDF.LI.IoId, ioIndex) +
-        tmplLi[SDF.LI.LineItemId] + rowName + tierName;
+        tmplLi[SDF.LI.LineItemId] + rowName + ruleName;
       liIndex = this.targetLiMap[key];
     }
 
@@ -603,7 +603,7 @@ export default class SdfGenerator {
       new_li[SDF.LI.LineItemId] = li_existing[SDF.LI.LineItemId];
       new_li[SDF.LI.Timestamp] = li_existing[SDF.LI.Timestamp];
       new_li[SDF.LI.Status] = this.fixDraft(li_existing[SDF.LI.Status]);
-      this.sourceToDestLineItem[tmplLi[SDF.LI.LineItemId] + rowName + tierName] = liIndex;
+      this.sourceToDestLineItem[tmplLi[SDF.LI.LineItemId] + rowName + ruleName] = liIndex;
       this.existingLisMap[li_existing[SDF.LI.LineItemId]] = true;
     }
     else {
@@ -617,10 +617,10 @@ export default class SdfGenerator {
     }
 
     if (this.recalculateStatus) {
-      if (ioPerTier) {
+      if (ioPerRule) {
         new_li[SDF.LI.Status] = 'Active';
       } else {
-        new_li[SDF.LI.Status] = this.ruleEvaluator.getActiveRule(this.config.rules!, feedRow)?.name == tierName ? 'Active' : 'Paused';
+        new_li[SDF.LI.Status] = this.ruleEvaluator.getActiveRule(this.config.rules!, feedRow)?.name == ruleName ? 'Active' : 'Paused';
       }
     }
 
@@ -629,16 +629,16 @@ export default class SdfGenerator {
         isTrueView,
         new_li[SDF.LI.Name],
         feedRow[feedInfo.name_column!],
-        tierName);
+        ruleName);
     if (feedInfo.geo_code_column) {
       new_li[SDF.LI.GeographyTargeting_Include] = feedRow[feedInfo.geo_code_column];
     }
     new_li[SDF.LI.Details] =
       'source:' + tmplLi[SDF.LI.LineItemId] + '\n' +
-      'city:' + rowName + '\n' +
-      'tier:' + tierName;
+      'row:' + rowName + '\n' +
+      'rule:' + ruleName;
 
-    let frequency = tmpl.getFrequency(isTrueView, tier);
+    let frequency = tmpl.getFrequency(isTrueView, rule);
 
     if (!frequency) {
       // TODO: v2 new feature: copy frequency data from template campaign
@@ -651,7 +651,7 @@ export default class SdfGenerator {
         new_li[SDF.LI.FrequencyPeriod] = frequency.period;
         new_li[SDF.LI.FrequencyAmount] = frequency.amount.toString();
 
-        let state = tier.display_state!;
+        let state = rule.display_state!;
         if (state.bid) {
           if (typeof state.bid == 'string' && state.bid[0] == 'x') {
             let mult = parseFloat(state.bid.substr(1));
@@ -693,7 +693,7 @@ export default class SdfGenerator {
         for (const idx of sourceAdGroups) {
           agDescr.push('adgroup:' +
             tmpl.adgroup_name(
-              this.tmplSdf.adGroups!.get('Name', idx), rowName, tierName)
+              this.tmplSdf.adGroups!.get('Name', idx), rowName, ruleName)
             + ':' + this.tmplSdf.adGroups!.get('Ad Group Id', idx));
         }
         new_li[SDF.LI.Details] = new_li[SDF.LI.Details] + '\n' + agDescr.join('\n');
@@ -701,17 +701,17 @@ export default class SdfGenerator {
       }
     }
 
-    this.setCustomFields(new_li, SdfElementType.LI, tierName, isTrueView ? 'YouTube' : 'Display', feedRow);
+    this.setCustomFields(new_li, SdfElementType.LI, ruleName, isTrueView ? 'YouTube' : 'Display', feedRow);
     return new_li;
   }
 
   private sdf_adgroup(tmplAg: Record<string, string>, feedRow: Record<string, string>,
-    tier: RuleInfo, tmpl: DV360Template, entryNum: number): Record<string, any> {
+    rule: RuleInfo, tmpl: DV360Template, entryNum: number): Record<string, any> {
     let feedInfo = this.config.feedInfo!;
     let rowName = feedRow[feedInfo.name_column!];
-    let tierName = tier.name;
+    let ruleName = rule.name;
 
-    let liIndex = this.sourceToDestLineItem[tmplAg[SDF.AdGroup.LineItemId] + rowName + tierName];
+    let liIndex = this.sourceToDestLineItem[tmplAg[SDF.AdGroup.LineItemId] + rowName + ruleName];
     let agIndex = -1;
     if (liIndex > -1) {
       let details = this.currentSdf!.lineItems!.get(SDF.LI.Details, liIndex);
@@ -737,7 +737,7 @@ export default class SdfGenerator {
       new_adgroup[SDF.AdGroup.LineItemId] = cur_adgroup[SDF.AdGroup.LineItemId];
       new_adgroup[SDF.AdGroup.AdGroupId] = cur_adgroup[SDF.AdGroup.AdGroupId];
       new_adgroup[SDF.AdGroup.Status] = this.fixDraft(cur_adgroup[SDF.AdGroup.Status]);
-      this.sourceToDestAdGroup[tmplAg[SDF.AdGroup.AdGroupId] + rowName + tierName] = agIndex;
+      this.sourceToDestAdGroup[tmplAg[SDF.AdGroup.AdGroupId] + rowName + ruleName] = agIndex;
       this.existingAdGroupsMap[cur_adgroup[SDF.AdGroup.AdGroupId]] = true;
     }
     else {
@@ -752,11 +752,11 @@ export default class SdfGenerator {
       new_adgroup[SDF.AdGroup.Status] = 'Active';
     }
 
-    new_adgroup[SDF.AdGroup.Name] = tmpl.adgroup_name(new_adgroup[SDF.AdGroup.Name], rowName, tierName);
-    if (tier.youtube_state && tier.youtube_state.bid)
-      new_adgroup[SDF.AdGroup.BidCost] = <any>tier.youtube_state.bid;
+    new_adgroup[SDF.AdGroup.Name] = tmpl.adgroup_name(new_adgroup[SDF.AdGroup.Name], rowName, ruleName);
+    if (rule.youtube_state && rule.youtube_state.bid)
+      new_adgroup[SDF.AdGroup.BidCost] = <any>rule.youtube_state.bid;
 
-    this.setCustomFields(new_adgroup, SdfElementType.AdGroup, tierName, 'YouTube', feedRow);
+    this.setCustomFields(new_adgroup, SdfElementType.AdGroup, ruleName, 'YouTube', feedRow);
     return new_adgroup;
   }
 

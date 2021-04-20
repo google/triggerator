@@ -116,7 +116,7 @@ suite('SdfService', function() {
       dv360Template: {
         template_campaign: "3237246", // see https://displayvideo.google.com/#ng_nav/p/100832/a/506732/c/3237246
         campaign_name: "TRGR: Test campaign (SdfService unit-tests)",
-        io_template: "io-{base_name}-{row_name}-{tier_name}",
+        io_template: "io-{base_name}-{row_name}-{rule_name}",
         li_template: "not used",
         yt_li_template: "not used",
         yt_io_template: "not used",
@@ -153,9 +153,9 @@ suite('SdfService', function() {
         template_campaign: "3420942", // see https://displayvideo.google.com/#ng_nav/p/100832/a/506732/c/3420942/
         campaign_name: "TRGR: Test campaign (SdfService unit-tests)",
         io_template: "{base_name}-{row_name}",
-        li_template: "{base_name}-{row_name}-{tier_name}",
-        yt_li_template: "{base_name}-{row_name}-{tier_name}",
-        yt_io_template: "{base_name}-{row_name}-{tier_name}",
+        li_template: "{base_name}-{row_name}-{rule_name}",
+        yt_li_template: "{base_name}-{row_name}-{rule_name}",
+        yt_io_template: "{base_name}-{row_name}-{rule_name}",
         adgroup_template: "not used",
         ad_template: "not used"
       }

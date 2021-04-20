@@ -5,9 +5,10 @@ Decision engine for automated managing DV360 campaigns using signals from extern
 
 ## Description
 The idea behind this project is automating management of campaigns in Google Display&Video 360 (DV360) using data from external sources that we call data feeds (or just feeds). DV360 doesn't allow to change programmatically all settings of campaigns through API, such as bids and frequencies. That's because this project took the approach of generating up front all combinations of Insertion Orders/Line Items/etc as a SDF (Structured Data Files) and leave it to the user to import into DV360. Later during run-time the execution engine takes a campaign created from generated SDF and enables/disables particular campaign's objects (IO/LI) for each row from feed(s).  
-To decide which IOs/LIs we should enable or disable for each feed row there are rules. A rule has a condition (expression in JavaScript) which either evaluated to true or false.  
-In the end after SDF is generated and imported into DV360 we have a total number of combinations of IOs and LIs equal to total number of combinations of feed's rows and rules. 
-Row name (a field's value which name specified in configuration) and row name are used in templates for naming DV360 campaigns objects (IOs/LIs/AdGroups/Ads).  
+To decide which IOs/LIs should be enabled or disabled for each feed row the
+decision engine uses rules. A rule has a condition (expression in JavaScript) which either evaluated to true or false.  
+In the end after SDF is generated and imported into DV360 we have a total number of combinations of IOs and LIs equal to total number of combinations of feed's rows and rules.  
+Row name (a field's value which name specified in configuration) and rule name are used in templates for naming DV360 campaigns objects (IOs/LIs/AdGroups/Ads).  
 The tool support both Display and TrueView (YouTube) campaigns.
 
 ## Deployment 
@@ -21,8 +22,8 @@ Basically you can run this project in any environment but this guide targets Goo
 ```
 git clone https://github.com/google/triggerator.git
 ```
-or use this wizard:
-[![Try It In Google Cloud Shell](http://gstatic.com/cloudssh/images/open-btn.svg)](https://console.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgoogle%2Ftriggerator&cloudshell_tutorial=README.md)
+or use this wizard:  
+[![Try It In Google Cloud Shell](http://gstatic.com/cloudssh/images/open-btn.svg)](https://console.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgoogle%2Ftriggerator&cloudshell_tutorial=README.md)  
 (in this case we'll need to choose a project after the repository is cloned - `gcloud config set project YOUR_PROJECT`)
 
 

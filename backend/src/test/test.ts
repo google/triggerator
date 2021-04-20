@@ -151,8 +151,8 @@ async function generate_sdf_from_template() {
       template_campaign: "3420942", // see https://displayvideo.google.com/#ng_nav/p/100832/a/506732/c/3420942/
       campaign_name: "TRGR: Test campaign (SdfService unit-tests)",
       io_template: "{base_name}-{row_name}",
-      li_template: "{base_name}-{row_name}-{tier_name}",
-      yt_li_template: "{base_name}-{row_name}-{tier_name}",
+      li_template: "{base_name}-{row_name}-{rule_name}",
+      yt_li_template: "{base_name}-{row_name}-{rule_name}",
       yt_io_template: "{base_name}-{row_name}",
       adgroup_template: "not used",
       ad_template: "not used"
