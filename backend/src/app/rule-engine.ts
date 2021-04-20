@@ -131,7 +131,7 @@ export default class RuleEngine {
       ruleName = (ruleName && ruleName[1].trim());
       // TODO: log
       if (rowName === null || ruleName === null) {
-        console.log(`[RuleEngine] skipping IO ${io[SDF.IO.Details]} as its Detail field contains no row/rule`);
+        console.log(`[RuleEngine] skipping IO ${io[SDF.IO.Details]} as its Details field contains no row/rule`);
         continue;
       }
       const key = rowName + ruleName;

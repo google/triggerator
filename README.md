@@ -79,7 +79,7 @@ Backend app doesn't have any authentication, nor any user management. For this t
 Please note that IAP manages user access with its own roles. So even project owner won't have access to a shielded app by default. To allow access for a user you need to go to IAP page in your GCP project - 
 https://console.cloud.google.com/security/iap and add a member with 'IAP-secured Web App User' role. If you installed app with setup.sh script  it's already done for you, but you need to add members for all other users. You can allow access for everyone by adding "allUsers" or "allAuthenticatedUsers" as a member with the IAP role, but obviously it's not recommended from security point of view.
 
-Another thing that makes the application to depend on Google Cloud services is the usage of Cloud Scheduler. Backend create Cloud Scheduler jobs for automated engine execution. Please note that in that cases when the backend is being called by Scheduler requests are bypassing IAP.
+Another thing that makes the application to depend on Google Cloud services is the usage of Cloud Scheduler. Backend creates Cloud Scheduler jobs for automated engine execution. Please note that in that cases when the backend is being called by Scheduler requests are bypassing IAP.
 
 
 ## License
