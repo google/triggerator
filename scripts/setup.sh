@@ -72,7 +72,7 @@ while :; do
 done
 
 # detect default service account 
-PROJECT_ID=$(gcloud config get-value project) #"$(gcloud app describe --format='value(id)')"
+PROJECT_ID=$(gcloud config get-value project 2> /dev/null) #"$(gcloud app describe --format='value(id)')"
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID | grep projectNumber | sed "s/.* '//;s/'//g")
 SERVICE_ACCOUNT=$PROJECT_ID@appspot.gserviceaccount.com
 #ask PROJECT_TITLE "$PROJECT_TITLE" "Project title (will be used for user authorization prompt):"
@@ -105,7 +105,7 @@ sed -i "s/MASTER_SPREADSHEET\s*:\s*.*$/MASTER_SPREADSHEET: '$spreadsheetId'/" ap
 # put SECURITY: 'IAP'
 sed -i "s/SECURITY\s*:\s*.*$/SECURITY: 'IAP'/" app.yaml
 # put EXPECTED_AUDIENCE: '/projects/685425631282/apps/triggerator-sd'
-sed -i "s/EXPECTED_AUDIENCE\s*:\s*.*$/EXPECTED_AUDIENCE: '/projects/$PROJECT_NUMBER/apps/$PROJECT_ID'/" app.yaml
+sed -i "s/EXPECTED_AUDIENCE\s*:\s*.*$/EXPECTED_AUDIENCE: '\/projects\/$PROJECT_NUMBER\/apps\/$PROJECT_ID'/" app.yaml
 
 # build and deploy app to GAE:
 echo -e "${COLOR}Building app...${NC}"
