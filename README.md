@@ -66,6 +66,11 @@ User type choose External). After you create the OAuth consent screen
   * If you get 'You don't have access' error just wait a bit
 
 
+## Updating
+Basically we just need to update source code (`git pull`) and redeploy (`gcloud app deploy`). But before doing this please check CHANGELOG.md for any breaking changes.
+There is no published artifacts anywhere for the solution so there's no a strict notion of release. But since the v1 the project maintainers are going to track all significant changes (especially breaking ones if they happen) and features in CHANGELOG.md and update `version` field in `package.json` files for backend and frontend. 
+
+
 ## Architecture
 The solution is a classic web application with front-end built in Angular (11+) and backend for NodeJS built with TypeScript and Express. The backend is supposed to be deployed to Google App Engine
 
@@ -75,3 +80,10 @@ Please note that IAP manages user access with its own roles. So even project own
 https://console.cloud.google.com/security/iap and add a member with 'IAP-secured Web App User' role. If you installed app with setup.sh script  it's already done for you, but you need to add members for all other users. You can allow access for everyone by adding "allUsers" or "allAuthenticatedUsers" as a member with the IAP role, but obviously it's not recommended from security point of view.
 
 Another thing that makes the application to depend on Google Cloud services is the usage of Cloud Scheduler. Backend create Cloud Scheduler jobs for automated engine execution. Please note that in that cases when the backend is being called by Scheduler requests are bypassing IAP.
+
+
+## License
+
+Apache Version 2.0
+
+See [LICENSE](https://github.com/google/triggerator/blob/master/LICENSE)
