@@ -208,8 +208,9 @@
             <div class="alert alert-dark" style="padding-bottom: 0;">Inside name templates you can use the following
               macros:
               <ul>
+                <li>{{ '{' }}base_name{{ '}' }} - entity (IO/LI/etc) name from template campaign</li>
                 <li>{{ '{' }}row_name{{ '}' }} - name column's value of feed row</li>
-                <li>{{ '{' }}tier_name{{ '}' }} - rule name</li>
+                <li>{{ '{' }}rule_name{{ '}' }} - rule name - see <a href="#" (click)="switchToTab('Feeds & Rules');$event.preventDefault()">Rules</a></li>
               </ul>
             </div>
           </div>
