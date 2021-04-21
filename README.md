@@ -17,7 +17,7 @@ Basically you can run this project in any environment but this guide targets Goo
 
 ### Prerequisites
 * In the Google Cloud Console, on the project selector page, select or create a Google Cloud project
-* Make sure that billing is enabled for your Cloud project
+* Make sure that billing is enabled for your Cloud project, see [Enable, disable, or change billing for a project](https://cloud.google.com/billing/docs/how-to/modify-project) for details
 * Activate Cloud Console Shell and clone the repository
 ```
 git clone https://github.com/google/triggerator.git
@@ -26,15 +26,21 @@ or use this wizard:
 [![Try It In Google Cloud Shell](http://gstatic.com/cloudssh/images/open-btn.svg)](https://console.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fgoogle%2Ftriggerator&cloudshell_tutorial=README.md)  
 (in this case we'll need to choose a project after the repository is cloned - `gcloud config set project YOUR_PROJECT`)
 
+Whatever installation method you use you'll need to add your application service account (PROJECT_ID@appspot.gserviceaccount.com) to your DV360 account manually (Standard role should be enough). See details in [Manage users in Display & Video 360](https://support.google.com/displayvideo/answer/2723011).
+
 
 ### Automated installation
-Run `scripts/setup.sh` script in Cloud Shell within the cloned repository. 
+Go to `scripts` folder of the cloned repository (`cd triggerator/scripts`) and run `./setup.sh` script in Cloud Shell.  
 
-Please note that currently `setup.sh` works only on Linux (won't work on MacOS). You can run it from your local machine (just set your project `gcloud config set project PROJECT_ID` and login `glcloud auth login` as a project owner/editor), but it was not tested much. So running the script in Cloud Shell is a recommended approached.
-
-You still need to add application service account (PROJECT_ID@appspot.gserviceaccount.com) to your DV360 account manually.
+Please note that currently `setup.sh` works only on Linux (won't work on MacOS). You can run it from your local machine (just set your project `gcloud config set project PROJECT_ID` and login `glcloud auth login` as a project owner/editor), but it was not tested much. So running the script in Cloud Shell is the recommended approach.
 
 Open the app (you can see the url by executing `gcloud app browse`). If you get 'You don't have access' error just wait a little bit and retry.
+
+Unfortunetely there could be an error during deployement to App Engine right after creation and the install script can hit that issue. It looks like :  
+
+> ERROR: (gcloud.app.deploy) NOT_FOUND: Unable to retrieve P4SA: [your-project@gcp-gae-service.iam.gserviceaccount.com] from GAIA. Could be GAIA propagation delay or request from deleted apps.
+
+In such a case if there was not any other errors you can just redeploy application. For this go to 'backend' folder (`cd ../backend` if you are in `scripts` folder) and run `gcloud app deploy -q`.  
 
 
 ### Manual installation
@@ -46,7 +52,7 @@ Open the app (you can see the url by executing `gcloud app browse`). If you get 
 * Copy its id from the url, for example for a spreadsheet
 https://docs.google.com/spreadsheets/d/12yocZ6MCFFwXFlBKCF9eeS80WiJk04SLuFQsX9s2xUE/edit#gid=0
 id will be `12yocZ6MCFFwXFlBKCF9eeS80WiJk04SLuFQsX9s2xUE`
-* Paste the id into `app.yaml` file as value for `MASTER_SPREADSHEET` environment variable
+* Paste the id into `backend/app.yaml` file as value for `MASTER_SPREADSHEET` environment variable
 * Activate the following APIs:
   * Sheets API: `gcloud services enable sheets.googleapis.com`
   * Drive API: `gcloud services enable drive.googleapis.com`
@@ -55,7 +61,7 @@ id will be `12yocZ6MCFFwXFlBKCF9eeS80WiJk04SLuFQsX9s2xUE`
   * Cloud Resource Manager API: `gcloud services enable cloudresourcemanager.googleapis.com`
   * IAP API: `gcloud services enable iap.googleapis.com`
 * Create a new App Engine application (`gcloud app create --region europe-west`)
-* Build and deploy application by running `build-n-deploy.sh` script in script folder in Cloud Shell
+* Build and deploy application by running `build-n-deploy.sh` script in `scripts` folder in Cloud Shell
   * If you get an error like ERROR: (gcloud.app.deploy) NOT_FOUND: Unable to retrieve P4SA just execute publish one more time - run `gcloud app deploy` in backend folder (in Cloud Shell)
 * Configure OAuth consent screeen by going to https://console.cloud.google.com/apis/credentials/consent
 User type choose External). After you create the OAuth consent screen 
@@ -67,8 +73,8 @@ User type choose External). After you create the OAuth consent screen
 
 
 ## Updating
-Basically we just need to update source code (`git pull`) and redeploy (`gcloud app deploy`). But before doing this please check CHANGELOG.md for any breaking changes.
-There is no published artifacts anywhere for the solution so there's no a strict notion of release. But since the v1 the project maintainers are going to track all significant changes (especially breaking ones if they happen) and features in CHANGELOG.md and update `version` field in `package.json` files for backend and frontend. 
+Basically you just need to update source code (execute `git pull` in the cloned repositoty folder), rebuild and redeploy (run `build-n-deploy.sh` in `scripts` folder). But before doing this please check [CHANGELOG.md](https://github.com/google/triggerator/blob/master/CHANGELOG.md) for any breaking changes.  
+There is no published artifacts anywhere for the solution so currently there's no a strict notion of release. But since the v1 the project maintainers are going to track all significant changes (especially breaking ones if they happen) and features in `CHANGELOG.md` and update `version` field in `package.json` files for backend and frontend. 
 
 
 ## Architecture
@@ -80,6 +86,9 @@ Please note that IAP manages user access with its own roles. So even project own
 https://console.cloud.google.com/security/iap and add a member with 'IAP-secured Web App User' role. If you installed app with setup.sh script  it's already done for you, but you need to add members for all other users. You can allow access for everyone by adding "allUsers" or "allAuthenticatedUsers" as a member with the IAP role, but obviously it's not recommended from security point of view.
 
 Another thing that makes the application to depend on Google Cloud services is the usage of Cloud Scheduler. Backend creates Cloud Scheduler jobs for automated engine execution. Please note that in that cases when the backend is being called by Scheduler requests are bypassing IAP.
+
+### Where is the data
+The application does not use any database. Instead all data is kept in Google Spreadsheets. During installation you create a so-called master spreadsheet (its id is put into `app.yaml` as an environment variable available to the backend in runtime). Then when you create a new application (or configuration) effectively you create a new spreadsheet, which id is put into the master spreadsheet. That's it. 
 
 
 ## License
