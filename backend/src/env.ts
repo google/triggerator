@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import path from 'path';
+import fs from 'fs';
 let argv = require('yargs/yargs')(process.argv.slice(2)).argv;
 
 export const STATIC_DIR = argv.staticDir || process.env.STATIC_DIR || 'static';
 export const PORT = argv.port || process.env.PORT || 8080;
 export const HEALTH_CHECK_URL = argv.healthCheckUrl || process.env.HEALTH_CHECK_URL || '/_ah/health';
-// Supported values: IAP (Identity-Aware Proxy), CLIENT (auth tokens in Authotization header):
+// Supported values: 'IAP' (Identity-Aware Proxy), 'CLIENT' (auth tokens in Authotization header):
 export const SECURITY = argv.security || process.env.SECURITY || 'CLIENT';
 
 // applicabale for SECURITY=='IAP', it's a value from 'Signed Header JWT Audience' 
@@ -40,3 +42,21 @@ export function getTempDir() {
 }
 
 export const SERVICE_ACCOUNT = IS_GAE ? process.env.GOOGLE_CLOUD_PROJECT + '@appspot.gserviceaccount.com' : ''
+
+let mailer_config: any = undefined;
+const mailerConfigPath = argv.mailerConfigPath || process.env.MAILER_CONFIG_PATH;
+if (mailerConfigPath) {
+  // TODO: suppport gs:// pathes
+  let filepath = path.join(__dirname, '..', mailerConfigPath);
+  filepath = path.resolve(filepath);
+  if (fs.existsSync(filepath)) {
+    try {
+      let config = fs.readFileSync(filepath, 'utf8');
+      mailer_config = JSON.parse(config);
+      console.log(`Found nodemailer config`);
+    } catch(e) {
+      console.error(`Failed to read nodemailer config in ${filepath}:\n`, e);
+    }
+  }
+}
+export const MAILER_CONFIG = mailer_config;

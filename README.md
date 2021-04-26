@@ -72,6 +72,37 @@ User type choose External). After you create the OAuth consent screen
   * If you get 'You don't have access' error just wait a bit
 
 
+### Email notifications
+You can setup sending email notifications on executions started by Cloud Scheduler.
+The server app uses [Nodemailer](https://nodemailer.com/smtp/) for sending emails via SMTP. That means that you can use any mail service provider that supports SMTP.  
+Please check this guide https://cloud.google.com/compute/docs/tutorials/sending-mail for details about any restrictions for outbound SMTP traffic in GCP. But if you use a standard port, such as 587, you're good.  
+
+Configuration for Nodemailer is taken from a json file which path is expected in environment variable `MAILER_CONFIG_PATH`. The path is resolved relatively to application root folder (a folder with `package.json`).
+
+Each configuration for ad campaigns contain their own email(s) for notifications.  
+
+The following is an example for Mailgun:
+
+in your `app.yaml`:
+```yaml
+  MAILER_CONFIG_PATH: './mailer.json'
+```
+
+In `mailer.json` (besides app.yaml):
+```json
+{
+  "host": "smtp.eu.mailgun.org",
+  "port": 587,
+  "auth": {
+    "user": "postmaster@YOUR_DOMAIN",
+    "pass": "YOUR_PASSWORD"
+  },
+  "from": "no-reply@YOUR_DOMAIN"
+}
+```
+Please note in Mailgun you can use Free plan but have to add a credit card and verify a domain.
+
+
 ## Updating
 Basically you just need to update source code (execute `git pull` in the cloned repositoty folder), rebuild and redeploy (run `build-n-deploy.sh` in `scripts` folder). But before doing this please check [CHANGELOG.md](https://github.com/google/triggerator/blob/master/CHANGELOG.md) for any breaking changes.  
 There is no published artifacts anywhere for the solution so currently there's no a strict notion of release. But since the v1 the project maintainers are going to track all significant changes (especially breaking ones if they happen) and features in `CHANGELOG.md` and update `version` field in `package.json` files for backend and frontend. 
