@@ -1,0 +1,30 @@
+<div class="navigation-bar">
+  <span>#{{currentIndex+1}} of {{data.dataSource.data.length}}</span>
+  <button mat-icon-button (click)="goPrev()">
+    <mat-icon mat-icon-button>arrow_back_ios</mat-icon>
+  </button>
+  <button mat-icon-button (click)="goNext()">
+    <mat-icon mat-icon-button>arrow_forward_ios</mat-icon>
+  </button>
+</div>
+<h1 mat-dialog-title>Details</h1>
+<div mat-dialog-content>
+  <div class="row">
+    <div class="col-4 text-center">Field</div>
+    <div class="col-8 text-center">Value</div>
+  </div>
+  <div class="row divider">
+    <div class="col">
+      <mat-divider></mat-divider>
+    </div>
+  </div>
+  <div *ngFor="let field of fields" class="row">
+    <div class="col-4 pb-3">{{field}}</div>
+    <div class="col-8 pb-3 pl-5">{{data.row[field] | app_json}}</div>
+  </div>
+</div>
+<div mat-dialog-actions class="mt-15" style="text-align: center;">
+  <div class="full-width">
+    <button mat-raised-button color="primary" mat-dialog-close cdkFocusInitial>Close</button>
+  </div>
+</div>

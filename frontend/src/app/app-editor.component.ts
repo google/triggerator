@@ -32,6 +32,7 @@ import { EventListComponent } from './event-list.component';
 import timezones from './timezones';
 import { Observable, Subject } from 'rxjs';
 import { map, startWith, takeUntil } from 'rxjs/operators';
+import { ObjectDetailsDialogComponent } from './components/object-details-dialog.component';
 
 @Component({
   selector: 'app-app-editor',
@@ -555,10 +556,23 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     const ds = this.dataSourceFeedData[dataSetName];
     ds.data = [];
     if (!feedData || !feedData.length) { return; }
+    // filter out columns with array data (we create special field $feed_name for access fields by index)
     this.feedDataColumns[dataSetName] = Object.keys(feedData[0]).filter(name => !name.startsWith('$'));
     ds.data = feedData;
     this.feedDataPanel.open();
     this.tabsFeedDataSelected = this.tabsFeedData.indexOf(dataSetName);
+  }
+
+  onFeedRowDetails($event: MouseEvent, row: any, index: number, ds: MatTableDataSource<any>) {
+    if (!this.onTableRowClick($event)) { return; }
+    const dialogRef = this.dialog.open(ObjectDetailsDialogComponent, {
+      width: '600px',
+      data: {
+        row,
+        index,
+        dataSource: ds
+      }
+    });
   }
 
   removeFeedDataTab(tabName: string) {
@@ -571,6 +585,15 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   }
 
   mouseOverIndex = -1;
+  validateColumn(object: any, path: string): boolean {
+    const parts = path.split('.');
+    for(let i=0; i < parts.length - 1; i++) {
+      object = object[parts[i]];
+      if (!object) return false;
+    }
+    if (!object) return false;
+    return object.hasOwnProperty(parts[parts.length-1]);
+  }
 
   validateFeedColumns() {
     const data = this.dataSourceFeedData['Result'].data;
@@ -587,7 +610,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     this.formFeeds.controls.name_column.setErrors(null);
     if (!name_column) {
       this.formFeeds.controls.name_column.setErrors({ required: true });
-    } else if (!row[name_column]) {
+    } else if (!this.validateColumn(row, name_column)) {
       this.formFeeds.controls.name_column.setErrors({ unknownColumn: true });
     }
     this.formFeeds.getError('required')
@@ -595,14 +618,14 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     this.formFeeds.controls.geo_code_column.setErrors(null);
     if (!geo_code_column) {
       this.formFeeds.controls.geo_code_column.setErrors({ required: true });
-    } else if (!row[geo_code_column]) {
+    } else if (!this.validateColumn(row, geo_code_column)) {
       this.formFeeds.controls.geo_code_column.setErrors({ unknownColumn: true });
     }
     // budget_factor_column
     this.formFeeds.controls.budget_factor_column.setErrors(null);
     if (!budget_factor_column) {
       this.formFeeds.controls.budget_factor_column.setErrors({ required: true });
-    } else if (!row[budget_factor_column]) {
+    } else if (!this.validateColumn(row, budget_factor_column)) {
       this.formFeeds.controls.budget_factor_column.setErrors({ unknownColumn: true });
     }
   }

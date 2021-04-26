@@ -35,6 +35,8 @@ import { RuleEditorDialogComponent } from './rule-editor-dialog.component';
 import { NewAppDialogComponent } from './new-app-dialog.component';
 import { EditValueDialogComponent } from './components/edit-value-dialog.component';
 import { EventListComponent } from './event-list.component';
+import { JsonPipe } from './components/json.pipe';
+import { ObjectDetailsDialogComponent } from './components/object-details-dialog.component';
 
 @NgModule({
   declarations: [
@@ -42,7 +44,8 @@ import { EventListComponent } from './event-list.component';
     NavbarComponent, AppsListComponent, AppEditorComponent, SettingsComponent,
     AboutComponent, ErrorComponent, FeedEditorDialogComponent,
     RulesListComponent, RuleEditorDialogComponent, NewAppDialogComponent,
-    EditValueDialogComponent, EventListComponent
+    EditValueDialogComponent, EventListComponent, 
+    JsonPipe, ObjectDetailsDialogComponent
   ],
   imports: [
     BrowserModule,
