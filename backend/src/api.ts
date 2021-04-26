@@ -386,7 +386,7 @@ router.post('/engine/:id/run', async (req: express.Request, res: express.Respons
     new DV360Facade(dv_options)
   );
   try {
-    await controller.run(appId, {sendNotificationsOnError: true});
+    await controller.run(appId, {sendNotifications: true});
     res.status(StatusCodes.OK).send(result);
   } catch (e) {
     console.error(`[WebApi] Execution (${appId}) failed: `, e.message);
@@ -419,7 +419,7 @@ router.get('/engine/:id/run/stream', async (req: express.Request, res: express.R
     new DV360Facade(dv_options)
   );
   try {
-    await controller.run(appId, {sendNotificationsOnError: false});
+    await controller.run(appId, {sendNotifications: false});
     console.log = originalLog;
     res.write('data: Done. Elapsed: ' + ((new Date().valueOf() - started.valueOf())/ 1000) + ' sec.\n\n');
     res.end();

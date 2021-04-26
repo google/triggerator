@@ -18,9 +18,10 @@ import ConfigService from './config-service';
 import FeedService from './feed-service';
 import RuleEngine, { RuleEvaluator } from './rule-engine';
 import DV360Facade from './dv360-facade';
+import {sendEmail} from './email-notifier';
 
 export interface ProcessingOptions {
-  sendNotificationsOnError: boolean
+  sendNotifications: boolean
 }
 export default class RuleEngineController {
   constructor(private configService: ConfigService, 
@@ -53,8 +54,11 @@ export default class RuleEngineController {
         throw new Error(`[RuleEngineController] Campaign ${campaignId} has no insersion orders`);
 
       await engine.run(feedData, sdf);
+      // TODO: we need to pass log
+      if (options.sendNotifications)
+        this.notifyOnSuccess(config);
     } catch (e) {
-      if (options.sendNotificationsOnError)
+      if (options.sendNotifications)
         this.notifyOnError(e, config);
       throw e;
     }
@@ -62,7 +66,20 @@ export default class RuleEngineController {
 
   notifyOnError(e: Error, config: Config) {
     if (config.execution!.notificationEmails) {
-      // TODO: send an email
+      let campaignId = config.execution!.campaignId!;
+      let advertiserId = config.execution!.advertiserId!;
+      // TODO: mroe information (timestamp started/ended)
+      const text = `Execution for advertiser=${advertiserId} campaign=${campaignId} failed: \n${e.message}\n\n` + e;
+      sendEmail(config.execution!.notificationEmails, 'Triggerator Status: Failure', text);
+    }
+  }
+
+  notifyOnSuccess(config: Config) {
+    if (config.execution!.notificationEmails) {
+      let campaignId = config.execution!.campaignId!;
+      let advertiserId = config.execution!.advertiserId!;
+      const text = `Execution for advertiser=${advertiserId} campaign=${campaignId} succeeded`;
+      sendEmail(config.execution!.notificationEmails, 'Triggerator Status: Success', text);
     }
   }
 }

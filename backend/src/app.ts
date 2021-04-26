@@ -88,7 +88,6 @@ if (SECURITY === 'IAP') {
       res.status(StatusCodes.UNAUTHORIZED).send({error: `IAP JWT token verification failed (${e.message}), please contact your system administator`});
       return;
     }
-    // TODO: where is a tiket (to use with setupOAuth)?
     next();
   });
 } else if (SECURITY === 'CLIENT') {
@@ -145,7 +144,7 @@ app.post('/', async (req: express.Request, res: express.Response) => {
     new FeedService(),
     new DV360Facade()
   );
-  await controller.run(payload, {sendNotificationsOnError: true});
+  await controller.run(payload, {sendNotifications: true});
 
   res.status(204).send();
 });
