@@ -420,14 +420,18 @@
               <mat-tab-group animationDuration="0ms" dynamicHeight color="accent" #FeedData
                 [selectedIndex]="tabsFeedDataSelected">
                 <mat-tab *ngFor="let tab of tabsFeedData; let index = index" [label]="tab">
-                  <mat-table [dataSource]="dataSourceFeedData[tab]">
+                  <mat-table [dataSource]="dataSourceFeedData[tab]" class="mat-elevation-z8 editable-table">
                     <ng-container *ngFor="let disCol of feedDataColumns[tab]; let colIndex = index"
                       matColumnDef="{{disCol}}">
                       <mat-header-cell *matHeaderCellDef>{{disCol}}</mat-header-cell>
-                      <mat-cell *matCellDef="let element">{{element[disCol]}}</mat-cell>
+                      <mat-cell *matCellDef="let element">{{element[disCol] | app_json}}</mat-cell>
                     </ng-container>
                     <mat-header-row *matHeaderRowDef="(feedDataColumns[tab] )"></mat-header-row>
-                    <mat-row *matRowDef="let row; columns: (feedDataColumns[tab] )"></mat-row>
+                    <!-- <mat-row *matRowDef="let row; columns: (feedDataColumns[tab] )"></mat-row> -->
+                    <mat-row *matRowDef="let row; let e = index; columns: (feedDataColumns[tab] )" class="remove-background"
+                    (mouseover)="mouseOverIndex = e" (mouseout)="mouseOverIndex=-1"
+                    [ngClass]="{'mat-elevation-z8' : e == mouseOverIndex}" (click)="onFeedRowDetails($event, row, index, dataSourceFeedData[tab])"></mat-row>
+    
                     <ng-template matNoDataRow>
                       <div class="alert">Load a feed or click Preview to load a combined feed</div>
                     </ng-template>
