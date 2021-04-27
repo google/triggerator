@@ -28,12 +28,12 @@ import { RuleEvaluator } from './app/rule-engine';
 import { Config } from './types/config';
 import { LoginTicket, verifyIdToken, verifyJwtToken } from './app/auth';
 
-
 const app = express();
 app.use(logger('dev'));
 app.use(express.json());
 const staticFilesDir = path.join(__dirname, STATIC_DIR);
 app.use(express.static(staticFilesDir));
+
 // Add headers allows CORS
 app.use((req, res, next) => {
   // Website you wish to allow to connect

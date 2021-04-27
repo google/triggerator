@@ -43,12 +43,16 @@ export async function verifyIdToken(token: string): Promise<TokenPayload | undef
   // const domain = payload['hd'];
 }
 
-export function setupOAuth(accessToken: string) {
+export function getOAuth(accessToken: string): OAuth2Client {
   var auth = new OAuth2Client();
   auth.credentials = {
     access_token: accessToken
   };
+  return auth;
+}
+
+export function setupOAuth(accessToken: string) {
   google.options({
-    auth: auth
-  });  
+    auth: getOAuth(accessToken)
+  });
 }
