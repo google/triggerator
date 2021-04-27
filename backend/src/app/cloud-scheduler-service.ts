@@ -19,10 +19,15 @@ import { JobInfo } from '../types/config';
 
 let schedulerAPI = google.cloudscheduler({ version: "v1" });
 
+async function getJobParent(): Promise<string> {
+  const projectId = await google.auth.getProjectId();
+  const locationId: string = await getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
+  const parent = `projects/${projectId}/locations/${locationId}`; 
+  return parent;
+}
 export async function getJobName(appId: string): Promise<string> {
-  let projectId = await google.auth.getProjectId();
-  let locationId: string = await getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
-  let jobName = `projects/${projectId}/locations/${locationId}/jobs/${appId}`;
+  const parent = await getJobParent();
+  const jobName = `${parent}/jobs/${appId}`;
   return jobName;
 }
 
@@ -69,8 +74,9 @@ export async function updateJob(appId: string, jobInfo: JobInfo) {
   // let projectId = await google.auth.getProjectId();
   // let locationId: string = await getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
   // let fullpath = `projects/${projectId}/locations/${locationId}`;
-
-  let jobName = await getJobName(appId);
+  const jobParent = await getJobParent();
+  const jobName = `${jobParent}/jobs/${appId}`;
+  //let jobName = await getJobName(appId);
   let jobInfoExist = await getJob(jobName);
   if (jobInfoExist) {
     console.log(`[CloudSchedulerService] Found an existing job: ${jobName}`)
@@ -112,7 +118,7 @@ export async function updateJob(appId: string, jobInfo: JobInfo) {
   } else {
     // create a new job
     let createJobRequest: cloudscheduler_v1.Params$Resource$Projects$Locations$Jobs$Create = {
-      //parent: fullpath,
+      parent: jobParent,
       requestBody: {
         name: jobName,
         appEngineHttpTarget: {
