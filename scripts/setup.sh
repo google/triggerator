@@ -36,6 +36,9 @@ enable_apis() {
   # Cloud Resource Manager API (it's needed for `gcloud alpha iap web add-iam-policy-binding`)
   echo -e "${COLOR}\tCloud Resource Manager API...${NC}"
   gcloud services enable cloudresourcemanager.googleapis.com
+  # Cloud Scheduler
+  echo -e "${COLOR}\tGoogle Scheduler API...${NC}"
+  gcloud services enable cloudscheduler.googleapis.com
   # Identity-Aware Proxy
   echo -e "${COLOR}\tIAP...${NC}"
   gcloud services enable iap.googleapis.com

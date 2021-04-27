@@ -11,6 +11,7 @@ In the end after SDF is generated and imported into DV360 we have a total number
 Row name (a field's value which name specified in configuration) and rule name are used in templates for naming DV360 campaigns objects (IOs/LIs/AdGroups/Ads).  
 The tool support both Display and TrueView (YouTube) campaigns.
 
+
 ## Deployment 
 
 Basically you can run this project in any environment but this guide targets Google Cloud deployment only. Free Tier is enough for this application and you won't exceed free tier quotes if you don't scale AppEngine instances.
@@ -104,7 +105,18 @@ Please note in Mailgun you can use Free plan but have to add a credit card and v
 
 
 ## Updating
-Basically you just need to update source code (execute `git pull` in the cloned repositoty folder), rebuild and redeploy (run `build-n-deploy.sh` in `scripts` folder). But before doing this please check [CHANGELOG.md](https://github.com/google/triggerator/blob/master/CHANGELOG.md) for any breaking changes.  
+Basically you just need to update source code (execute `git pull` in the cloned repositoty folder), rebuild and redeploy (run `build-n-deploy.sh` in `scripts` folder). But before doing this please check [CHANGELOG.md](https://github.com/google/triggerator/blob/main/CHANGELOG.md) for any breaking changes.  
+Also please note that the only files you are supposed to changed (`app.yaml`, `mailer.json`) are not tracked by Git so you are safe to update from upstream. If it's not the case please proceed accordantly (e.g. do git stash `git stash` and `git stash pop` after the repository  is updated).  
+When you build the application from sources (and you do) there could be a case that `package-lock.json` will be slightly different that ones in the repository. This is not important but requires you to do reset (i.e. discard all local changes).  
+
+So in general this commands should be sifficient for updating the application (or just run `update.sh` script in `scripts` folder):
+```shell
+git fetch 
+git reset --hard origin/main
+cd scripts
+./build-n-deploy.sh
+```
+
 There is no published artifacts anywhere for the solution so currently there's no a strict notion of release. But since the v1 the project maintainers are going to track all significant changes (especially breaking ones if they happen) and features in `CHANGELOG.md` and update `version` field in `package.json` files for backend and frontend. 
 
 
@@ -122,8 +134,13 @@ Another thing that makes the application to depend on Google Cloud services is t
 The application does not use any database. Instead all data is kept in Google Spreadsheets. During installation you create a so-called master spreadsheet (its id is put into `app.yaml` as an environment variable available to the backend in runtime). Then when you create a new application (or configuration) effectively you create a new spreadsheet, which id is put into the master spreadsheet. That's it. 
 
 
+## Change history
+
+See [CHANGELOG](https://github.com/google/triggerator/blob/main/CHANGELOG.md)
+
+
 ## License
 
 Apache Version 2.0
 
-See [LICENSE](https://github.com/google/triggerator/blob/master/LICENSE)
+See [LICENSE](https://github.com/google/triggerator/blob/main/LICENSE)

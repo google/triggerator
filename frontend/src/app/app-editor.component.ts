@@ -145,7 +145,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       .pipe(
         startWith(''),
         map((value) => {
-          const filterValue = value.toLowerCase();
+          const filterValue = value ? value.toLowerCase() : '';
           return this.timeZones.filter(option => option.toLowerCase().indexOf(filterValue) >= 0);
         })
       );
