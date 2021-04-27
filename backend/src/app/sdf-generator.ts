@@ -631,7 +631,13 @@ export default class SdfGenerator {
         feedRow[feedInfo.name_column!],
         ruleName);
     if (feedInfo.geo_code_column) {
-      new_li[SDF.LI.GeographyTargeting_Include] = feedRow[feedInfo.geo_code_column];
+      const geo_code = feedRow[feedInfo.geo_code_column];
+      if (_.isFinite(geo_code) && _.isInteger(geo_code)) {
+        new_li[SDF.LI.GeographyTargeting_Include] = geo_code;
+      } else {
+        // TODO: warning, or error?
+        console.log(`Ignoring non-integer geo code '${geo_code}' for LI '${new_li[SDF.LI.Name]}'`);
+      }
     }
     new_li[SDF.LI.Details] =
       'source:' + tmplLi[SDF.LI.LineItemId] + '\n' +
