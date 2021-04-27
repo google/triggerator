@@ -319,6 +319,8 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         schedule: this.formExecution.get('schedule').value,
         timeZone: this.formExecution.get('timeZone').value,
       });
+      // remove dirty
+      this.formExecution.markAsPristine();
       this.showSnackbar('Configuration updated');
     } catch (e) {
       this.handleApiError('Schedule failed to save', e);

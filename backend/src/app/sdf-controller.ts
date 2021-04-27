@@ -69,7 +69,14 @@ export default class SdfController {
       throw new Error(`[SdfController] Combined feed contains no rows, cannot proceed with SDF generation`);
     }
 
-    // #4 Generate SDF
+    // #4: validate columns for first row
+    errors = this.configService.validateGeneratingRuntimeConfiguration(config, feedData);
+    if (errors && errors.length)
+    throw new Error(`[SdfController] There are errors in configuration that prevents from generating SDFs:\n` +
+      errors.map(e => e.message).join(',\n')
+    );
+
+    // #5 Generate SDF
     let filepath: string;
     if (!options.fileName) {
       options.fileName = "sdf-" + new Date().toISOString().replace(/\-/g, "").replace(/\:/g, "").replace(".", "") + ".zip";

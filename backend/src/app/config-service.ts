@@ -17,6 +17,7 @@ import { sheets_v4, google } from 'googleapis';
 import _ from 'lodash';
 import { SERVICE_ACCOUNT } from '../env';
 import ConfigInfo, { FeedInfo, FeedType, RuleInfo, RuleState, Config, AppList, CustomFields, AppInfo, FeedConfig, SdfElementType } from '../types/config';
+import { FeedData } from '../types/types';
 import { RuleEvaluator } from './rule-engine';
 
 export const CONFIG_SHEETS = {
@@ -659,6 +660,12 @@ export default class ConfigService {
     return errors;
   }
 
+  /**
+   * Validate a configuration for generating SDF with new/updated campaign.
+   * @param config Configuration to validate
+   * @param update true if updating an existing campaign or false if generating a new one
+   * @returns Errors
+   */
   validateGeneratingConfiguration(config: Config, update: boolean): ValidationError[] {
     let errors = this.validateConfigurationBase(config);
     if (!config.dv360Template!.template_campaign)
@@ -669,6 +676,42 @@ export default class ConfigService {
     return errors;
   }
 
+  validateGeneratingRuntimeConfiguration(config: Config, feed: FeedData): ValidationError[] {
+    // NOTE: it's supposed that validateGeneratingConfiguration was already called and feed is not empty
+    let errors: ValidationError[] = [];
+    let row = feed.getRow(0);
+    const feedInfo = config.feedInfo!;
+    if (!this.validateColumn(row, feedInfo.name_column!)) {
+      errors.push({message:  `Row name column '${feedInfo.name_column}' was not found in feed data`});
+    }
+    if (feedInfo.geo_code_column) {
+      if (!this.validateColumn(row, feedInfo.geo_code_column)) {
+        errors.push({message:  `Geo code column '${feedInfo.geo_code_column}' was not found in feed data`});
+      }
+    }
+    if (feedInfo.budget_factor_column) {
+      if (!this.validateColumn(row, feedInfo.budget_factor_column)) {
+        errors.push({message:  `Budget factor column '${feedInfo.budget_factor_column}' was not found in feed data`});
+      }
+    }
+    return errors;
+  }
+
+  private validateColumn(object: any, path: string): boolean {
+    const parts = path.split('.');
+    for(let i=0; i < parts.length - 1; i++) {
+      object = object[parts[i]];
+      if (!object) return false;
+    }
+    if (!object) return false;
+    return object.hasOwnProperty(parts[parts.length-1]);
+  }
+
+  /**
+   * Validate a configuration for main execution
+   * @param config Configuration to validate
+   * @returns 
+   */
   validateRuntimeConfiguration(config: Config): ValidationError[] {
     let errors = this.validateConfigurationBase(config);
     if (!config.execution!.campaignId)
