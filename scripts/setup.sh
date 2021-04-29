@@ -1,3 +1,4 @@
+#!/bin/bash
 # 
 # Copyright 2021 Google LLC
 #
