@@ -53,7 +53,8 @@ export default class RuleEngineController {
       if (!sdf.insertionOrders) 
         throw new Error(`[RuleEngineController] Campaign ${campaignId} has no insersion orders`);
 
-      await engine.run(feedData, sdf);
+      let updatedItems = await engine.run(feedData, sdf);
+      console.log(`[RuleEngineController] Compeleted. Updated items: ${updatedItems}`);
       // TODO: we need to pass log
       if (options.sendNotifications)
         this.notifyOnSuccess(config);

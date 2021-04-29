@@ -211,7 +211,8 @@ export default class SdfGenerator {
       // updating existing
       campaignId = currentSdf.campaigns.get(SDF.Campaign.CampaignId, -1);
       new_campaign = currentSdf.campaigns.getRow(0,
-        SDF.Campaign.Name, SDF.Campaign.CampaignId, SDF.Campaign.Timestamp, SDF.Campaign.Status);
+        SDF.Campaign.Name, SDF.Campaign.CampaignId, SDF.Campaign.Timestamp, SDF.Campaign.Status,
+        SDF.Campaign.CampaignStartDate, SDF.Campaign.CampaignEndDate);
     } else {
       // generating new
       if (!dv360Template.campaign_name)
@@ -222,10 +223,21 @@ export default class SdfGenerator {
         [SDF.Campaign.CampaignId]: campaignId
       }
     }
-    if (this.autoActivate)
+    if (this.autoActivate) {
       new_campaign[SDF.Campaign.Status] = 'Active';
+    }
     if (this.startDate) {
-      new_campaign[SDF.Campaign.CampaignStartDate] = this.formatDate(this.startDate);
+      if (currentSdf != null) {
+        // if we're updating and campaign's start date in the past, there's no point to change it 
+        // as it'll cause an import error: "The campaign has already started. The start date cannot be modified."
+        // format: MM/DD/YYYY
+        let dtCurrent = Date.parse(new_campaign[SDF.Campaign.CampaignStartDate]);
+        if (dtCurrent >= Date.now()) {
+          new_campaign[SDF.Campaign.CampaignStartDate] = this.formatDate(this.startDate);
+        }
+      } else {
+        new_campaign[SDF.Campaign.CampaignStartDate] = this.formatDate(this.startDate);
+      }
     }
     if (this.endDate) {
       new_campaign[SDF.Campaign.CampaignEndDate] = this.formatDate(this.endDate);

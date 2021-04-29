@@ -61,10 +61,12 @@ export function parseBool(params: any): boolean {
   );
 };
 
-export function parseDate(params: any): Date {
+export function parseDate(params: any): Date | undefined {
   if (_.isDate(params))
     return params;
-  return new Date(params);
+  if (!isNaN(Date.parse(params)))
+    return new Date(params);
+  return undefined;
 }
 
 export function difference(object: any, base: any) {

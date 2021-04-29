@@ -112,7 +112,7 @@ export default class RuleEngine {
     this.forceUpdate = options?.forceUpdate ?? false;
   }
 
-  async run(feedData: FeedData, sdf: SdfFull) {
+  async run(feedData: FeedData, sdf: SdfFull): Promise<number> {
     let nameColumn = this.config.feedInfo!.name_column!;
     let iosMap: Record<string, Array<{ ioId: string, status: string }>> = {};
     let updatedItems = 0;
@@ -131,7 +131,7 @@ export default class RuleEngine {
       ruleName = (ruleName && ruleName[1].trim());
       // TODO: log
       if (rowName === null || ruleName === null) {
-        console.log(`[RuleEngine] skipping IO ${io[SDF.IO.Details]} as its Details field contains no row/rule`);
+        console.log(`[RuleEngine] skipping IO '${io[SDF.IO.Name]}' (${io[SDF.IO.IoId]}) as its Details field contains no row/rule: ${details}`);
         continue;
       }
       const key = rowName + ruleName;
@@ -177,14 +177,14 @@ export default class RuleEngine {
         if (!rule || ruleInfo.name != rule.name) {
           let ioIds = iosMap[rowName + ruleInfo.name];
           if (ioIds) {
-            updatedItems += this.deactivateIos(advertiserId, ioIds);
+            updatedItems += await this.deactivateIos(advertiserId, ioIds);
           }
         }
       }
       // activate
       let ioIds = iosMap[rowName + (rule ? rule.name : '')];
       if (ioIds) {
-        updatedItems += this.activateIos(advertiserId, ioIds);
+        updatedItems += await this.activateIos(advertiserId, ioIds);
       }
     }
 
@@ -194,7 +194,7 @@ export default class RuleEngine {
         let rowName = feedData.get(nameColumn, rowNo);
         let ioIds = iosMap[rowName];
         if (ioIds) {
-          updatedItems += this.processIoLineItems(advertiserId, rule, ioIds, sdf.lineItems);
+          updatedItems += await this.processIoLineItems(advertiserId, rule, ioIds, sdf.lineItems);
         }
       }
     }
@@ -208,27 +208,28 @@ export default class RuleEngine {
           if (!rule || ruleInfo.name != rule.name) {
             let liIds = lisMap[rowName + ruleInfo.name];
             if (liIds) {
-              updatedItems += this.deactivateLis(advertiserId, liIds);
+              updatedItems += await this.deactivateLis(advertiserId, liIds);
             }
           }
         }
         // activate
         var liIds = lisMap[rowName + (rule ? rule.name : '')];
         if (liIds) {
-          updatedItems += this.activateLis(advertiserId, liIds);
+          updatedItems += await this.activateLis(advertiserId, liIds);
         }
       }
     }
+
+    return updatedItems;
   }
 
-  private activateIos(advertiserId: string, ios: Array<{ ioId: string, status: string }>): number {
+  private async activateIos(advertiserId: string, ios: Array<{ ioId: string, status: string }>): Promise<number> {
     let changesCount = 0;
     for (const io of ios) {
       if (!this.forceUpdate && io.status == 'Active') continue;
       if (!this.dontUpdate) {
-        console.log('activating IO ' + io.ioId);
-        this.dv_facade.updateInsertionOrderStatus(advertiserId, io.ioId, 'active');
-        console.log('success');
+        console.log('[RuleEngine] activating IO ' + io.ioId);
+        await this.dv_facade.updateInsertionOrderStatus(advertiserId, io.ioId, 'active');
       }
       changesCount++;
       this.updateLog.push(`IO:${io.ioId}:Status=Active`);
@@ -237,14 +238,13 @@ export default class RuleEngine {
     return changesCount;
   }
 
-  private deactivateIos(advertiserId: string, ios: Array<{ ioId: string, status: string }>): number {
+  private async deactivateIos(advertiserId: string, ios: Array<{ ioId: string, status: string }>): Promise<number> {
     var changesCount = 0;
     for (const io of ios) {
       if (!this.forceUpdate && io.status != 'Active') continue;
       if (!this.dontUpdate) {
-        console.log('deactivating IO ' + io.ioId);
-        this.dv_facade.updateInsertionOrderStatus(advertiserId, io.ioId, 'paused');
-        console.log('success');
+        console.log('[RuleEngine] deactivating IO ' + io.ioId);
+        await this.dv_facade.updateInsertionOrderStatus(advertiserId, io.ioId, 'paused');
       }
       changesCount++;
       this.updateLog.push(`IO:${io.ioId}:Status=Paused`);
@@ -253,14 +253,13 @@ export default class RuleEngine {
     return changesCount;
   }
 
-  private activateLis(advertiserId: string, lis: Array<{ liId: string, status: string }>) {
+  private async activateLis(advertiserId: string, lis: Array<{ liId: string, status: string }>): Promise<number> {
     let changesCount = 0;
     for (let li of lis) {
       if (!this.forceUpdate && li.status == 'Active') continue;
       if (!this.dontUpdate) {
-        console.log('activating Li ' + li.liId);
-        this.dv_facade.updateLineItemStatus(advertiserId, li.liId, 'active');
-        console.log('success');
+        console.log('[RuleEngine] activating Li ' + li.liId);
+        await this.dv_facade.updateLineItemStatus(advertiserId, li.liId, 'active');
       }        
       changesCount++;
       this.updateLog.push(`LI:${li.liId}:Status=Active`);
@@ -269,15 +268,14 @@ export default class RuleEngine {
     return changesCount;
   }
 
-  private deactivateLis(advertiserId: string, lis: Array<{ liId: string, status: string }>) {
+  private async deactivateLis(advertiserId: string, lis: Array<{ liId: string, status: string }>): Promise<number> {
     let changesCount = 0;
     for (let li of lis) {
       if (!this.forceUpdate && li.status != 'Active') continue;
 
       if (!this.dontUpdate) {
-        console.log('deactivating Li ' + li.liId);
-        this.dv_facade.updateLineItemStatus(advertiserId, li.liId, 'paused');
-        console.log('success');
+        console.log('[RuleEngine] deactivating Li ' + li.liId);
+        await this.dv_facade.updateLineItemStatus(advertiserId, li.liId, 'paused');
       }
       changesCount++;
       this.updateLog.push(`LI:${li.liId}:Status=Paused`);
@@ -286,7 +284,7 @@ export default class RuleEngine {
     return changesCount;
   }
 
-  private processIoLineItems(advertiserId: string, activeRule: RuleInfo|null, 
+  private async processIoLineItems(advertiserId: string, activeRule: RuleInfo|null, 
     ioIds: Array<{ ioId: string, status: string }>, lineItems: RecordSet) {
     let changesCount = 0;
     for (let io of ioIds) {
@@ -301,18 +299,16 @@ export default class RuleEngine {
 
         let status = lineItems.get('Status', index);
         if (this.forceUpdate || (ruleName != activeRule?.name && status == 'Active')) {
-          console.log('deactivating LI ' + liId);
-          this.dv_facade.updateLineItemStatus(advertiserId, liId, 'paused');
+          console.log('[RuleEngine] deactivating LI ' + liId);
+          await this.dv_facade.updateLineItemStatus(advertiserId, liId, 'paused');
           changesCount++;
           this.updateLog.push(`LI:${liId}:Status=Paused`);
-          console.log('success');
         }
         else if (this.forceUpdate || (ruleName == activeRule?.name && status != 'Active')) {
-          console.log('activating LI ' + liId);
-          this.dv_facade.updateLineItemStatus(advertiserId, liId, 'active');
+          console.log('[RuleEngine] activating LI ' + liId);
+          await this.dv_facade.updateLineItemStatus(advertiserId, liId, 'active');
           changesCount++;
           this.updateLog.push(`LI:${liId}:Status=Active`);
-          console.log('success');
         }
       }
     }

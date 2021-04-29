@@ -51,8 +51,7 @@ export default class DV360Facade {
   }
 
   async updateInsertionOrderStatus(advertiserId: string, ioId: string, status: 'active' | 'paused') {
-    const dv_api = new dv360.Displayvideo({});
-    let io = (await dv_api.advertisers.insertionOrders.patch({
+    let io = (await this.dv_api.advertisers.insertionOrders.patch({
       advertiserId: advertiserId,
       insertionOrderId: ioId,
       updateMask: 'entityStatus',
@@ -60,11 +59,11 @@ export default class DV360Facade {
         entityStatus: status === 'active' ? 'ENTITY_STATUS_ACTIVE' : 'ENTITY_STATUS_PAUSED'
       }
     })).data;
+    console.log(`[DV360Facade] InsertionOrder ${io.name}(${ioId}) now has entity status ${io.entityStatus}.`);
   }
 
   async updateLineItemStatus(advertiserId: string, liId: string, status: 'active' | 'paused') {
-    const dv_api = new dv360.Displayvideo({});
-    let li = (await dv_api.advertisers.lineItems.patch({
+    let li = (await this.dv_api.advertisers.lineItems.patch({
       advertiserId: advertiserId,
       lineItemId: liId,
       updateMask: 'entityStatus',
@@ -72,7 +71,8 @@ export default class DV360Facade {
         entityStatus: status === 'active' ? 'ENTITY_STATUS_ACTIVE' : 'ENTITY_STATUS_PAUSED'
       }
     })).data;
-
+    console.log(`[DV360Facade] LineItem ${li.name}(${liId}) now has entity status ${li.entityStatus}.`);
+    
     /*
         // request body parameters:
         //   "advertiserId": "my_advertiserId",

@@ -123,8 +123,12 @@ export default class SdfService {
     }
     let generator = new SdfGenerator(this.config, this.ruleEvaluator, feedData, tmplSdf, currentSdf);
     generator.autoActivate = autoActivate;
-    generator.startDate = startDate;
-    generator.endDate = endDate;
+    if (startDate && !isNaN(startDate.valueOf())) {
+      generator.startDate = startDate;
+    }
+    if (endDate && !isNaN(endDate.valueOf())) {
+      generator.endDate = endDate;
+    }
     
     return generator.generate();
   }
