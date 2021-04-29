@@ -15,8 +15,7 @@
  */
 import path from 'path';
 import fs from 'fs';
-let argv = require('yargs/yargs')(process.argv.slice(2)).argv;
-
+import argv from './argv';
 export const STATIC_DIR = argv.staticDir || process.env.STATIC_DIR || 'static';
 export const PORT = argv.port || process.env.PORT || 8080;
 export const HEALTH_CHECK_URL = argv.healthCheckUrl || process.env.HEALTH_CHECK_URL || '/_ah/health';
@@ -28,11 +27,16 @@ export const SECURITY = argv.security || process.env.SECURITY || 'CLIENT';
 // See https://cloud.google.com/iap/docs/signed-headers-howto#verifying_the_jwt_payload
 export const EXPECTED_AUDIENCE = argv.expectedAudience || process.env.EXPECTED_AUDIENCE;
 
+/** Google Spreadsheet identifier for master doc with links to configuration spreadsheets */
 export const MASTER_SPREADSHEET = argv.masterSpreadsheet || process.env.MASTER_SPREADSHEET;
 
+/** True if the app is inside AppEngine */
 export const IS_GAE = !!process.env.GAE_APPLICATION;
 
-export const GAE_LOCATION = "europe-west1";
+export const GAE_LOCATION = process.env.GAE_LOCATION || "europe-west1";
+
+/** Default log level (usualy one of 'info' or 'debug') */
+export const LOG_LEVEL = process.env.LOG_LEVEL || (process.env.NODE_ENV === "production" ? "debug" : "info");
 
 export function getTempDir() {
   if (IS_GAE)
@@ -41,6 +45,7 @@ export function getTempDir() {
     return '.tmp';
 }
 
+/** Full name of current service account */
 export const SERVICE_ACCOUNT = IS_GAE ? process.env.GOOGLE_CLOUD_PROJECT + '@appspot.gserviceaccount.com' : ''
 
 let mailer_config: any = undefined;
@@ -59,4 +64,5 @@ if (mailerConfigPath) {
     }
   }
 }
+/** Configuration object for NodeMailer */
 export const MAILER_CONFIG = mailer_config;
