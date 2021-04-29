@@ -31,6 +31,7 @@ import { Config, JobInfo } from './types/config';
 import RuleEngineController from './app/rule-engine-controller';
 import SchedulerService from './app/cloud-scheduler-service';
 import { GoogleAuth, OAuth2Client } from 'google-auth-library';
+//import logger from './app/logger-morgan';
 
 let router = express.Router();
 
@@ -49,10 +50,12 @@ router.get('/apps/list', async (req: express.Request, res: express.Response) => 
   let cfgSvc = new ConfigService();
   try {
     let apps = await cfgSvc.loadApplicationList(masterSpreadsheetId);
-    console.log(`[WebApi] Fetched app list: ` + JSON.stringify(apps));
+    req.log.info({component: 'WebApi'}, `Fetched app list: ` + JSON.stringify(apps));
+    //console.log(`[WebApi] Fetched app list: ` + JSON.stringify(apps));
     res.status(200).send(apps);
   } catch (e) {
-    console.error(e);
+    req.log.error(e);
+    //console.error(e);
     res.status(500).send({ error: e.message });
   }
 });
@@ -62,11 +65,13 @@ router.post('/apps/create', async (req: express.Request, res: express.Response) 
   try {
     let name = req.body.name;
     let appId = req.body.appId;
-    console.log(`[WebApi] Creating an app (name:${name}, id: ${appId})`);
+    req.log.info({component: 'WebApi'}, `Creating an app (name:${name}, id: ${appId})`);
+    //console.log(`[WebApi] Creating an app (name:${name}, id: ${appId})`);
     let result = await cfgSvc.createApplication(MASTER_SPREADSHEET, req.user, name, appId);
     res.status(200).send(result);
   } catch (e) {
-    console.error(e);
+    req.log.error(e);
+    //console.error(e);
     res.status(500).send({ error: e.message });
   }
 });
@@ -86,11 +91,13 @@ router.post('/apps/:id/delete', async (req: express.Request, res: express.Respon
 
 router.get('/config/:id', async (req: express.Request, res: express.Response) => {
   let configId = <string>req.params.id;
-  console.log(`[WebApi] Fetching configuration from ${configId} spreadsheet`);
+  req.log.info({component: 'WebApi'}, `Fetching configuration from ${configId} spreadsheet`);
+  //console.log(`[WebApi] Fetching configuration from ${configId} spreadsheet`);
   let cfgSvc = new ConfigService();
   try {
     let config: Config = await cfgSvc.loadConfiguration(configId);
-    console.log(`[WebApi] Loaded configuration: \n` + JSON.stringify(config));
+    req.log.info({component: 'WebApi', config}, `Loaded configuration`);
+    //console.log(`[WebApi] Loaded configuration: \n` + JSON.stringify(config));
     res.status(200).send(config);
   } catch (e) {
     console.error(e);
