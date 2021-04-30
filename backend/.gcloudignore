@@ -6,7 +6,15 @@
 # For more information, run:
 #   $ gcloud topic gcloudignore
 #
+.nyc_output
+.tmp
+.vscode
+coverage
+draft
+.oauth
+.DS_Store
 .gcloudignore
+.nycrc
 # If you would like to upload your .git directory, .gitignore file or files
 # from your .gitignore file, remove the corresponding line
 # below:
@@ -15,3 +23,4 @@
 
 # Node.js dependencies:
 node_modules/
+token.json
