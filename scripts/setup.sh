@@ -16,12 +16,14 @@
 COLOR='\033[0;36m' # Cyan
 NC='\033[0m' # No Color
 
-ask() {
-  if [ -z "$2" ]; then
-    echo "$3"
-    read $1
-  fi
-}
+# NOTE: despite other GCP services GAE supports only two regions: europe-west and us-central
+GAE_LOCATION=europe-west
+PROJECT_TITLE=Triggerator
+USER_EMAIL=$(gcloud config get-value account 2> /dev/null)
+# detect default service account 
+PROJECT_ID=$(gcloud config get-value project 2> /dev/null) #"$(gcloud app describe --format='value(id)')"
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID | grep projectNumber | sed "s/.* '//;s/'//g")
+SERVICE_ACCOUNT=$PROJECT_ID@appspot.gserviceaccount.com
 
 enable_apis() {
   echo -e "${COLOR}Enabling APIs:${NC}"
@@ -48,7 +50,7 @@ enable_apis() {
   gcloud services enable displayvideo.googleapis.com
   # create GAE
   echo -e "${COLOR}Creating App Engine application...${NC}"
-  gcloud app create --region europe-west
+  gcloud app create --region $GAE_LOCATION
 }
 
 urlencode() {
@@ -56,9 +58,7 @@ urlencode() {
     "$1" "$urlencode_safe"
 }
 
-# enable required APIs
-enable_apis
-
+# apply overwrites from command line arguments
 while :; do
     case $1 in
   -t|--title)
@@ -69,25 +69,26 @@ while :; do
       shift
       USER_EMAIL=$1
       ;;
+  -l|--location)
+      shift
+      GAE_LOCATION=$1
+      ;;
   *)
       break
     esac
   shift
 done
 
-# detect default service account 
-PROJECT_ID=$(gcloud config get-value project 2> /dev/null) #"$(gcloud app describe --format='value(id)')"
-PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID | grep projectNumber | sed "s/.* '//;s/'//g")
-SERVICE_ACCOUNT=$PROJECT_ID@appspot.gserviceaccount.com
-#ask PROJECT_TITLE "$PROJECT_TITLE" "Project title (will be used for user authorization prompt):"
-#ask USER_EMAIL "$USER_EMAIL" "Project owner's Google account (email):"
-PROJECT_TITLE=Triggerator
-USER_EMAIL=$(gcloud config get-value account 2> /dev/null)
+LOCATION=${GAE_LOCATION}1
+
+# enable required APIs
+enable_apis
 
 
 # create a master spreadsheet and share it with the  SA
 # NOTE: to access Sheets and Drive APIs we can't use gcloud's access token, 
-# so we'll use GAE's default service account. For this we export its key and set it up in well-known envvar
+# so we'll use GAE's default service account. 
+# For this we'll export its key and set it up in well-known envvar GOOGLE_APPLICATION_CREDENTIALS
 gcloud iam service-accounts keys create key.json --iam-account=$SERVICE_ACCOUNT
 export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/key.json
 spreadsheetId=$(python3 ./create-spreadsheet.py  --user $USER_EMAIL)
@@ -111,6 +112,12 @@ sed -i "s/SECURITY\s*:\s*.*$/SECURITY: 'IAP'/" app.yaml
 # put EXPECTED_AUDIENCE: '/projects/685425631282/apps/triggerator-sd'
 sed -i "s/EXPECTED_AUDIENCE\s*:\s*.*$/EXPECTED_AUDIENCE: '\/projects\/$PROJECT_NUMBER\/apps\/$PROJECT_ID'/" app.yaml
 
+# app.yaml is done, save it to a well-known location on GCS, so that it's not lost
+GCS_BUCKET=gs://${PROJECT_ID}-setup
+gsutil mb -l $LOCATION -b on $GCS_BUCKET
+gsutil cp app.yaml $GCS_BUCKET/
+
+
 # build and deploy app to GAE:
 echo -e "${COLOR}Building app...${NC}"
 cd ../scripts
@@ -123,7 +130,7 @@ gcloud app deploy --quiet
 # create IAP
 echo -e "${COLOR}Creating oauth brand (consent screen) for IAP...${NC}"
 gcloud alpha iap oauth-brands create --application_title="$PROJECT_TITLE" --support_email=$USER_EMAIL
-# Output example: 
+# Output `gcloud alpha iap oauth-brands create` example: 
 # Created [964442731935].
 # applicationTitle: Triggerator
 # name: projects/964442731935/brands/964442731935
@@ -135,11 +142,12 @@ gcloud alpha iap oauth-clients create projects/$PROJECT_NUMBER/brands/$PROJECT_N
   --format=json 2> /dev/null |\
   python3 -c "import sys, json; res=json.load(sys.stdin); i = res['name'].rfind('/'); print(res['name'][i+1:]); print(res['secret'])" \
   > .oauth
+# NOTE: readarray isn't supported on MacOS
 readarray -t lines < .oauth
-
+# Now in .oath file we have two line, first client id, second is client secret
 IAP_CLIENT_ID=${lines[0]}
 IAP_CLIENT_SECRET=${lines[1]}
-# Output example: 
+# Output `gcloud alpha iap oauth-clients create` example: 
 # {
 #  "displayName": "iap",
 #  "name": "projects/964442731935/brands/964442731935/identityAwareProxyClients/964442731935-tdkmgnvv296bcsr2ic04rl31o2ih0drv.apps.googleusercontent.com",
@@ -162,12 +170,8 @@ curl -X PATCH -H "Content-Type: application/json" \
 echo -e "${COLOR}Granting user $USER_EMAIL access to the app through IAP...${NC}"
 gcloud alpha iap web add-iam-policy-binding --resource-type=app-engine --member="user:$USER_EMAIL" --role='roles/iap.httpsResourceAccessor'
 
-echo -e "${COLOR}Done!${NC}"
+echo -e "\n${COLOR}Done!${NC}"
 echo -e "Add service account ${COLOR}$SERVICE_ACCOUNT ${NC} as a user to your DV360 account"
-echo -e "After than you are ready to use the application - just type ${COLOR}gcloud app browse${NC} to see its url"
+echo -e "You are ready to use the application - just type ${COLOR}gcloud app browse${NC} to see its url"
 
 gcloud app browse
-
-# TODO: 
-# copy "Get GWT audience"
-# e.g. /projects/757798051795/apps/triggerator-test

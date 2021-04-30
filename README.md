@@ -33,7 +33,7 @@ Whatever installation method you use you'll need to add your application service
 ### Automated installation
 Go to `scripts` folder of the cloned repository (`cd triggerator/scripts`) and run `./setup.sh` script in Cloud Shell.  
 
-Please note that currently `setup.sh` works only on Linux (won't work on MacOS). You can run it from your local machine (just set your project `gcloud config set project PROJECT_ID` and login `glcloud auth login` as a project owner/editor), but it was not tested much. So running the script in Cloud Shell is the recommended approach.
+Please note that currently `setup.sh` works only on Linux (i.e. won't work on MacOS). You can run it from your local machine (just set your project `gcloud config set project PROJECT_ID` and login `glcloud auth login` as a project owner/editor), but it was not tested much. So running the script in Cloud Shell is the recommended approach.
 
 Open the app (you can see the url by executing `gcloud app browse`). If you get 'You don't have access' error just wait a little bit and retry.
 
@@ -42,6 +42,12 @@ Unfortunetely there could be an error during deployement to App Engine right aft
 > ERROR: (gcloud.app.deploy) NOT_FOUND: Unable to retrieve P4SA: [your-project@gcp-gae-service.iam.gserviceaccount.com] from GAIA. Could be GAIA propagation delay or request from deleted apps.
 
 In such a case if there was not any other errors you can just redeploy application. For this go to 'backend' folder (`cd ../backend` if you are in `scripts` folder) and run `gcloud app deploy -q`.  
+
+#### Customization
+`setup.sh` support several command line arguments with which we can customeze defaults:
+* `-l` | `--location` - location region for App Engine applicatoin, please note that despite other GCP services GAE supports only two regions: `europe-west` and `us-central`. Default is `europe-west`
+* `-t` | `--title` - title for OAuth consent screen. Default is 'Triggerator'
+* `-u` | `--user` - user email for to be shown as contact of OAuth consent screen. Default is the current user's email
 
 
 ### Manual installation
@@ -106,7 +112,7 @@ Please note in Mailgun you can use Free plan but have to add a credit card and v
 
 ## Updating
 Basically you just need to update source code (execute `git pull` in the cloned repositoty folder), rebuild and redeploy (run `build-n-deploy.sh` in `scripts` folder). But before doing this please check [CHANGELOG.md](https://github.com/google/triggerator/blob/main/CHANGELOG.md) for any breaking changes.  
-Also please note that the only files you are supposed to changed (`app.yaml`, `mailer.json`) are not tracked by Git so you are safe to update from upstream. If it's not the case please proceed accordantly (e.g. do git stash `git stash` and `git stash pop` after the repository  is updated).  
+Also please note that the only files you are supposed to changed (`app.yaml`, `mailer.json`) are not tracked by Git so you are safe to update from upstream. If it's not the case please proceed accordantly (e.g. do git stash `git stash` and `git stash pop` after the repository is updated).  
 When you build the application from sources (and you do) there could be a case that `package-lock.json` will be slightly different that ones in the repository. This is not important but requires you to do reset (i.e. discard all local changes).  
 
 So in general this commands should be sifficient for updating the application (or just run `update.sh` script in `scripts` folder):
@@ -117,7 +123,9 @@ cd scripts
 ./build-n-deploy.sh
 ```
 
-There is no published artifacts anywhere for the solution so currently there's no a strict notion of release. But since the v1 the project maintainers are going to track all significant changes (especially breaking ones if they happen) and features in `CHANGELOG.md` and update `version` field in `package.json` files for backend and frontend. 
+But if you are going to update your application from a different machine or by different person from within its Cloud Shell it won't work because your newly cloned repository doesn't have `app.yaml` of your application (that was generated/created during installation). And running `setup.sh` again against a project with deployed application is not a good idea (you will lose your data). So what you need to do instead is to get `app.yaml` from place/person who did the initial installation. To simplify this process `setup.sh` copies `app.yaml` to a GCS bucket called "$PROJECT_ID-setup" and `update.sh` takes it from there if there's no local app.yaml. So it's recommended to use `update.sh` for updating applications.
+
+There is no published artifacts anywhere for the solution so currently there's no a strict notion of *release*. But since the v1 the project maintainers are going to track all significant changes (especially breaking ones if they happen) and features in `CHANGELOG.md` and update `version` field in `package.json` files for backend and frontend. 
 
 
 ## Architecture
@@ -132,6 +140,35 @@ Another thing that makes the application to depend on Google Cloud services is t
 
 ### Where is the data
 The application does not use any database. Instead all data is kept in Google Spreadsheets. During installation you create a so-called master spreadsheet (its id is put into `app.yaml` as an environment variable available to the backend in runtime). Then when you create a new application (or configuration) effectively you create a new spreadsheet, which id is put into the master spreadsheet. That's it. 
+
+### GAE environemnt, instance class, scaling and costs
+
+There are two type of environment in GAE: standard and flexible. See https://cloud.google.com/appengine/docs/the-appengine-environments 
+As flexibile environment doesn't provide Free Tier we use standard. But we can manually change the environemnt in your `app.yaml`. Standard environment allows to scale down to 0 running instances when the application is not in use.
+
+There are several types of scaling in standard environment. By default automatic scaling is used. Different scaling type have [different characterictics](https://cloud.google.com/appengine/docs/standard/nodejs/how-instances-are-managed#scaling_types). For this solution the most important one is *request timeout*. During main execution there will lots of calls to DV360 API (to enable/disable IO/LI) and the API is quite slow. So one execution can last quite long.  
+Request timeouts are following:
+* Automatic scaling : 10 minutes
+* Basic/manual scaling: 24 hours
+
+Usually 10 minutes is not enough. That because the template for `app.yaml` contains basic_scaling:
+```yaml
+runtime: nodejs14
+basic_scaling:
+  max_instances: 1
+```
+
+Why should you bother about scaling type? It's because that Free Tier provides different quotes for different scalling types (See all details here - https://cloud.google.com/free/docs/gcp-free-tier#free-tier-usage-limits):
+* 28 hours per day of "F" instances  
+* 9 hours per day of "B" instances  
+
+"F" instances means automatic scaling.  
+"B" instances means basic (or manual) scaling.  
+
+So using one instance in standard environment with basic scaling you have 9 hours of execution to use with free of change. After that we'll be billing - check [pricing](https://cloud.google.com/appengine/pricing) (at 2021 it's $0.05 per hour).
+
+You alway can change environemnt, scaling and instance class in your app.yaml, see detail here - 
+https://cloud.google.com/appengine/docs/standard/nodejs/config/appref.
 
 
 ## Change history
