@@ -6,6 +6,11 @@ basic_scaling:
 #  min_instances: 0
 #  max_instances: 1
 env_variables:
+  MASTER_SPREADSHEET:
   SECURITY:
   EXPECTED_AUDIENCE:
-  MASTER_SPREADSHEET:
+  MAILER_CONFIG_PATH:
+  LOG_LEVEL: 'info'
+  GAE_LOCATION:
+  GIT_COMMIT:
+  HEALTH_CHECK_URL:

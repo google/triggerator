@@ -20,6 +20,8 @@ draft
 # below:
 .git
 .gitignore
+app.yaml.original
+app.yaml.copy
 
 # Node.js dependencies:
 node_modules/

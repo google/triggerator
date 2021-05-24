@@ -16,6 +16,7 @@
 import assert from 'assert';
 import { Config, FeedInfo } from '../types/config';
 import DV360Facade from '../app/dv360-facade';
+import winston from 'winston';
 
 suite('DV360Facade', () => {
   test('downloadSdf: load sdf by campaign id', async function() {
@@ -23,7 +24,7 @@ suite('DV360Facade', () => {
     let advertiserId = "506732";
     let campaignId = "3242703";
     
-    let dv = new DV360Facade();
+    let dv = new DV360Facade(winston);
     let sdf = await dv.downloadSdf(advertiserId, campaignId);
     console.log('Campaigns count: ' + JSON.stringify(sdf.campaigns?.rowCount));
     console.log('IOs count: ' + JSON.stringify(sdf.insertionOrders?.rowCount));

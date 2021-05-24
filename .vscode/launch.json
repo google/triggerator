@@ -17,18 +17,15 @@
       "program": "${workspaceFolder}/backend/src/index.ts",
       "args": [
         "--keyFile=./keys/triggerator-sd-sa.json",
-        "--masterSpreadsheet=1fnxjMudPpiHz0XezAmdFjvD2QCYi6IvgluDLpxYs8-M"
+        "--masterSpreadsheet=1fnxjMudPpiHz0XezAmdFjvD2QCYi6IvgluDLpxYs8-M",
+        "--mailerConfigPath=mailer.sendgrid.json"
       ],
+      // "env": {
+      //   "NODE_ENV": "production"
+      // },
       "cwd": "${workspaceFolder}/backend",
       "sourceMaps": true,
-      "preLaunchTask": "build: tsc - backend",
-      //"preLaunchTask": "build",
-      // "outFiles": [
-      //   "${workspaceFolder}/backend/dist/**/*.js"
-      // ],
-      // "skipFiles": [
-      //   "<node_internals>/**"
-      // ],     
+      "preLaunchTask": "build: tsc - backend",   
     }, {
       "name": "Backend: test.ts",
       "type": "node",

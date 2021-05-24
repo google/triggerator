@@ -21,6 +21,7 @@ import assert from 'assert';
 import FeedService from '../app/feed-service';
 import { FeedConfig, FeedInfo, FeedType } from '../types/config';
 import { FeedData } from '../types/types';
+import winston from 'winston';
 
 class FeedServiceTester {
   server: http.Server;
@@ -132,7 +133,7 @@ suite('FeedService', () => {
     });
 
     test('load a JSON file', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: tester.getHttpUrl('weather.json'),
@@ -145,7 +146,7 @@ suite('FeedService', () => {
     });
 
     test('load a JSONL file', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: tester.getHttpUrl('weather-jsonl.json'),
@@ -158,7 +159,7 @@ suite('FeedService', () => {
     });
 
     test('load a JSON: archived as zip', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: tester.getHttpUrl('weather.json.zip'),
@@ -170,7 +171,7 @@ suite('FeedService', () => {
     });
 
     test('load a JSON: archived as gzip', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: tester.getHttpUrl('weather.json.gz'),
@@ -182,7 +183,7 @@ suite('FeedService', () => {
     });
 
     test('load a CSV file', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: tester.getHttpUrl('weather.csv'),
@@ -195,7 +196,7 @@ suite('FeedService', () => {
     });
 
     test('load a CSV in non-UTF8 encoding', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       // weather_columns_1251 is a CSV file in Windows-1251 encoding
       let feedInfo: FeedInfo = {
         name: 'test',
@@ -210,7 +211,7 @@ suite('FeedService', () => {
     });
 
     test('load non existing file', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: tester.getHttpUrl('non-existing.json'),
@@ -231,7 +232,7 @@ suite('FeedService', () => {
 
   suite('load file from GCS', function () {
     test('load a JSON from gs:// url', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: 'gs://triggerator-tests/weather.json',
@@ -244,7 +245,7 @@ suite('FeedService', () => {
     });
 
     test('load a JSON in zip archive from gs:// url', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: 'gs://triggerator-tests/weather.json.zip',
@@ -256,7 +257,7 @@ suite('FeedService', () => {
     });
 
     test('load a CSV from gs:// url', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: 'gs://triggerator-tests/weather.csv',
@@ -271,7 +272,7 @@ suite('FeedService', () => {
 
   suite('load file from Google Drive', function () {
     test('load a JSON from Drive', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: 'drive://1JWz87cdPk74tEYBPDQoG8-BVTFO_aQyk/weather.json',
@@ -284,7 +285,7 @@ suite('FeedService', () => {
     });
 
     test('load a CSV in non-UTF8 encoding', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       // weather_columns_1251 is a CSV file in Windows-1251 encoding
       let feedInfo: FeedInfo = {
         name: 'test',
@@ -301,7 +302,7 @@ suite('FeedService', () => {
 
   suite('load data from Google Spreadsheet', function () {
     test('load Spreadsheet data by a full link', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: 'https://docs.google.com/spreadsheets/d/1KH8OlT9OqLWdktZ6zPSNs9caMq53zcDvs4aFWavkgtg/edit',
@@ -347,7 +348,7 @@ suite('FeedService', () => {
     });
 
     test('load Spreadsheet data by a full link with sheetid(gid)', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: 'https://docs.google.com/spreadsheets/d/1KH8OlT9OqLWdktZ6zPSNs9caMq53zcDvs4aFWavkgtg/edit#gid=411533494',
@@ -390,7 +391,7 @@ suite('FeedService', () => {
     });
 
     test('load Spreadsheet data by a spreadsheetId', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedInfo: FeedInfo = {
         name: 'test',
         url: '1KH8OlT9OqLWdktZ6zPSNs9caMq53zcDvs4aFWavkgtg,Data2!A1:Z10',
@@ -435,7 +436,7 @@ suite('FeedService', () => {
 
   suite('joins', function () {
     test('joining two Sheets feeds', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedConfig: FeedConfig = {
         feeds: [
           {
@@ -485,7 +486,7 @@ suite('FeedService', () => {
     });
 
     test('Joining 3 feeds (1->2->3)', async function () {
-      let feedService = new FeedService();
+      let feedService = new FeedService(winston);
       let feedConfig: FeedConfig = {
         feeds: [
           {

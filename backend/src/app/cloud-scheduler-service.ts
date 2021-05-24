@@ -16,133 +16,159 @@
 import { cloudscheduler_v1, google } from 'googleapis';
 import { GAE_LOCATION } from '../env';
 import { JobInfo } from '../types/config';
+import { Logger } from '../types/logger';
 
 let schedulerAPI = google.cloudscheduler({ version: "v1" });
 
-async function getJobParent(): Promise<string> {
-  const projectId = await google.auth.getProjectId();
-  const locationId: string = await getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
-  const parent = `projects/${projectId}/locations/${locationId}`; 
-  return parent;
-}
-export async function getJobName(appId: string): Promise<string> {
-  const parent = await getJobParent();
-  const jobName = `${parent}/jobs/${appId}`;
-  return jobName;
-}
-
-export async function getJob(jobName: string): Promise<JobInfo | null> {
-  try {
-    let job = (await schedulerAPI.projects.locations.jobs.get({
-      name: jobName
-    })).data;
-    let jobInfo: JobInfo = {
-      enable: job.state === 'ENABLED',
-      schedule: job.schedule!,
-      timeZone: job.timeZone!
-    };
-    return jobInfo;
-  } catch (e) {
-    console.error(`[CloudSchedulerService] Fetch job ${jobName} failed: `, e.response?.data?.error);
-    if (e.response?.data?.error?.status === 'NOT_FOUND') {
-      return null;
-    }
-    throw e;
+export default class SchedulerService {
+  constructor(private logger: Logger) {    
   }
-}
 
-export async function getLocationId(projectId: string) {
-  // fetch AppEngine's location via Admin API
-  // TODO: I'm not sure we should do this, as anyway here's some sort of hard-code (adding "1" to region)
-  // Then currently (at 2021 April) there're just two locations for Scheduler: us-west1 and europe-west1.
-  // Maybe it's easier to get from ENV always: 
-  if (GAE_LOCATION)
-    return GAE_LOCATION;
-  try {
-    let gae = (await google.appengine("v1").apps.get({ appsId: `${projectId}` })).data;
-    console.log(gae);
-    return gae.locationId! + "1";
-  } catch (e) {
-    console.error(`[CloudSchedulerService] Fetching location from AppEngine Admin API failed: `, e.message);
-    throw e;
+  async getJobParent(): Promise<string> {
+    const projectId = await google.auth.getProjectId();
+    const locationId: string = await this.getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
+    const parent = `projects/${projectId}/locations/${locationId}`; 
+    return parent;
   }
-}
 
-export async function updateJob(appId: string, jobInfo: JobInfo) {
-  console.log(`[CloudSchedulerService] Updating scheduler job for configuration ${appId}`);
-
-  // let projectId = await google.auth.getProjectId();
-  // let locationId: string = await getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
-  // let fullpath = `projects/${projectId}/locations/${locationId}`;
-  const jobParent = await getJobParent();
-  const jobName = `${jobParent}/jobs/${appId}`;
-  //let jobName = await getJobName(appId);
-  let jobInfoExist = await getJob(jobName);
-  if (jobInfoExist) {
-    console.log(`[CloudSchedulerService] Found an existing job: ${jobName}`)
-    if (jobInfoExist.enable && !jobInfo.enable) {
-      // disable
-      try {
-        await schedulerAPI.projects.locations.jobs.pause({ name: jobName });
-      } catch (e) {
-        console.error(`[CloudSchedulerService] Pausing the job ${jobName} failed: `, e.message);
-        throw e;
-      }
-    } else if (!jobInfoExist.enable && jobInfo.enable) {
-      // enable
-      try {
-        await schedulerAPI.projects.locations.jobs.resume({ name: jobName });
-      } catch (e) {
-        console.error(`[CloudSchedulerService] Resuming the job ${jobName} failed: `, e.message);
-        throw e;
-      }
-    }
-    if (jobInfo.enable) {
-      // NOTE: Scheduler API doesn't allow to check a job's properties if it's disabled
-      if (jobInfo.hasOwnProperty("schedule") || jobInfo.hasOwnProperty("timeZone")) {
-        try {
-          await schedulerAPI.projects.locations.jobs.patch({
-            name: jobName,
-            updateMask: "schedule,timeZone",
-            requestBody: {
-              schedule: jobInfo.schedule,
-              timeZone: jobInfo.timeZone,
-            }
-          });
-        } catch (e) {
-          console.error(`[CloudSchedulerService] Changing the job's properties failed: `, e.message);
-          throw e;
-        }
-      }
-    }
-  } else {
-    // create a new job
-    let createJobRequest: cloudscheduler_v1.Params$Resource$Projects$Locations$Jobs$Create = {
-      parent: jobParent,
-      requestBody: {
-        name: jobName,
-        appEngineHttpTarget: {
-          relativeUri: `/api/v1/engine/${appId}/run`,
-          httpMethod: 'POST',
-          body: Buffer.from(appId).toString('base64')
-        },
-        schedule: jobInfo.schedule,
-        timeZone: jobInfo.timeZone
-      }
-    };
-    console.log(`[CloudSchedulerService] Creating a new scheduler job:\n`, JSON.stringify(createJobRequest));
+  async getJobName(appId: string): Promise<string> {
+    const parent = await this.getJobParent();
+    const jobName = `${parent}/jobs/${appId}`;
+    return jobName;
+  }
+  
+  async getJob(jobName: string): Promise<JobInfo | null> {
     try {
-      await schedulerAPI.projects.locations.jobs.create(createJobRequest);
+      let job = (await schedulerAPI.projects.locations.jobs.get({
+        name: jobName
+      })).data;
+      let jobInfo: JobInfo = {
+        enable: job.state === 'ENABLED',
+        schedule: job.schedule!,
+        timeZone: job.timeZone!
+      };
+      return jobInfo;
     } catch (e) {
-      console.error(`[CloudSchedulerService] Job creation failed: `, e.message);
+      this.logger.error(`[CloudSchedulerService] Fetch job ${jobName} failed: `, e.response?.data?.error);
+      if (e.response?.data?.error?.status === 'NOT_FOUND') {
+        return null;
+      }
+      e.logged = true;
       throw e;
     }
   }
-}
 
-export default {
-  getJob,
-  getJobName,
-  updateJob,
-  getLocationId
+  async getJobList(): Promise<JobInfo[]> {
+    try {
+      const jobParent = await this.getJobParent();
+      let  list = (await schedulerAPI.projects.locations.jobs.list({parent: jobParent})).data;
+      if (!list.jobs) return [];
+      let jobs: JobInfo[] = list.jobs.map(job => { return {
+        name: job.name!,
+        enable: job.state === 'ENABLED',
+        schedule: job.schedule!,
+        timeZone: job.timeZone!
+      }});
+      return jobs;
+    } catch (e) {
+      this.logger.error(`[CloudSchedulerService] Fetch job list failed: `, e.response?.data?.error);
+      e.logged = true;
+      throw e;
+    }
+  }
+  
+
+  async getLocationId(projectId: string) {
+    // fetch AppEngine's location via Admin API
+    // TODO: I'm not sure we should do this, as anyway here's some sort of hard-code (adding "1" to region)
+    // Then currently (at 2021 April) there're just two locations for Scheduler: us-west1 and europe-west1.
+    // Maybe it's easier to get from ENV always: 
+    if (GAE_LOCATION)
+      return GAE_LOCATION;
+    try {
+      let gae = (await google.appengine("v1").apps.get({ appsId: `${projectId}` })).data;
+      this.logger.debug(gae);
+      return gae.locationId! + "1";
+    } catch (e) {
+      this.logger.error(`[CloudSchedulerService] Fetching location from AppEngine Admin API failed: ${e.message}`);
+      e.logged = true;
+      throw e;
+    }
+  }
+  
+  async updateJob(appId: string, jobInfo: JobInfo) {
+    this.logger.info(`[CloudSchedulerService] Updating scheduler job for configuration ${appId}`);
+  
+    // let projectId = await google.auth.getProjectId();
+    // let locationId: string = await getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
+    // let fullpath = `projects/${projectId}/locations/${locationId}`;
+    const jobParent = await this.getJobParent();
+    const jobName = `${jobParent}/jobs/${appId}`;
+    //let jobName = await getJobName(appId);
+    let jobInfoExist = await this.getJob(jobName);
+    if (jobInfoExist) {
+      this.logger.debug(`[CloudSchedulerService] Found an existing job: ${jobName}`)
+      if (jobInfoExist.enable && !jobInfo.enable) {
+        // disable
+        try {
+          await schedulerAPI.projects.locations.jobs.pause({ name: jobName });
+        } catch (e) {
+          this.logger.error(`[CloudSchedulerService] Pausing the job ${jobName} failed: ${e.message}`);
+          e.logged = true;
+          throw e;
+        }
+      } else if (!jobInfoExist.enable && jobInfo.enable) {
+        // enable
+        try {
+          await schedulerAPI.projects.locations.jobs.resume({ name: jobName });
+        } catch (e) {
+          this.logger.error(`[CloudSchedulerService] Resuming the job ${jobName} failed: ${e.message}`);
+          e.logger = true;
+          throw e;
+        }
+      }
+      if (jobInfo.enable) {
+        // NOTE: Scheduler API doesn't allow to check a job's properties if it's disabled
+        if (jobInfo.hasOwnProperty("schedule") || jobInfo.hasOwnProperty("timeZone")) {
+          try {
+            await schedulerAPI.projects.locations.jobs.patch({
+              name: jobName,
+              updateMask: "schedule,timeZone",
+              requestBody: {
+                schedule: jobInfo.schedule,
+                timeZone: jobInfo.timeZone,
+              }
+            });
+          } catch (e) {
+            this.logger.error(`[CloudSchedulerService] Changing the job's properties failed: ${e.message}`);
+            e.logged = true;
+            throw e;
+          }
+        }
+      }
+    } else {
+      // create a new job
+      let createJobRequest: cloudscheduler_v1.Params$Resource$Projects$Locations$Jobs$Create = {
+        parent: jobParent,
+        requestBody: {
+          name: jobName,
+          appEngineHttpTarget: {
+            relativeUri: `/api/v1/engine/${appId}/run`,
+            httpMethod: 'POST',
+            body: Buffer.from(appId).toString('base64')
+          },
+          schedule: jobInfo.schedule,
+          timeZone: jobInfo.timeZone
+        }
+      };
+      this.logger.info(`[CloudSchedulerService] Creating a new scheduler job:\n` + JSON.stringify(createJobRequest));
+      try {
+        await schedulerAPI.projects.locations.jobs.create(createJobRequest);
+      } catch (e) {
+        this.logger.error(`[CloudSchedulerService] Job creation failed: ${e.message}`);
+        e.logged = true;
+        throw e;
+      }
+    }
+  }
 }

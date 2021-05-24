@@ -30,7 +30,7 @@ import { ConfigService } from './shared/config.service';
 })
 export class AppsListComponent extends ComponentBase implements OnInit {
   loading: boolean;
-  displayedColumns: string[] = ['position', 'name', 'spreadsheetId', 'version', 'status', 'actions'];
+  displayedColumns: string[] = ['position', 'name', 'spreadsheetId', 'version', 'status', 'scheduled', 'actions'];
   dataSource: MatTableDataSource<AppInfo>;
 
   mouseOverIndex;

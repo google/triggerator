@@ -106,11 +106,15 @@ cp app.yaml.copy app.yaml
 
 # put spreadsheet id into app.yaml
 echo -e "${COLOR}Updating app.yaml...${NC}"
-sed -i "s/MASTER_SPREADSHEET\s*:\s*.*$/MASTER_SPREADSHEET: '$spreadsheetId'/" app.yaml
+# NOTE: the "'.original' -e" syntax is for MacOS compatibility
+sed -i'.original' -e "s/MASTER_SPREADSHEET\s*:\s*.*$/MASTER_SPREADSHEET: '$spreadsheetId'/" app.yaml
 # put SECURITY: 'IAP'
-sed -i "s/SECURITY\s*:\s*.*$/SECURITY: 'IAP'/" app.yaml
+sed -i'.original' -e "s/SECURITY\s*:\s*.*$/SECURITY: 'IAP'/" app.yaml
 # put EXPECTED_AUDIENCE: '/projects/685425631282/apps/triggerator-sd'
-sed -i "s/EXPECTED_AUDIENCE\s*:\s*.*$/EXPECTED_AUDIENCE: '\/projects\/$PROJECT_NUMBER\/apps\/$PROJECT_ID'/" app.yaml
+sed -i'.original' -e "s/EXPECTED_AUDIENCE\s*:\s*.*$/EXPECTED_AUDIENCE: '\/projects\/$PROJECT_NUMBER\/apps\/$PROJECT_ID'/" app.yaml
+# put GIT_COMMIT:  59eef42ccb3bca1d6c1a9c3b00cf03b1277c70e1
+GIT_COMMIT=$(git rev-parse HEAD)
+sed -i'.original' -e "s/GIT_COMMIT\s*:\s*.*$/GIT_COMMIT: '$GIT_COMMIT'/" app.yaml
 
 # app.yaml is done, save it to a well-known location on GCS, so that it's not lost
 GCS_BUCKET=gs://${PROJECT_ID}-setup

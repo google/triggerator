@@ -19,6 +19,8 @@ import { SERVICE_ACCOUNT } from '../env';
 import ConfigInfo, { FeedInfo, FeedType, RuleInfo, RuleState, Config, AppList, CustomFields, AppInfo, FeedConfig, SdfElementType } from '../types/config';
 import { FeedData } from '../types/types';
 import { RuleEvaluator } from './rule-engine';
+import { Logger} from '../types/logger';
+import SchedulerService from './cloud-scheduler-service';
 
 export const CONFIG_SHEETS = {
   General: "General",
@@ -42,8 +44,9 @@ function combineErrors(errorsSrc: ValidationError[], errorsAdd: ValidationError[
 
 export default class ConfigService {
   sheetsAPI: sheets_v4.Sheets;
-
-  constructor() {
+  
+  constructor(public logger: Logger) {
+    if (!logger) throw new Error('[ConfigService] Required argument logger is missing');
     this.sheetsAPI = google.sheets({ version: "v4" });
   }
 
@@ -254,6 +257,7 @@ export default class ConfigService {
     let config: Config = {};// = new ConfigInfo();
     if (!spreadsheetId) throw new Error(`[ConfigService] spreadsheetId was not specified`);
     // load title (have to do it via separate call)
+    config.id = spreadsheetId;
     try {
       let props = (await this.sheetsAPI.spreadsheets.get({
         spreadsheetId: spreadsheetId,
@@ -261,7 +265,8 @@ export default class ConfigService {
       })).data.properties;
       config.title = props?.title || "";
     } catch (e) {
-      console.error(`[ConfigService] Error on loading spreadsheet ${spreadsheetId}: `, e.message);
+      this.logger.error(`[ConfigService] Error on loading spreadsheet ${spreadsheetId}: ${e.message}`, e);
+      e.logged = true;
       throw e;
     }
 
@@ -297,7 +302,8 @@ export default class ConfigService {
         }
       }
     } catch (e) {
-      console.error(`[ConfigService] Error on fetching configuration from spreadsheet ${spreadsheetId}: `, e.message);
+      this.logger.error(`[ConfigService] Error on fetching configuration from spreadsheet ${spreadsheetId}: ${e.message}`, e);
+      e.logged = true;
       throw e;
     }
 
@@ -306,7 +312,7 @@ export default class ConfigService {
 
   async validateMasterSpreadsheet(masterSpreadsheetId: string): Promise<string[]> {
     try {
-      console.log(`[ConfigService] Fetching master spreadsheet ${masterSpreadsheetId}`);
+      this.logger.info(`[ConfigService] Fetching master spreadsheet ${masterSpreadsheetId}`);
       let values = (await this.sheetsAPI.spreadsheets.values.get({
         spreadsheetId: masterSpreadsheetId,
         majorDimension: 'ROWS',
@@ -318,7 +324,7 @@ export default class ConfigService {
       return [];
     } catch (e) {
       if (e.response?.data?.error?.code === 400 && e.response.data.error.status === "INVALID_ARGUMENT") {
-        console.log(`[ConfigService] Master spreadsheet ${masterSpreadsheetId} doesn't have Main sheet, creating one`);
+        this.logger.warn(`[ConfigService] Master spreadsheet ${masterSpreadsheetId} doesn't have Main sheet, creating one`);
         // it's an expected error that means there's no such Sheet 'Main' in the spreadsheet,
         // so create it
         /*
@@ -342,13 +348,13 @@ export default class ConfigService {
             }
           });
         } catch (e) {
-          console.error(`[ConfigService] Failure on a sheet creation in master spreadsheet: `, e.message);
+          this.logger.error(`[ConfigService] Failure on a sheet creation in master spreadsheet: ${e.message}`, e);
           throw e;
         }
         return [];
       }
       // any other error mean a real problem (permissions or non existing doc)
-      console.error(`[ConfigService] Failed to fetch master spreadsheet ${masterSpreadsheetId}: `, e.message);
+      this.logger.error(`[ConfigService] Failed to fetch master spreadsheet ${masterSpreadsheetId}: ${e.message}`, e);
       throw e;
     }
     /* alternative way:
@@ -419,6 +425,7 @@ export default class ConfigService {
           status: "active"
         });
       } catch (e) {
+        this.logger.warn(`[ConfigService] Failed to fetch doc ${docid}: ${e.message}`, e);
         appList.configurations.push({
           name: '',
           configId: docid,
@@ -428,6 +435,19 @@ export default class ConfigService {
         });
       }
     }
+
+    // fetch all jobs and enrich the app list with their corresponding job infos
+    let scheduler = new SchedulerService(this.logger);
+    let jobList = await scheduler.getJobList();
+    for (const job of jobList) {
+      if (!job.name) continue;
+      let jobId = job.name.substring(job.name.indexOf('/jobs/') + '/jobs/'.length);
+      let app = appList.configurations.find(app => app.configId === jobId);
+      if (app) {
+        app.job = job;
+      }
+    }
+
     return appList;
   }
 
@@ -443,7 +463,7 @@ export default class ConfigService {
     }
     let attachingExisting = !!appId;
     if (!appId) {
-      console.log(`[ConfigService] Creating a new spreadsheet for a new app '${name}'`);
+      this.logger.info(`[ConfigService] Creating a new spreadsheet for a new app '${name}'`);
       try {
         const response = (await sheetsAPI.spreadsheets.create({
           requestBody: {
@@ -473,7 +493,7 @@ export default class ConfigService {
         })).data;
         appId = response.spreadsheetId!;
         if (userEmail) {
-          console.log(`[ConfigService] Sharing the created doc (${appId}) with user '${userEmail}'`);
+          this.logger.info(`[ConfigService] Sharing the created doc (${appId}) with user '${userEmail}'`);
           let driveAPI = google.drive({ version: "v3" });
           try {
             (await driveAPI.permissions.create({
@@ -486,13 +506,12 @@ export default class ConfigService {
               }
             }));
           } catch (e) {
-            console.error(`Failed to change permissions on doc ${appId} for user ${userEmail}: ${e.message}`);
-            console.error(e);
+            this.logger.error(`Failed to change permissions on doc ${appId} for user ${userEmail}: ${e.message}`, e);
             // throw e; or not to throw?
           }
         }
       } catch (e) {
-        console.error(`[ConfigService] Couldn't create a new spreadsheet: `, e.message);
+        this.logger.error(`[ConfigService] Couldn't create a new spreadsheet: ${e.message}`, e);
         throw e;
       }
     }
@@ -528,9 +547,8 @@ export default class ConfigService {
         }
       });
     } catch (e) {
-      console.error(`[ConfigService] Failure on creating developer metadata: `, e.message);
+      this.logger.error(`[ConfigService] Failure on creating developer metadata: ${e.message}`, e);
       if (attachingExisting && e.response?.data?.error?.code === 403) {
-        //console.error(`[ConfigService]`)
         throw new Error(`Cannot update Spreadsheet ${appId}, did you share it with '${SERVICE_ACCOUNT}' user?`);
       }
       throw e;
@@ -542,12 +560,12 @@ export default class ConfigService {
       status: 'active',
       version: "1"
     };
-    console.log(`[ConfigService] Application created: `, JSON.stringify(result));
+    this.logger.info(`[ConfigService] Application created: `, JSON.stringify(result), {result: result});
     return result;
   }
 
   async deleteApplication(masterSpreadsheetId: string, appId: string) {
-    console.log(`[ConfigService] Deleting an application ${appId}`);
+    this.logger.info(`[ConfigService] Deleting an application ${appId}`);
     let app_ids = await this.validateMasterSpreadsheet(masterSpreadsheetId);
     if (!app_ids.includes(appId)) {
       throw new Error(`[ConfigService] Application with id ${appId} doesn't exist`);
@@ -560,7 +578,8 @@ export default class ConfigService {
         fileId: appId
       })
     } catch (e) {
-      console.error(`[ConfigService] An error occured on deleting spreadsheet ${appId}: `, e.message);
+      this.logger.error(`[ConfigService] An error occured on deleting spreadsheet ${appId}: ${e.message}`, e);
+      e.logged = true;
       throw e;
     }
   }
@@ -575,7 +594,7 @@ export default class ConfigService {
       [''],
       [''],
     )
-    console.log(`[ConfigService] Updating application list in master doc: ` + JSON.stringify(rows));
+    this.logger.info(`[ConfigService] Updating application list in master doc: ` + JSON.stringify(rows));
     try {
       let res = (await this.sheetsAPI.spreadsheets.values.update({
         spreadsheetId: masterSpreadsheetId,
@@ -587,12 +606,12 @@ export default class ConfigService {
         }
       })).data;
     } catch (e) {
-      console.error(`[ConfigService] Couldn't update master spreadsheet with new application: `, e.message);
+      this.logger.error(`[ConfigService] Couldn't update master spreadsheet with new application: ${e.message}`, e);
       throw e;
     }
   }
 
-  private validateConfigurationBase(config: Config): ValidationError[] {
+  private static validateConfigurationBase(config: Config): ValidationError[] {
     if (!config.execution)
       throw new Error(`[validateConfiguration] config.execution section is missing`);
     if (!config.dv360Template)
@@ -611,7 +630,7 @@ export default class ConfigService {
     return errors;
   }
 
-  validateFeeds(feedInfo: FeedConfig): ValidationError[] {
+  static validateFeeds(feedInfo: FeedConfig): ValidationError[] {
     let errors = [];
     if (!feedInfo.feeds) {
       errors.push({ message: 'Feeds are not specified' });
@@ -647,7 +666,7 @@ export default class ConfigService {
     }
     return errors;
   }
-  validateRules(rules: RuleInfo[]): ValidationError[] {
+  static validateRules(rules: RuleInfo[]): ValidationError[] {
     let errors: ValidationError[] = [];
     for (const rule of rules) {
       if (!rule.name)
@@ -666,7 +685,7 @@ export default class ConfigService {
    * @param update true if updating an existing campaign or false if generating a new one
    * @returns Errors
    */
-  validateGeneratingConfiguration(config: Config, update: boolean): ValidationError[] {
+  static validateGeneratingConfiguration(config: Config, update: boolean): ValidationError[] {
     let errors = this.validateConfigurationBase(config);
     if (!config.dv360Template!.template_campaign)
       throw new Error(`[validateConfiguration] Template DV360 campaign id is missing in configuration`);
@@ -676,7 +695,7 @@ export default class ConfigService {
     return errors;
   }
 
-  validateGeneratingRuntimeConfiguration(config: Config, feed: FeedData): ValidationError[] {
+  static validateGeneratingRuntimeConfiguration(config: Config, feed: FeedData): ValidationError[] {
     // NOTE: it's supposed that validateGeneratingConfiguration was already called and feed is not empty
     let errors: ValidationError[] = [];
     let row = feed.getRow(0);
@@ -697,7 +716,7 @@ export default class ConfigService {
     return errors;
   }
 
-  private validateColumn(object: any, path: string): boolean {
+  private static validateColumn(object: any, path: string): boolean {
     const parts = path.split('.');
     for(let i=0; i < parts.length - 1; i++) {
       object = object[parts[i]];
@@ -712,7 +731,7 @@ export default class ConfigService {
    * @param config Configuration to validate
    * @returns 
    */
-  validateRuntimeConfiguration(config: Config): ValidationError[] {
+  static validateRuntimeConfiguration(config: Config): ValidationError[] {
     let errors = this.validateConfigurationBase(config);
     if (!config.execution!.campaignId)
       errors.push({ message: 'Campaign id is not specified' });
@@ -725,7 +744,7 @@ export default class ConfigService {
   }
 
   async applyChanges(spreadsheetId: string, diff: Config): Promise<number> {
-    console.log(`[ConfigService][applyChanges] Applying changes: ${JSON.stringify(diff)}`);
+    this.logger.info(`[ConfigService][applyChanges] Applying changes: ${JSON.stringify(diff)}`);
     let data: sheets_v4.Schema$ValueRange[] = [];
     if (diff.title) {
       try {
@@ -745,7 +764,8 @@ export default class ConfigService {
           }
         });
       } catch (e) {
-        console.error(`[ConfigService] Updating title (${diff.title}) in spreadsheet ${spreadsheetId} failed: `, e.message);
+        this.logger.error(`[ConfigService] Updating title (${diff.title}) in spreadsheet ${spreadsheetId} failed: ${e.message}`, e);
+        e.logged = true;
         throw e;
       }
     }
@@ -907,7 +927,7 @@ export default class ConfigService {
       });
     }
     if (!data.length) {
-      console.log(`[ConfigService][applyChanges] There is nothing to update`);
+      this.logger.info(`[ConfigService][applyChanges] There is nothing to update`);
       return 0;
     }
     try {
@@ -918,10 +938,11 @@ export default class ConfigService {
           valueInputOption: "USER_ENTERED",
         }
       })).data;
-      console.log(`[ConfigService][applyChanges] Updated ${res.totalUpdatedCells} cells`);
+      this.logger.info(`[ConfigService][applyChanges] Updated ${res.totalUpdatedCells} cells`);
       return <number>res.totalUpdatedCells;
     } catch (e) {
-      console.error(`[ConfigService] Updating configuration ${spreadsheetId} failed: `, e.message);
+      this.logger.error(`[ConfigService] Updating configuration ${spreadsheetId} failed: ${e.message}`, e);
+      e.logged = true;
       throw e;
     }
   }

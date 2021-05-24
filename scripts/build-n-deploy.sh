@@ -15,4 +15,6 @@
 
 ./build.sh
 cd ../backend
-gcloud app deploy  -q
+GIT_COMMIT=$(git rev-parse HEAD)
+sed -i'.original' -e "s/GIT_COMMIT\s*:\s*.*$/GIT_COMMIT: '$GIT_COMMIT'/" app.yaml
+gcloud app deploy -q

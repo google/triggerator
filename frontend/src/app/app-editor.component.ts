@@ -91,7 +91,9 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     this.formExecution = this.fb.group({
       schedule: { value: null, disabled: true },
       timeZone: { value: null, disabled: true },
-      enable: null
+      enable: null,
+      runDebugLogging: null,
+      runSendEmail: null
     });
     this.formSdf = this.fb.group({
       template_campaign: null,
@@ -362,11 +364,17 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     //   this.handleApiError('fail', e);
     // }
     // return;
+    const includeDebugLogging = this.formExecution.get('runDebugLogging').value;
+    const sendNotification  = this.formExecution.get('runSendEmail').value;
     try {
       this.executing = true;
       this.eventList.addMessage('Starting execution');
       this.eventList.open();
-      this.configService.runExecution(this.appId).subscribe({
+      this.configService.runExecution(
+        this.appId, {
+          debugLogging: includeDebugLogging,
+          sendNotification: sendNotification
+        }).subscribe({
         next: (msg) => {
           this.eventList.addMessage(msg);
         },
@@ -384,6 +392,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       });
     } catch (e) {
       // we don't expect an error here, but just in case
+      console.error(e);
     } finally {
       this.executing = false;
     }

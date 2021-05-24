@@ -39,6 +39,11 @@ export function traverseObject(object: any,
 }
  */
 
+/**
+ * Parses numbers from strings
+ * @param str a string containing a number
+ * @returns a finite number (never returns NaN) or undefined
+ */
 export function tryParseNumber(str: any): number | undefined {
   if (_.isFinite(str))
     return <number>str;
@@ -52,6 +57,11 @@ export function tryParseNumber(str: any): number | undefined {
   }
 }
 
+/**
+ * Parses boolean arguments from url (e.g. &start=true)
+ * @param params A value from url
+ * @returns a boolean or undefined
+ */
 export function parseBool(params: any): boolean {
   return !(
     params === "false" ||
@@ -61,6 +71,11 @@ export function parseBool(params: any): boolean {
   );
 };
 
+/**
+ * Parses date/datetime arguments from url (e.g. &startDate=2021-06-01)
+ * @param params A value from url
+ * @returns a Date or underfined
+ */
 export function parseDate(params: any): Date | undefined {
   if (_.isDate(params))
     return params;
@@ -69,6 +84,12 @@ export function parseDate(params: any): Date | undefined {
   return undefined;
 }
 
+/**
+ * Compares two object and returns a difference as a new obejct
+ * @param object An object being compared with the base
+ * @param base A baseline object to compare with
+ * @returns a new object containing fields of `object` that are absent in `base` (recursively)
+ */
 export function difference(object: any, base: any) {
   function changes(object: any, base: any) {
     return _.transform(object, function (result: any, value, key) {
@@ -78,4 +99,12 @@ export function difference(object: any, base: any) {
     });
   }
   return changes(object, base);
+}
+
+/**
+ * Returns a timestamp like 20211231T235959001 for 2021-12-31 23:59:59.001, that can be used in file names
+ * @returns a string with a timestamp of current date/time
+ */
+export function getCurrentDateTimestamp() {
+  return new Date().toISOString().replace(/\-/g, "").replace(/\:/g, "").replace(".", "");
 }

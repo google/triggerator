@@ -40,6 +40,59 @@ export class BackendService {
     return this.baseUrl + url;
   }
 
+  /**
+   * Execution an long-running operation via legacy request/response pattern (two methods start and querystatus)
+   * when Server-Sent Event are not supported (e.g. GAE).
+   * @param url 
+   * @param params 
+   * @returns 
+   */
+  getEventsLegacy(url: string, params?: Record<string, any>): Observable<string> {
+    const subject = new Subject<string>();
+    this.http.post<{ operation: string }>(
+      this.getUrl(url + '/start'),
+      null,
+      { headers: this.getBaseHeaders(), params })
+      .toPromise().then(res => {
+        let opid = res.operation;
+        const interval = 1000;
+        const executePoll = async () => {
+          let result: { events: string[], completed: boolean };
+          try {
+            result = await this.getApi<{ events: string[], completed: boolean }>(url + '/querystatus?opid=' + opid);
+          } catch (e) {
+            subject.error(e);
+            return;
+          }
+          if (result.events && result.events.length) {
+            for (const line of result.events) {
+              if (line.startsWith('error:')) {
+                subject.error(line.substring('error:'.length));
+                return;
+              } else {
+                subject.next(line);
+              }
+            }
+          }
+          if (result.completed) {
+            subject.complete();
+          } else {
+            setTimeout(executePoll, interval);
+          }
+        };
+        setTimeout(executePoll, interval);
+      }, (reason: any) => {
+        subject.error(reason?.error?.error || reason.message || reason);
+      });
+    return subject;
+  }
+
+  /**
+   * Execution an long-running operation via Server-Sent Events
+   * @param url 
+   * @param params 
+   * @returns 
+   */
   getEvents(url: string, params?: Record<string, any>): Observable<string> {
     const subject = new Subject<string>();
     if (params) {
@@ -48,7 +101,7 @@ export class BackendService {
         url += (key + '=' + params[key] + '&')
       }
       if (url[url.length - 1] === '&')
-        url = url.substring(0, url.length - 2);
+        url = url.substring(0, url.length - 1);
     }
     var evtSource = new EventSource(this.getUrl(url));
     evtSource.onmessage = (e) => {
@@ -78,7 +131,8 @@ export class BackendService {
 
   async getApi<T>(url: string, params?: Record<string, any>): Promise<T> {
 
-    return this.http.get<T>(this.getUrl(url),
+    return this.http.get<T>(
+      this.getUrl(url),
       {
         headers: this.getBaseHeaders(),
         params

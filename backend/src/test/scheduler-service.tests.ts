@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 import SchedulerService from './../app/cloud-scheduler-service';
+import winston from 'winston';
 
 import assert from 'assert';
 suite('CloudSchedulerService', async function() {
   
   test('List jobs', async function() {
-    let jobName = await SchedulerService.getJobName('non-existing-id');
-    let job = await SchedulerService.getJob(jobName);
+    let scheduler = new SchedulerService(winston);
+    let jobName = await scheduler.getJobName('non-existing-id');
+    let job = await scheduler.getJob(jobName);
     assert.strictEqual(job, null);
   });
 });

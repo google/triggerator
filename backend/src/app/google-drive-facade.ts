@@ -19,7 +19,7 @@ import fs from 'fs';
 
 export async function uploadFile(filePath: string, destinationUrl: string): Promise<string> {
   if (!destinationUrl || !destinationUrl.startsWith("drive://"))
-    throw new Error(`[GoogleDriveFacade] destination is expected in 'drive://folderid' format`);
+    throw new Error(`[GoogleDriveFacade] destination (${destinationUrl}) is in incorrect format, expected 'drive://folderid'`);
     
   let folderId = destinationUrl.substring("drive://".length);
   const drive = google.drive({ version: 'v3' });
@@ -49,17 +49,13 @@ export async function downloadFile(url: string): Promise<Buffer> {
 
   const drive = google.drive({ version: 'v3' });
   let res: drive_v3.Schema$FileList;
-  try {
-    res = (await drive.files.list({
-      //mimeType='application/vnd.google-apps.folder'
-      q: `'${folderId}' in parents and name = '${fileName}'`,
-      fields: 'files(id, name)',
-      spaces: 'drive'
-    })).data;
-  } catch (e) {
-    console.error(`[GoogleDriveFacade] Fetching Google Drive file ${url} failed: ${e.message}`);
-    throw e;
-  }
+  res = (await drive.files.list({
+    //mimeType='application/vnd.google-apps.folder'
+    q: `'${folderId}' in parents and name = '${fileName}'`,
+    fields: 'files(id, name)',
+    spaces: 'drive'
+  })).data;
+
   if (!res.files?.length) {
     throw new Error(`[GoogleDriveFacade] File ${fileName} wasn't found in Google Drive folder ${folderId} (or was't shared with the server's service account)`);
   }

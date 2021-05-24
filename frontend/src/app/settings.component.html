@@ -25,7 +25,10 @@
       <!-- Version Column -->
       <ng-container matColumnDef="value">
         <mat-header-cell *matHeaderCellDef> Value </mat-header-cell>
-        <mat-cell *matCellDef="let element"> {{element.value}} </mat-cell>
+        <mat-cell *matCellDef="let element"> 
+          <a href="{{element.link}}" *ngIf="element.link; else elseBlock">{{element.value}}</a>
+          <ng-template #elseBlock> {{element.value}} </ng-template>
+          </mat-cell>
       </ng-container>
 
       <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
