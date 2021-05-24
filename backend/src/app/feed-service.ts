@@ -27,12 +27,17 @@ import { FeedConfig, FeedInfo, FeedType } from '../types/config';
 import { FeedData } from '../types/types';
 import { tryParseNumber } from './utils';
 import GoogleDriveFacade from './google-drive-facade';
+import { Logger } from '../types/logger';
 
 
 type FeedInfoData = { feed: FeedData, info: FeedInfo };
 type FeedJoinData = { feed: FeedData, name: string, key: string, ext_key?: string };
 
 export default class FeedService {
+  constructor(public logger: Logger) {
+    if (!logger) throw new Error('[FeedService] Required argument logger is missing');
+  }
+  
   async loadSpreadsheet(feedInfo: FeedInfo): Promise<FeedData> {
     const sheetsAPI = google.sheets({ version: "v4" });
 
@@ -72,7 +77,8 @@ export default class FeedService {
           includeGridData: false
         })).data;
       } catch (e) {
-        console.error(`[FeedService] Fetching Spreadsheet ${spreadsheetId} failed: ${e.message}`);
+        this.logger.error(`[FeedService] Fetching Spreadsheet ${spreadsheetId} failed: ${e.message}`, e);
+        e.logged = true;
         throw e;
       }
       let sheets = spreadsheet.sheets;
@@ -99,7 +105,7 @@ export default class FeedService {
     }
 
     // now load sheet data
-    console.log(`[FeedService] Loading values from spreadsheet ${spreadsheetId} in range '${rangeName}'`);
+    this.logger.log('info', `Loading values from spreadsheet '${spreadsheetId}' in range '${rangeName}'`, {component: 'FeedService'});
     const request = {
       spreadsheetId: spreadsheetId,
       range: rangeName,
@@ -151,7 +157,8 @@ export default class FeedService {
       }
       objects.push(obj);
     }
-    return new FeedData(/* feedInfo,  */objects);
+    this.logger.debug(`[FeedService] Loaded ${values.length} rows, columns: ${JSON.stringify(columns)}`);
+    return new FeedData(objects);
   }
 
   unzip(rawData: ArrayBuffer, url: string): Promise<Buffer> {
@@ -211,14 +218,15 @@ export default class FeedService {
       res = await request(params);
     }
     catch (e) {
-      console.log(e)
       if (e.response) {
         const res = <GaxiosResponse>e.response;
         const msg = `[FeedService] Service ${feedInfo.url} returned error ${res.status} ${res.statusText}`;
-        console.log(msg + '. See details in next line.');
+        this.logger.error(msg + '. See details on the next line.');
         const resdata = await (<GaxiosError>e).response!.data.text();
-        console.log(resdata);
-        throw new Error(msg);
+        this.logger.error(resdata);
+        let err = new Error(msg);
+        //err['logged'] = true;
+        throw err;
       }
       throw e;
     }
@@ -306,6 +314,7 @@ export default class FeedService {
         throw new Error(`[FeedService] Feed ${feedInfo.name} has 'Auto' type, feed url doesn't have file extension, detecting format isn't supported`);
       }
     }
+    this.logger.debug(`[FeedService] feed type detected as ${feedType}`);
     if (feedType === FeedType.JSON) {
       // the returned data is good JSON, and already parsed by gaxios
       // we expect that it's an array of object
@@ -315,7 +324,7 @@ export default class FeedService {
         try {
           return JSON.parse(line);
         } catch (e) {
-          console.log(`[FeedService] Failed to parse JSON line: ${line}`);
+          this.logger.error(`[FeedService] Failed to parse JSON line: ${line}`);
           throw new Error(`[FeedService] The data returned by ${feedInfo.url} cannot be parsed as JSON: ${e}`);
         }
       });
@@ -340,7 +349,7 @@ export default class FeedService {
         throw new Error(`[FeedService] The data returned by ${feedInfo.url} is not an array of object`)
       }
     } catch (e) {
-      console.log(`[FeedService] Failed to parse JSON string: ${strData}`);
+      this.logger.error(`[FeedService] Failed to parse JSON string: ${strData}`);
       throw new Error(`[FeedService] The data returned by ${feedInfo.url} cannot be parsed as JSON: ${e}`);
     }
   }
@@ -439,7 +448,14 @@ export default class FeedService {
   }
 
   async loadFromDrive(feedInfo: FeedInfo): Promise<FeedData> {
-    let fileContents = await GoogleDriveFacade.downloadFile(feedInfo.url);
+    let fileContents: Buffer;
+    try {
+      fileContents = await GoogleDriveFacade.downloadFile(feedInfo.url);
+    } catch (e) {
+      console.error(`[GoogleDriveFacade] Fetching Google Drive file ${feedInfo.url} failed: ${e.message}`);
+      e.logged = true;
+      throw e;
+    }
     let feedData = this.parseBuffer(fileContents, feedInfo);
     return feedData;
   }
@@ -460,7 +476,7 @@ export default class FeedService {
   async loadFeed(feedInfo: FeedInfo): Promise<FeedData> {
     this.substituteUrlMacros(feedInfo);
     const url = feedInfo.url;
-    console.log(`[FeedService] Loading feed ${url}`);
+    this.logger.info(`[FeedService] Loading feed ${url}`);
     if (!url) {
       throw new Error(`[FeedService] Feed ${feedInfo.name} has incorrect url`);
     }
@@ -485,7 +501,6 @@ export default class FeedService {
       }
     }
     return feed;
-    //return feed.then(this.processFeed);
   }
 
   // private processFeed(feed: FeedData): FeedData {
@@ -553,6 +568,7 @@ export default class FeedService {
     // }
     return new FeedData(result);
   }
+
   private initArrayFields(feedName: string, feed: FeedData) {
     let rs = feed.recordSet;
     for (let row = 0; row < rs.rowCount; row++) {
@@ -560,6 +576,7 @@ export default class FeedService {
       obj['$' + feedName] = Object.values(obj);
     }
   }
+
   async loadAll(feedConfig: FeedConfig): Promise<FeedData> {
     if (!feedConfig.feeds || !feedConfig.feeds.length) {
       throw new Error("Feed configuration contains no feeds");
@@ -580,8 +597,9 @@ export default class FeedService {
     // build a map: feed name => feed data
     let feeds_src: Record<string, FeedData> = {};
     let feeds_dst: Record<string, { feed: FeedData, sources: Set<string> }> = {};
-    feeds.forEach(f => feeds_src[f.info.name] = f.feed);
-
+    feeds.forEach(f => feeds_src[f.info.name] = f.feed);    
+    this.logger.debug(`[FeedService] Joining ${feeds.length} feeds containing ${feeds.map(f => f.feed.rowCount)} rows`);
+    
     // the main feed will be the one without external key
     let finalFeedName: string | undefined;
     for (const feed_ of feeds) {
@@ -641,7 +659,7 @@ export default class FeedService {
     // }
 
     let finalFeed = feeds_dst[finalFeedName].feed;
-    console.log('[FeedService] All feeds were loaded and joined. Resulted number of rows: ' + finalFeed.rowCount);
+    this.logger.info('[FeedService] All feeds were loaded and joined. Resulted number of rows: ' + finalFeed.rowCount);
     return finalFeed;
   }
 }

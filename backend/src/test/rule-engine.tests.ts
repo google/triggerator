@@ -15,8 +15,7 @@
  */
 import assert from 'assert';
 import { Config, FeedInfo, FeedType } from '../types/config';
-import DV360Facade, { SdfDownloadOptions } from '../app/dv360-facade';
-import RuleEngine, { RuleEvaluator } from '../app/rule-engine';
+import { RuleEvaluator } from '../app/rule-engine';
 import { FeedData, RecordSet, SdfFull } from '../types/types';
 
 function getFeedData(): FeedData {

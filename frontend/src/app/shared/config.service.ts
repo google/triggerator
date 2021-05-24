@@ -31,7 +31,7 @@ export class ConfigService {
   constructor(public backendService: BackendService) { }
 
   getSettings() {
-    return this.backendService.getApi<{settings: Record<string,string>}>('/settings');
+    return this.backendService.getApi<{ settings: Record<string, string> }>('/settings');
   }
 
   getAppList(): Promise<AppList> {
@@ -39,7 +39,7 @@ export class ConfigService {
   }
 
   createApp(name: string, appId?: string) {
-    return this.backendService.postApi(`/apps/create`, {name, appId});
+    return this.backendService.postApi(`/apps/create`, { name, appId });
   }
 
   deleteApp(appId: string) {
@@ -79,8 +79,8 @@ export class ConfigService {
     return this.backendService.getApi(`/config/${configId}/feeds/${feedName}`);
   }
 
-  loadAllFeeds(configId: string, evaluateRules: boolean): Promise<{data: Record<string, any>[]; effeective_rules: string[]}> {
-    return this.backendService.getApi(`/config/${configId}/feeds/_all_`, {evaluateRules});
+  loadAllFeeds(configId: string, evaluateRules: boolean): Promise<{ data: Record<string, any>[]; effeective_rules: string[] }> {
+    return this.backendService.getApi(`/config/${configId}/feeds/_all_`, { evaluateRules });
   }
 
   updateSchedule(configId: string, job: JobInfo) {
@@ -91,7 +91,11 @@ export class ConfigService {
     return this.backendService.getApi(`/config/${configId}/schedule`);
   }
 
-  runExecution(configId: string): Observable<string> {
-    return this.backendService.getEvents(`/engine/${configId}/run/stream`);
+  runExecution(configId: string, options?: { debugLogging?: boolean, sendNotification?: boolean }): Observable<string> {
+    return this.backendService.getEventsLegacy(
+      `/engine/${configId}/run/legacy`,
+      { debug: options?.debugLogging, notify: options?.sendNotification }
+    );
+    //return this.backendService.getEvents(`/engine/${configId}/run/stream`, {debug: options?.debugLogging});
   }
 }

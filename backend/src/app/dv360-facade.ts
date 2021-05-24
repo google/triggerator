@@ -22,6 +22,7 @@ import csv_parse from 'csv-parse/lib/sync';
 import _ from 'lodash';
 import { RecordSet, SdfFull } from '../types/types';
 import { getTempDir } from '../env';
+import { Logger } from '../types/logger';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -41,7 +42,8 @@ export default class DV360Facade {
   private dv_api: displayvideo_v1.Displayvideo;
   private options: DV360FacadeOptions;
 
-  constructor(options?: DV360FacadeOptions) {
+  constructor(public logger: Logger, options?: DV360FacadeOptions) {
+    if (!logger) throw new Error('[DV360Facade] Required argument logger is missing');
     options = options || {};
     options.apiOptions = options.apiOptions || { version: "v1" };
     if (!options.apiOptions.version)
@@ -59,7 +61,7 @@ export default class DV360Facade {
         entityStatus: status === 'active' ? 'ENTITY_STATUS_ACTIVE' : 'ENTITY_STATUS_PAUSED'
       }
     })).data;
-    console.log(`[DV360Facade] InsertionOrder ${io.name}(${ioId}) now has entity status ${io.entityStatus}.`);
+    this.logger.info(`[DV360Facade] InsertionOrder ${io.name}(${ioId}) now has entity status ${io.entityStatus}.`);
   }
 
   async updateLineItemStatus(advertiserId: string, liId: string, status: 'active' | 'paused') {
@@ -71,7 +73,7 @@ export default class DV360Facade {
         entityStatus: status === 'active' ? 'ENTITY_STATUS_ACTIVE' : 'ENTITY_STATUS_PAUSED'
       }
     })).data;
-    console.log(`[DV360Facade] LineItem ${li.name}(${liId}) now has entity status ${li.entityStatus}.`);
+    this.logger.info(`[DV360Facade] LineItem ${li.name}(${liId}) now has entity status ${li.entityStatus}.`);
     
     /*
         // request body parameters:
@@ -157,7 +159,7 @@ export default class DV360Facade {
         // Note rmSync added only in NodeJS 14.14
         // fs.rmSync(filename);
       } catch (e) {
-        console.log(`[DV360Facade] Failed to delete a downloaded file ${fileName}: ${e}`);
+        this.logger.warn(`[DV360Facade] Failed to delete a downloaded file ${fileName}: ${e}`);
       }
     }
 
@@ -197,7 +199,7 @@ export default class DV360Facade {
   }
 
   private async _downloadSdf(advertiserId: string, campaignId: string, opt: DownloadOptionsRuntime): Promise<{ fileName: string, resourceName: string }> {
-    console.log(`[DV360Facade] Starting downloading SDF for advertiser/campaign ${advertiserId}/${campaignId}`);
+    this.logger.info(`[DV360Facade] Starting downloading SDF for advertiser/campaign ${advertiserId}/${campaignId}`);
     let op:dv360.Schema$Operation;
     try {
       op = (await this.dv_api.sdfdownloadtasks.create({
@@ -227,7 +229,7 @@ export default class DV360Facade {
     const op_name = op.name!;
 
     // #2 wait for the task to complete, polling for operation status
-    console.log(`[DV360Facade] Waiting for the SDF to be exported by DV360 and ready to download (please expect >30 sec to wait)`);
+    this.logger.info(`[DV360Facade] Waiting for the SDF to be exported by DV360 and ready to download (please expect >30 sec to wait)`);
     let started = Date.now();
     while (true) {
       op = (await this.dv_api.sdfdownloadtasks.operations.get({ name: op_name })).data;
@@ -240,7 +242,7 @@ export default class DV360Facade {
         throw new Error(`Operation ${op_name} timed out (timeout=${opt.max_wait / 1000}s)`);
     }
     let resourceName = op.response!.resourceName;
-    console.log(`[DV360Facade] SdfDownload ${op_name} completed, created resource ${resourceName}, elapsed: ${(Date.now() - started) / 1000} sec`);
+    this.logger.info(`[DV360Facade] SdfDownload ${op_name} completed, created resource ${resourceName}, elapsed: ${(Date.now() - started) / 1000} sec`);
 
     // #3 downlaod a zip file with CSVs
     let res = (await this.dv_api.media.download({ resourceName: resourceName, alt: 'media' }, { responseType: 'stream' }));

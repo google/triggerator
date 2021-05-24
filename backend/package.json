@@ -1,6 +1,6 @@
 {
   "name": "triggerator-backend",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Google DV360 Triggerator backend (decision engine)",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "tsc": "tsc",
     "build": "npm run tsc",
     "start": "node dist/index.js",
-    "start:local": "ts-node src/index.ts --keyFile=./keys/triggerator-sd-sa.json --masterSpreadsheet=1fnxjMudPpiHz0XezAmdFjvD2QCYi6IvgluDLpxYs8-M --mailerConfigPath=mailer.json",
+    "start:local": "ts-node src/index.ts --keyFile=./keys/triggerator-sd-sa.json --masterSpreadsheet=1fnxjMudPpiHz0XezAmdFjvD2QCYi6IvgluDLpxYs8-M --mailerConfigPath=mailer.sendgrid.json",
     "start:local:js": "node dist/index.js --keyFile=./keys/triggerator-sd-sa.json",
     "start:dev": "./node_modules/nodemon/bin/nodemon.js",
     "deploy": "gcloud app deploy"
@@ -30,6 +30,7 @@
   "license": "ISC",
   "dependencies": {
     "@google-cloud/debug-agent": "^5.1.3",
+    "@google-cloud/logging-winston": "^4.0.4",
     "@google-cloud/storage": "^5.8.3",
     "csv": "^5.5.0",
     "csv-parse": "^4.15.3",
@@ -43,10 +44,11 @@
     "install": "^0.13.0",
     "lodash": "^4.17.21",
     "mathjs": "^9.3.0",
-    "morgan": "^1.10.0",
     "nodemailer": "^6.5.0",
     "sprintfjs": "^1.2.17",
     "update": "^0.7.4",
+    "uuid": "^8.3.2",
+    "winston": "^3.3.3",
     "yargs": "^16.2.0",
     "yauzl": "^2.10.0",
     "yazl": "^2.5.1"
@@ -57,9 +59,9 @@
     "@types/lodash": "^4.14.168",
     "@types/mathjs": "^6.0.11",
     "@types/mocha": "^8.2.2",
-    "@types/morgan": "^1.9.2",
     "@types/nodemailer": "^6.4.1",
     "@types/server-destroy": "^1.0.1",
+    "@types/uuid": "^8.3.0",
     "@types/yauzl": "^2.9.1",
     "@types/yazl": "^2.4.2",
     "mocha": "^8.3.2",
@@ -76,6 +78,7 @@
     "nyc": "Needed for test coverage colculation (see npm scripts here)",
     "open": "Needed for auto opening a url in the default browser",
     "ts-node": "Needed for directly require ts module in mochas",
-    "shx": "Needed for development-time package.json scripts"
+    "shx": "Needed for development-time package.json scripts",
+    "nodemon": "Needed for development-time auto-reload server on file changes"
   }
 }

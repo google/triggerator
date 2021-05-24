@@ -49,7 +49,12 @@ export class SettingsComponent extends ComponentBase implements OnInit {
         const value = settings[name];
         if (_.isObject(value)) {
           for (const subname of Object.keys(value)) {
-            data.push({ name: name + '.' + subname, value: value[subname] });
+            if (_.isObject(value[subname])) {
+              let val = <any>value[subname];
+              data.push({ name: name + '.' + subname, value: val.value, link: val.link });
+            } else {
+              data.push({ name: name + '.' + subname, value: value[subname] });
+            }
           }
         } else {
           data.push({ name, value });

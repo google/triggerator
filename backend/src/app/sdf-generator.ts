@@ -17,6 +17,7 @@ import _ from 'lodash';
 import { Config, DV360TemplateInfo, FrequencyPeriod, RuleInfo, SdfElementType } from '../types/config';
 import { RuleEvaluator } from './rule-engine';
 import { FeedData, SDF, SdfFull } from '../types/types';
+import { Logger } from '../types/logger';
 
 type FrequencyInfo = {
   exposures: number,
@@ -165,10 +166,13 @@ export default class SdfGenerator {
   startDate?: Date;
   endDate?: Date;
 
-  constructor(private config: Config, private ruleEvaluator: RuleEvaluator,
+  constructor(private config: Config, 
+    private logger: Logger,
+    private ruleEvaluator: RuleEvaluator,
     private feedData: FeedData,
-    private tmplSdf: SdfFull, private currentSdf: SdfFull | null) {
-
+    private tmplSdf: SdfFull, 
+    private currentSdf: SdfFull | null) {
+    if (!logger) throw new Error('[SdfGenerator] ArgumentException: Required argument logger is missing');
   }
 
   validateTemplates(dv360Template: DV360TemplateInfo | undefined): asserts dv360Template {
@@ -213,6 +217,7 @@ export default class SdfGenerator {
       new_campaign = currentSdf.campaigns.getRow(0,
         SDF.Campaign.Name, SDF.Campaign.CampaignId, SDF.Campaign.Timestamp, SDF.Campaign.Status,
         SDF.Campaign.CampaignStartDate, SDF.Campaign.CampaignEndDate);
+      this.logger.log('debug', `[SdfGenerator] Updating campaign ${campaignId}`, {campaing: new_campaign});
     } else {
       // generating new
       if (!dv360Template.campaign_name)
@@ -222,6 +227,7 @@ export default class SdfGenerator {
         [SDF.Campaign.Name]: dv360Template.campaign_name,
         [SDF.Campaign.CampaignId]: campaignId
       }
+      this.logger.log('debug', `[SdfGenerator] Generating a new campaign ${campaignId}`, {campaing: new_campaign});
     }
     if (this.autoActivate) {
       new_campaign[SDF.Campaign.Status] = 'Active';
@@ -648,7 +654,7 @@ export default class SdfGenerator {
         new_li[SDF.LI.GeographyTargeting_Include] = geo_code;
       } else {
         // TODO: warning, or error?
-        console.log(`Ignoring non-integer geo code '${geo_code}' for LI '${new_li[SDF.LI.Name]}'`);
+        this.logger.warn(`[SdfGenerator] Ignoring non-integer geo code '${geo_code}' for LI '${new_li[SDF.LI.Name]}'`);
       }
     }
     new_li[SDF.LI.Details] =

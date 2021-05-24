@@ -24,9 +24,13 @@ import { Config, FeedInfo, FeedType } from '../types/config';
 import { authorizeAsync } from './auth';
 import DV360Facade from '../app/dv360-facade';
 import SdfService from '../app/sdf-service';
-import RuleEngine, { RuleEvaluator } from '../app/rule-engine';
+import { RuleEvaluator } from '../app/rule-engine';
 import { FeedData } from '../types/types';
 import { OAUTH_SCOPES } from '../consts';
+import winston from 'winston';
+import SchedulerService from '../app/cloud-scheduler-service';
+
+winston.add(new winston.transports.Console());
 
 async function test_sdf_download() {
   let campaignId = 3242703;
@@ -110,17 +114,17 @@ async function test_sdf_download_dbm(campaignId: string) {
 
 async function test_config_service() {
   const spreadsheetId = '1KkKLHlxBEEhdLsxjK9RXSh9I7eO6bJinxZsi1XgjsBI';//'1Zf5MpraZTY8kWPm8is6tAAcywsIc3P-X_acwIwXRAhs';
-  let configService = new ConfigService();
+  let configService = new ConfigService(winston);
   let config = await configService.loadConfiguration(spreadsheetId);
   console.log(JSON.stringify(config));
 
-  let feedSvc = new FeedService();
+  let feedSvc = new FeedService(winston);
   let data = await feedSvc.loadAll(config.feedInfo!);
   console.log(data);
 }
 
 async function test_feed_service_gcs() {
-  let feedService = new FeedService();
+  let feedService = new FeedService(winston);
   let feedInfo: FeedInfo = {
     name: 'test',
     url: 'gs://triggerator-tests/weather.json',
@@ -158,9 +162,9 @@ async function generate_sdf_from_template() {
       ad_template: "not used"
     }
   };
-  let dv_facade = new DV360Facade({useLocalCache: true});
+  let dv_facade = new DV360Facade(winston, {useLocalCache: true});
   let ruleEvaluator = new RuleEvaluator();       
-  let sdf_svc = new SdfService(config, ruleEvaluator, dv_facade);
+  let sdf_svc = new SdfService(config, winston, ruleEvaluator, dv_facade);
   let values = [
     { id: 1, name: 'Moscow', temp: 0},
     { id: 2, name: 'Saint-Petersburg', temp: 1},
@@ -174,7 +178,7 @@ async function generate_sdf_from_template() {
 }
 
 async function test_drive() {
-  let feedSvc = new FeedService();
+  let feedSvc = new FeedService(winston);
   let feedData = await feedSvc.loadFromDrive({ 
     url: 'drive://1JWz87cdPk74tEYBPDQoG8-BVTFO_aQyk/weather.json', 
     name: 'test', 
@@ -191,6 +195,12 @@ async function test_drive() {
   //   spaces: 'drive',
   // });
   // console.log(res.data);
+}
+
+async function test_getJobList() {
+  let svc = new SchedulerService(winston);
+  let jobs = await svc.getJobList();
+  console.log(jobs);
 }
 
 async function main() {
@@ -210,7 +220,7 @@ async function main() {
     auth: auth
   });
 
-  await test_config_service();
+  await test_getJobList();
   //await generate_sdf_from_template();
 }
 

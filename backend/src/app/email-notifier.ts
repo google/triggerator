@@ -28,7 +28,7 @@ export async function sendEmail(to: string, subject: string, text: string, html?
   };
   try {
     let info = await transporter.sendMail(message);
-    console.log(`Notification to ${to} sent`, info);
+    console.log(`Notification to ${to} sent:` + JSON.stringify(info));
   } catch(e) {
     console.error(`nodemailer failed to send an email:\n`, e);
   }

@@ -17,6 +17,7 @@ import math, { MathNode } from 'mathjs';
 import { Config, RuleInfo } from '../types/config';
 import DV360Facade from './dv360-facade';
 import { FeedData, RecordSet, SDF, SdfFull } from '../types/types';
+import { Logger } from '../types/logger';
 
 const { create, all, factory } = require('mathjs');
 const allWithCustomFunctions = {
@@ -73,8 +74,7 @@ export class RuleEvaluator {
           try {
             expr = parseCustom(rule.condition)
           } catch (e) {
-            console.error(e);
-            throw new Error(`[RuleEvaluator] expression "${rule.condition}" can't be parsed: ${e}`);
+            throw new Error(`[RuleEvaluator] expression "${rule.condition}" can't be parsed: ${e.message}`);
           }
           this.parsed_conditions[rule.condition] = expr;
         }
@@ -83,7 +83,6 @@ export class RuleEvaluator {
             return rule;
           }
         } catch(e) {
-          console.error(e);
           throw new Error(`[RuleEvaluator] '${rule.name}' rule's evaluation failed: ${e.message}`);
         }
       }
@@ -99,9 +98,11 @@ export default class RuleEngine {
   updateLog: string[] = [];
 
   constructor(config: Config, 
+    private logger: Logger,
     private dv_facade: DV360Facade, 
     private ruleEvaluator: RuleEvaluator, 
     options?: RuleEngineOptions) {
+    if (!logger) throw new Error('[RuleEngine] ArgumentException: Required argument logger is missing');
     if (!config) throw new Error(`[RuleEngine] ArgumentException: Config should be specified`);
     if (!config.rules)
       throw new Error('[RuleEngine] Config doesn\'t contain rules section');
@@ -119,8 +120,8 @@ export default class RuleEngine {
     if (!this.config.rules || !this.config.rules.length)
       throw new Error(`[RuleEngine] There no rules in configuration to process`);
     let advertiserId = sdf.advertiserId;
-    if (!sdf.insertionOrders) throw new Error(`[RuleEngine] Camapign has no insersion orders`);
-    
+    if (!sdf.insertionOrders) throw new Error(`[RuleEngine] Campaign has no insersion orders`);
+    this.logger.info(`[RuleEngine] Starting execution with feed data of ${feedData.rowCount} rows`);
     for (let i = 0; i < sdf.insertionOrders.rowCount; i++) {
       let io = sdf.insertionOrders.getRow(i);
       // extract a reference to a rule from the IO (it's kept in Detail field)
@@ -129,9 +130,9 @@ export default class RuleEngine {
       let ruleName: any = /rule:(.*?)(?:\\n|$)/m.exec(details);
       rowName = (rowName && rowName[1].trim());
       ruleName = (ruleName && ruleName[1].trim());
-      // TODO: log
+      this.logger.debug(`[RuleEngine] processing insertionOrder ${io[SDF.IO.Name]} (status=${io[SDF.LI.Status]}), rowName=${rowName}, ruleName=${ruleName}`);
       if (rowName === null || ruleName === null) {
-        console.log(`[RuleEngine] skipping IO '${io[SDF.IO.Name]}' (${io[SDF.IO.IoId]}) as its Details field contains no row/rule: ${details}`);
+        this.logger.warn(`[RuleEngine] skipping IO '${io[SDF.IO.Name]}' (${io[SDF.IO.IoId]}) as its Details field contains no row/rule: ${details}`);
         continue;
       }
       const key = rowName + ruleName;
@@ -141,6 +142,7 @@ export default class RuleEngine {
         status: io[SDF.LI.Status]
       });
     }
+    // TODO: comment what's happening here
     let lisMap: Record<string, Array<{ liId: string, status: string }>> = {};
     if (sdf.lineItems && '' in iosMap) {
       for (let item of iosMap['']) {
@@ -162,13 +164,12 @@ export default class RuleEngine {
         }
       }
     }
-
     // calculate for each row from data feed what rule is effective for it
     let effective_rules: Array<RuleInfo | null> = []
     for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
       effective_rules[rowNo] = this.ruleEvaluator.getActiveRule(this.config.rules, feedData.getRow(rowNo));
     }
-
+    // activate and deactivate IOs
     for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
       let rule = effective_rules[rowNo];
       let rowName = feedData.get(nameColumn, rowNo);
@@ -187,7 +188,7 @@ export default class RuleEngine {
         updatedItems += await this.activateIos(advertiserId, ioIds);
       }
     }
-
+    // activate and deactivate LIs
     if (sdf.lineItems) {
       for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
         let rule = effective_rules[rowNo];
@@ -198,7 +199,7 @@ export default class RuleEngine {
         }
       }
     }
-
+    // TODO: comment what's happening here (and what's the difference with the previous part (processIoLineItems))
     if ('' in iosMap) {
       for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
         let rule = effective_rules[rowNo];
@@ -226,9 +227,12 @@ export default class RuleEngine {
   private async activateIos(advertiserId: string, ios: Array<{ ioId: string, status: string }>): Promise<number> {
     let changesCount = 0;
     for (const io of ios) {
-      if (!this.forceUpdate && io.status == 'Active') continue;
+      if (!this.forceUpdate && io.status == 'Active') {
+        this.logger.debug(`[RuleEngine] activation IO ${io.ioId} skipped because it's already active`);
+        continue;
+      };
       if (!this.dontUpdate) {
-        console.log('[RuleEngine] activating IO ' + io.ioId);
+        this.logger.debug('[RuleEngine] activating IO ' + io.ioId);
         await this.dv_facade.updateInsertionOrderStatus(advertiserId, io.ioId, 'active');
       }
       changesCount++;
@@ -241,9 +245,12 @@ export default class RuleEngine {
   private async deactivateIos(advertiserId: string, ios: Array<{ ioId: string, status: string }>): Promise<number> {
     var changesCount = 0;
     for (const io of ios) {
-      if (!this.forceUpdate && io.status != 'Active') continue;
+      if (!this.forceUpdate && io.status != 'Active') {
+        this.logger.debug(`[RuleEngine] deactivation IO ${io.ioId} skipped because it's already non-active`);
+        continue;
+      };
       if (!this.dontUpdate) {
-        console.log('[RuleEngine] deactivating IO ' + io.ioId);
+        this.logger.debug('[RuleEngine] deactivating IO ' + io.ioId);
         await this.dv_facade.updateInsertionOrderStatus(advertiserId, io.ioId, 'paused');
       }
       changesCount++;
@@ -256,9 +263,12 @@ export default class RuleEngine {
   private async activateLis(advertiserId: string, lis: Array<{ liId: string, status: string }>): Promise<number> {
     let changesCount = 0;
     for (let li of lis) {
-      if (!this.forceUpdate && li.status == 'Active') continue;
+      if (!this.forceUpdate && li.status == 'Active') {
+        this.logger.debug(`[RuleEngine] activation LI ${li.liId} skipped because it's already active`);
+        continue;
+      };
       if (!this.dontUpdate) {
-        console.log('[RuleEngine] activating Li ' + li.liId);
+        this.logger.debug('[RuleEngine] activating Li ' + li.liId);
         await this.dv_facade.updateLineItemStatus(advertiserId, li.liId, 'active');
       }        
       changesCount++;
@@ -271,10 +281,13 @@ export default class RuleEngine {
   private async deactivateLis(advertiserId: string, lis: Array<{ liId: string, status: string }>): Promise<number> {
     let changesCount = 0;
     for (let li of lis) {
-      if (!this.forceUpdate && li.status != 'Active') continue;
+      if (!this.forceUpdate && li.status != 'Active') {
+        this.logger.debug(`[RuleEngine] deactivation LI ${li.liId} skipped because it's already non-active`);
+        continue;
+      };
 
       if (!this.dontUpdate) {
-        console.log('[RuleEngine] deactivating Li ' + li.liId);
+        this.logger.debug('[RuleEngine] deactivating Li ' + li.liId);
         await this.dv_facade.updateLineItemStatus(advertiserId, li.liId, 'paused');
       }
       changesCount++;
@@ -299,13 +312,13 @@ export default class RuleEngine {
 
         let status = lineItems.get('Status', index);
         if (this.forceUpdate || (ruleName != activeRule?.name && status == 'Active')) {
-          console.log('[RuleEngine] deactivating LI ' + liId);
+          this.logger.debug('[RuleEngine] deactivating LI ' + liId);
           await this.dv_facade.updateLineItemStatus(advertiserId, liId, 'paused');
           changesCount++;
           this.updateLog.push(`LI:${liId}:Status=Paused`);
         }
         else if (this.forceUpdate || (ruleName == activeRule?.name && status != 'Active')) {
-          console.log('[RuleEngine] activating LI ' + liId);
+          this.logger.debug('[RuleEngine] activating LI ' + liId);
           await this.dv_facade.updateLineItemStatus(advertiserId, liId, 'active');
           changesCount++;
           this.updateLog.push(`LI:${liId}:Status=Active`);

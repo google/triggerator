@@ -22,11 +22,12 @@ import ConfigService, { CONFIG_SHEETS } from '../app/config-service';
 import ConfigInfo, { FeedType, Config, SdfElementType } from '../types/config';
 import { sheets_v4, google } from 'googleapis';
 import { difference } from '../app/utils';
+import winston from 'winston';
 
 const spreadsheetId = "1fOjOPQ9TKnoGGXPbG5d34YrkxivwePegLrVhtjbaoFA";
 suite('ConfigService', () => {
   test('fetch and parse config from Spreadsheet', async function () {
-    let svc = new ConfigService();
+    let svc = new ConfigService(winston);
     let config = await svc.loadConfiguration(spreadsheetId);
     console.log(JSON.stringify(config, null, 2));
     let expected: Config = {
@@ -221,7 +222,7 @@ suite('ConfigService', () => {
         }]
       };
 
-      let svc = new ConfigService();
+      let svc = new ConfigService(winston);
       let rowcount = await svc.applyChanges(spreadsheetId, config);
 
       let loadedConfig = await svc.loadConfiguration(spreadsheetId);
@@ -234,15 +235,14 @@ suite('ConfigService', () => {
   });
 
   test('validate config: feeds', function() {
-    let configService = new ConfigService();
     // no feeds
-    let errors = configService.validateFeeds({});
+    let errors = ConfigService.validateFeeds({});
     assert.strictEqual(errors.length, 1);
     // no feeds
-    errors = configService.validateFeeds({feeds: []});
+    errors = ConfigService.validateFeeds({feeds: []});
     assert.strictEqual(errors.length, 1);
     // no feeds
-    errors = configService.validateFeeds({feeds: [{type:FeedType.Auto, url: 'url',name: "feed1"}]});
+    errors = ConfigService.validateFeeds({feeds: [{type:FeedType.Auto, url: 'url',name: "feed1"}]});
     assert.strictEqual(errors.length, 1);
   });
 });

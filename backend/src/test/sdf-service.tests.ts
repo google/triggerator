@@ -20,6 +20,7 @@ import DV360Facade, { SdfDownloadOptions } from '../app/dv360-facade';
 import { RuleEvaluator } from '../app/rule-engine';
 import SdfService from '../app/sdf-service';
 import { FeedData, RecordSet, SdfFull } from '../types/types';
+import winston from 'winston';
 
 /**
  * ============================================================================
@@ -88,9 +89,9 @@ suite('SdfService', function() {
         ad_template: "not used"
       }
     };
-    let dv_facade = new DV360Facade({useLocalCache: true});
+    let dv_facade = new DV360Facade(winston, {useLocalCache: true});
     let ruleEvaluator = new RuleEvaluator();
-    let sdf_svc = new SdfService(config, ruleEvaluator, dv_facade);
+    let sdf_svc = new SdfService(config, winston, ruleEvaluator, dv_facade);
     let dataFeed = getFeedData();
     let sdf = await sdf_svc.generateFromTemplate(dataFeed, false, true, new Date(), new Date());
     assert.strictEqual(sdf.insertionOrders.rowCount, dataFeed.rowCount, "Expect IO by feed row");
@@ -124,9 +125,9 @@ suite('SdfService', function() {
         ad_template: "not used"
       }
     };
-    let dv_facade = new DV360Facade({useLocalCache: true});
+    let dv_facade = new DV360Facade(winston, {useLocalCache: true});
     let ruleEvaluator = new RuleEvaluator();
-    let sdf_svc = new SdfService(config, ruleEvaluator, dv_facade);
+    let sdf_svc = new SdfService(config, winston, ruleEvaluator, dv_facade);
     let dataFeed = getFeedData();
     let sdf = await sdf_svc.generateFromTemplate(dataFeed, false, true, new Date(), new Date());
     assert.strictEqual(sdf.insertionOrders.rowCount, dataFeed.rowCount * 2, "Expect one IO per feed row count and rules multiplication");
@@ -160,9 +161,9 @@ suite('SdfService', function() {
         ad_template: "not used"
       }
     };
-    let dv_facade = new DV360Facade({useLocalCache: true});
+    let dv_facade = new DV360Facade(winston, {useLocalCache: true});
     let ruleEvaluator = new RuleEvaluator();
-    let sdf_svc = new SdfService(config, ruleEvaluator, dv_facade);
+    let sdf_svc = new SdfService(config, winston, ruleEvaluator, dv_facade);
     let dataFeed = getFeedData();
     let sdf = await sdf_svc.generateFromTemplate(dataFeed, false, true, new Date(), new Date());
     let filePath = await sdf_svc.exportSdf(sdf);

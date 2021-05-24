@@ -25,6 +25,7 @@ import { FeedData, SdfFull } from '../types/types';
 import SdfGenerator from './sdf-generator';
 import DV360Facade from './dv360-facade';
 import { getTempDir } from '../env';
+import { Logger } from '../types/logger';
 
 export interface GenerateSdfOptions {
   /**
@@ -42,8 +43,15 @@ export default class SdfService {
     quoted: true
   };
 
-  constructor(private config: Config, private ruleEvaluator: RuleEvaluator,
-    private dv_facade: DV360Facade) { }
+  constructor(private config: Config, 
+    private logger: Logger,
+    private ruleEvaluator: RuleEvaluator,
+    private dv_facade: DV360Facade) 
+  { 
+    if (!logger) throw new Error('[SdfService] ArgumentException: Required argument logger is missing');
+    if (!ruleEvaluator) throw new Error('[SdfService] ArgumentException: Required argument ruleEvaluator is missing');
+    if (!dv_facade) throw new Error('[SdfService] ArgumentException: Required argument dv_facade is missing');
+  }
 
   async generateSdf(feedData: FeedData, options: GenerateSdfOptions): Promise<string> {
     let sdf = await this.generateFromTemplate(feedData, 
@@ -76,7 +84,7 @@ export default class SdfService {
     let outputFile = path.join(path.resolve(getTempDir()), fileName);
     let promise = new Promise<string>((resolve, reject) => {
       zipfile.outputStream.pipe(fs.createWriteStream(outputFile)).on("close", () => {
-        console.log(`[SdfService] Generated and exported sdf in ${outputFile}`);
+        this.logger.debug(`[SdfService] Generated and exported sdf in ${outputFile}`);
         resolve(outputFile);
       }).on("error", (err) => {
         reject(err);
@@ -121,7 +129,7 @@ export default class SdfService {
         throw new Error(`[SdfService] Сouldn't load SDF for campaign ${this.config.execution!.campaignId}, DV360 returned empty SDF`);
       }
     }
-    let generator = new SdfGenerator(this.config, this.ruleEvaluator, feedData, tmplSdf, currentSdf);
+    let generator = new SdfGenerator(this.config, this.logger, this.ruleEvaluator, feedData, tmplSdf, currentSdf);
     generator.autoActivate = autoActivate;
     if (startDate && !isNaN(startDate.valueOf())) {
       generator.startDate = startDate;

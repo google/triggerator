@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 import { PORT, IS_GAE } from './env';
+import argv from './argv';
 if (IS_GAE) {
   require('@google-cloud/debug-agent').start({serviceContext: {enableCanary: false}});
 }
-let argv = require('yargs/yargs')(process.argv.slice(2)).argv;
 import { google } from 'googleapis';
 import { OAUTH_SCOPES } from './consts';
-import app from './app';
+import createApp from './app';
 
 async function mainServer() {
   // NOTE: setup authetication for server-to-server communication 
@@ -39,8 +39,9 @@ async function mainServer() {
     auth: auth
   });
 
+  const app = await createApp();
   app.listen(PORT, () => {
-    console.log(`Web server is listening on ${PORT}`)
+    console.log(`Web server is listening on ${PORT}, NODE_ENV = '${process.env.NODE_ENV}'`)
   });
 }
 

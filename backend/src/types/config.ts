@@ -121,6 +121,7 @@ export interface Config {
   feedInfo?: FeedConfig
   customFields?: CustomFields[];
   title?: string;
+  id?: string;
 }
 
 export default class ConfigInfo implements Config {
@@ -179,11 +180,12 @@ export default class ConfigInfo implements Config {
 
 export type AppStatus = "active" | "invalid"
 export interface AppInfo {
-  name?: string, 
-  configId: string, 
-  version: string, 
-  status: AppStatus, 
-  statusDetails?: string
+  name?: string;
+  configId: string; 
+  version: string;
+  status: AppStatus;
+  statusDetails?: string;
+  job?: JobInfo;
 }
 export interface AppList {
   spreadsheetId: string;
@@ -191,6 +193,7 @@ export interface AppList {
 }
 
 export interface JobInfo {
+  name?: string;
   enable?: boolean;
   schedule?: string;
   timeZone?: string;
