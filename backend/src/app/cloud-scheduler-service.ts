@@ -19,6 +19,7 @@ import { JobInfo } from '../types/config';
 import { Logger } from '../types/logger';
 
 let schedulerAPI = google.cloudscheduler({ version: "v1" });
+const COMPONENT = 'CloudSchedulerService';
 
 export default class SchedulerService {
   constructor(private logger: Logger) {    
@@ -49,11 +50,10 @@ export default class SchedulerService {
       };
       return jobInfo;
     } catch (e) {
-      this.logger.error(`[CloudSchedulerService] Fetch job ${jobName} failed: `, e.response?.data?.error);
+      this.logger.error(`Fetch job ${jobName} failed: `, e.response?.data?.error, {component: COMPONENT});
       if (e.response?.data?.error?.status === 'NOT_FOUND') {
         return null;
       }
-      e.logged = true;
       throw e;
     }
   }
@@ -71,8 +71,7 @@ export default class SchedulerService {
       }});
       return jobs;
     } catch (e) {
-      this.logger.error(`[CloudSchedulerService] Fetch job list failed: `, e.response?.data?.error);
-      e.logged = true;
+      this.logger.error(`Fetch job list failed: `, e.response?.data?.error, {component: COMPONENT});
       throw e;
     }
   }
@@ -90,14 +89,13 @@ export default class SchedulerService {
       this.logger.debug(gae);
       return gae.locationId! + "1";
     } catch (e) {
-      this.logger.error(`[CloudSchedulerService] Fetching location from AppEngine Admin API failed: ${e.message}`);
-      e.logged = true;
+      this.logger.error(`Fetching location from AppEngine Admin API failed: ${e.message}`, {component: COMPONENT});
       throw e;
     }
   }
   
   async updateJob(appId: string, jobInfo: JobInfo) {
-    this.logger.info(`[CloudSchedulerService] Updating scheduler job for configuration ${appId}`);
+    this.logger.info(`Updating scheduler job for configuration ${appId}`, {component: COMPONENT});
   
     // let projectId = await google.auth.getProjectId();
     // let locationId: string = await getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
@@ -107,14 +105,13 @@ export default class SchedulerService {
     //let jobName = await getJobName(appId);
     let jobInfoExist = await this.getJob(jobName);
     if (jobInfoExist) {
-      this.logger.debug(`[CloudSchedulerService] Found an existing job: ${jobName}`)
+      this.logger.debug(`Found an existing job: ${jobName}`, {component: COMPONENT})
       if (jobInfoExist.enable && !jobInfo.enable) {
         // disable
         try {
           await schedulerAPI.projects.locations.jobs.pause({ name: jobName });
         } catch (e) {
-          this.logger.error(`[CloudSchedulerService] Pausing the job ${jobName} failed: ${e.message}`);
-          e.logged = true;
+          this.logger.error(`Pausing the job ${jobName} failed: ${e.message}`, {component: COMPONENT});
           throw e;
         }
       } else if (!jobInfoExist.enable && jobInfo.enable) {
@@ -122,8 +119,7 @@ export default class SchedulerService {
         try {
           await schedulerAPI.projects.locations.jobs.resume({ name: jobName });
         } catch (e) {
-          this.logger.error(`[CloudSchedulerService] Resuming the job ${jobName} failed: ${e.message}`);
-          e.logger = true;
+          this.logger.error(`Resuming the job ${jobName} failed: ${e.message}`, {component: COMPONENT});
           throw e;
         }
       }
@@ -140,8 +136,7 @@ export default class SchedulerService {
               }
             });
           } catch (e) {
-            this.logger.error(`[CloudSchedulerService] Changing the job's properties failed: ${e.message}`);
-            e.logged = true;
+            this.logger.error(`Changing the job's properties failed: ${e.message}`, {component: COMPONENT});
             throw e;
           }
         }
@@ -161,12 +156,11 @@ export default class SchedulerService {
           timeZone: jobInfo.timeZone
         }
       };
-      this.logger.info(`[CloudSchedulerService] Creating a new scheduler job:\n` + JSON.stringify(createJobRequest));
+      this.logger.info(`Creating a new scheduler job:\n` + JSON.stringify(createJobRequest), {component: COMPONENT, requet: createJobRequest});
       try {
         await schedulerAPI.projects.locations.jobs.create(createJobRequest);
       } catch (e) {
-        this.logger.error(`[CloudSchedulerService] Job creation failed: ${e.message}`);
-        e.logged = true;
+        this.logger.error(`Job creation failed: ${e.message}`, {component: COMPONENT});
         throw e;
       }
     }
