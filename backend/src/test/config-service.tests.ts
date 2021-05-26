@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import fs from 'fs';
-import path from 'path';
-import http from 'http';
 import 'mocha';
 import assert from 'assert';
 import ConfigService, { CONFIG_SHEETS } from '../app/config-service';
-import ConfigInfo, { FeedType, Config, SdfElementType } from '../types/config';
+import { FeedType, Config, SdfElementType } from '../types/config';
 import { sheets_v4, google } from 'googleapis';
 import { difference } from '../app/utils';
 import winston from 'winston';
+import ConfigValidator from '../app/config-validator';
 
 const spreadsheetId = "1fOjOPQ9TKnoGGXPbG5d34YrkxivwePegLrVhtjbaoFA";
+
 suite('ConfigService', () => {
   test('fetch and parse config from Spreadsheet', async function () {
     let svc = new ConfigService(winston);
@@ -236,13 +235,13 @@ suite('ConfigService', () => {
 
   test('validate config: feeds', function() {
     // no feeds
-    let errors = ConfigService.validateFeeds({});
+    let errors = ConfigValidator.validateFeeds({});
     assert.strictEqual(errors.length, 1);
     // no feeds
-    errors = ConfigService.validateFeeds({feeds: []});
+    errors = ConfigValidator.validateFeeds({feeds: []});
     assert.strictEqual(errors.length, 1);
     // no feeds
-    errors = ConfigService.validateFeeds({feeds: [{type:FeedType.Auto, url: 'url',name: "feed1"}]});
+    errors = ConfigValidator.validateFeeds({feeds: [{type:FeedType.Auto, url: 'url',name: "feed1"}]});
     assert.strictEqual(errors.length, 1);
   });
 });
