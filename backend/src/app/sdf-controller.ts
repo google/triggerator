@@ -22,6 +22,7 @@ import SdfService, { GenerateSdfOptions } from './sdf-service';
 import { FeedData } from '../types/types';
 import { getCurrentDateTimestamp } from './utils';
 import { Logger } from '../types/logger';
+import ConfigValidator from './config-validator';
 
 export default class SdfController {
   constructor(
@@ -49,14 +50,14 @@ export default class SdfController {
     try {
       config = await this.configService.loadConfiguration(configId);
     } catch (e) {
-      this.logger.error(`[SdfController] Fetching configuration failed: ${e.message}`);
+      this.logger.error(`[SdfController] Fetching configuration failed: ${e.message}`, e);
       e.logged = true;
       throw e;
     }
     this.config = config;
 
     // #2 Validate configuration
-    let errors = ConfigService.validateGeneratingConfiguration(config, !!options.update);
+    let errors = ConfigValidator.validateGeneratingConfiguration(config, !!options.update);
     if (errors && errors.length)
       throw new Error(`[SdfController] There are errors in configuration that prevents from generating SDFs:\n` +
         errors.map(e => e.message).join(',\n')
@@ -68,7 +69,7 @@ export default class SdfController {
     try {
       feedData = await this.feedService.loadAll(config.feedInfo!);
     } catch (e) {
-      this.logger.error(`[SdfController] Fetching combined feed failed: ${e.message}`);
+      this.logger.error(`[SdfController] Fetching combined feed failed: ${e.message}`, e);
       e.logged = true;
       throw e;
     }
@@ -77,7 +78,7 @@ export default class SdfController {
     }
 
     // #4: validate columns for first row
-    errors = ConfigService.validateGeneratingRuntimeConfiguration(config, feedData);
+    errors = ConfigValidator.validateGeneratingRuntimeConfiguration(config, feedData);
     if (errors && errors.length)
     throw new Error(`[SdfController] There are errors in configuration that prevents from generating SDFs:\n` +
       errors.map(e => e.message).join(',\n')
@@ -91,7 +92,7 @@ export default class SdfController {
     try {
       filepath = await sdfSvc.generateSdf(feedData, options);
     } catch (e) {
-      this.logger.error(`[SdfController] Generating SDF failed: ${e.message}`);
+      this.logger.error(`[SdfController] Generating SDF failed: ${e.message}`, e);
       e.logged = true;
       throw e;
     }

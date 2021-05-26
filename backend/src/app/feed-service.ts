@@ -452,7 +452,7 @@ export default class FeedService {
     try {
       fileContents = await GoogleDriveFacade.downloadFile(feedInfo.url);
     } catch (e) {
-      console.error(`[GoogleDriveFacade] Fetching Google Drive file ${feedInfo.url} failed: ${e.message}`);
+      console.error(`[GoogleDriveFacade] Fetching Google Drive file ${feedInfo.url} failed: ${e.message}`, e);
       e.logged = true;
       throw e;
     }

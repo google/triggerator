@@ -37,6 +37,7 @@ import SchedulerService from './app/cloud-scheduler-service';
 import { sendEmail } from './app/email-notifier';
 import { Logger } from './types/logger';
 import { v4 as uuidv4 } from 'uuid';
+import ConfigValidator from './app/config-validator';
 
 let router = express.Router();
 
@@ -55,7 +56,7 @@ router.get('/apps/list', async (req: express.Request, res: express.Response, nex
   let cfgSvc = new ConfigService(req.log);
   try {
     let apps: AppList = await cfgSvc.loadApplicationList(masterSpreadsheetId);
-    req.log.info(`Fetched app list: ` + JSON.stringify(apps), { result: apps,component: 'WebApi' });
+    req.log.info(`Fetched app list: ` + JSON.stringify(apps), { result: apps, component: 'WebApi' });
     res.status(200).send(apps);
   } catch (e) {
     next(e);
@@ -332,82 +333,18 @@ router.post('/config/:id/schedule/edit', async (req: express.Request, res: expre
   }
 });
 
-/**
- * Endpoint for automated running engine execution (from Cloud Scheduler)
- */
-router.post('/engine/:id/run', async (req: express.Request, res: express.Response, next) => {
-  let appId = <string>req.params.id;
+async function runExecutionEngine(appId: string, isAsync: boolean, includeDebugLog: boolean, sendEmail: boolean, req: express.Request, res: express.Response) {
   const logger = req.log;
   // load and validate configuration
   let config = await getConfig(logger, appId, res);
   if (!config) return;
-  let errors = ConfigService.validateRuntimeConfiguration(config);
+  let errors = ConfigValidator.validateRuntimeConfiguration(config);
   if (errors && errors.length) {
-    next(new Error(`[RuleEngineController] There are errors in configuration that prevents from running processing campaigns with it: ` +
-      errors.map(e => e.message).join(',\n'))
+    const err = new Error(`[RuleEngineController] There are errors in configuration that prevents from running processing campaigns with it: ` +
+      errors.map(e => e.message).join(',\n')
     );
-    return;
-  }
-
-  const logFilename = path.join(getTempDir(), 'log_run_' + getCurrentDateTimestamp());
-  const fileTransport = new winston.transports.File({
-    tailable: true,
-    filename: logFilename,
-    format: winston.format.printf(
-      (info) => `${info.timestamp} ${info.level}: ${info.message}`,
-    )
-  });
-  logger.add(fileTransport);
-  let controller = new RuleEngineController(
-    config,
-    logger,
-    new RuleEvaluator(),
-    new FeedService(logger),
-    new DV360Facade(logger, dv_options)
-  );
-  try {
-    let updatedItems = await controller.run(appId);
-    logger.info(`RuleEngine compeleted. Updated items: ${updatedItems}`);
-    res.sendStatus(StatusCodes.OK);
-    // notify via email
-    logger.remove(fileTransport);
-    const log = fs.readFileSync(logFilename, 'utf8');
-    notifyOnSuccess(log, config);
-  } catch (e) {
-    if (!e.logged)
-      logger.error(`[WebApi] Execution (${appId}) failed: ${e.message}`, e);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message });
-    // notify via email
-    logger.remove(fileTransport);
-    try {
-      const log = fs.readFileSync(logFilename, 'utf8');
-      notifyOnError(e, log, config);
-    } catch (e2) {
-      logger.error(`[WebApi] Failed to read log file ${logFilename} for sending in email: ${e2}`);
-    }
-  }
-});
-
-let g_running_ops: Record<string, string[]> = {};
-/**
- * Endpoint for manual running engine execution from the client w/o stream, 
- * this method starts an operation and return an opid which used later on with querystatus method
- * to query the operation status and get log events.
- */
-router.post('/engine/:id/run/legacy/start', async (req: express.Request, res: express.Response, next) => {
-  let appId = <string>req.params.id;
-  const includeDebugLog = parseBool(req.query.debug);
-  const sendEmail = parseBool(req.query.notify) || true;
-
-  const logger = req.log;
-  // load and validate configuration
-  let config = await getConfig(logger, appId, res);
-  if (!config) return;
-  let errors = ConfigService.validateRuntimeConfiguration(config);
-  if (errors && errors.length) {
-    next(new Error(`[RuleEngineController] There are errors in configuration that prevents from running processing campaigns with it: ` +
-      errors.map(e => e.message).join(',\n'))
-    );
+    logger.error(err);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: err.message });
     return;
   }
 
@@ -415,6 +352,8 @@ router.post('/engine/:id/run/legacy/start', async (req: express.Request, res: ex
   g_running_ops[opId] = [];
   let traceid: string;
   let loggingDone = false;
+  let logOutput: string | null = null;
+  // a in-memory transport for winston logger to intercept all log events during execution
   const stream = new Writable({
     write: (chunk: any, encoding: BufferEncoding, next: (error?: Error | null | undefined) => void) => {
       if (!traceid) {
@@ -429,6 +368,9 @@ router.post('/engine/:id/run/legacy/start', async (req: express.Request, res: ex
         if (op) {
           op.push(line);
         }
+        if (!loggingDone && line !== '__DONE__') {
+          logOutput = logOutput + `${chunk.timestamp} ${line}\n`;
+        }
         if (line === '__DONE__') {
           loggingDone = true;
         }
@@ -439,18 +381,6 @@ router.post('/engine/:id/run/legacy/start', async (req: express.Request, res: ex
   });
   const streamTransport = new winston.transports.Stream({ stream });
   logger.add(streamTransport);
-  const logFilename = path.join(getTempDir(), 'log_run_' + getCurrentDateTimestamp());
-  let fileTransport: winston.transport | null = null;
-  if (sendEmail || !IS_GAE) {
-    fileTransport = new winston.transports.File({
-      tailable: true,
-      filename: logFilename,
-      format: winston.format.printf(
-        (info) => `${info.timestamp} ${info.level}: ${info.message}`,
-      )
-    });
-    logger.add(fileTransport);
-  }
 
   let controller = new RuleEngineController(
     config,
@@ -459,63 +389,97 @@ router.post('/engine/:id/run/legacy/start', async (req: express.Request, res: ex
     new FeedService(logger),
     new DV360Facade(logger, dv_options)
   );
+
   try {
-    let task = controller.run(appId);
-    res.status(StatusCodes.OK).send({ operation: opId });
-    let updatedItems = await task;
-    logger.info(`RuleEngine completed. Updated items: ${updatedItems}`);
-    // it's a special event - marker of completion for querystatus method:
+    let updatedItems: number;
+    if (isAsync) {
+      let task = controller.run(appId);
+      res.status(StatusCodes.OK).send({ operation: opId });
+      updatedItems = await task;
+    } else {
+      updatedItems = await controller.run(appId);
+      res.sendStatus(StatusCodes.OK);
+    }
+    logger.info(`RuleEngine compeleted. Updated items: ${updatedItems}`);
+
+    // NOTE: we can't simply remove streamTransport because
+    // winston can do asynchronous logging and not all events where flushed to our transport,
+    // So not to loose them we're sending a special event and signal from within the transport
+    // (flippping logginDone flag), and only after that remove the transport.
     logger.log('warn', '__DONE__');
-    // logging can be asynchronous, so we have to wait till all events are logged
-    await new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
       function wait() {
-        if (!loggingDone) {
-          setTimeout(wait, 100);
-        } else {
-          resolve(true);
-        }
+        loggingDone ? resolve(true) : setTimeout(wait, 100);
       }
       setImmediate(wait);
     });
     logger.remove(streamTransport);
+
     if (sendEmail) {
-      // notify via email
-      logger.remove(fileTransport!);
-      const log = fs.readFileSync(logFilename, 'utf8');
-      notifyOnSuccess(log, config);
+      logger.info('Sending email notification with log');
+      notifyOnSuccess(logOutput!, config);
     }
   } catch (e) {
-    //g_running_ops[opId].push('error:' + e.message);
+    if (!e.logged)
+      logger.error(`[WebApi] Execution (${appId}) failed: ${e.message}`, e);
+
     // this is a special event for client (anythings starting with 'error:') telling that the op was failed
-    logger.error('error:' + e.message);
-    // this is a special event - marker of completion for querystatus method
+    if (isAsync) {
+      logger.error('error:' + e.message);
+    }
+
+    // NOTE: we can't simply remove streamTransport because
+    // winston can do asynchronous logging and not all events where flushed to our transport,
+    // So not to loose them we're sending a special event and signal from within the transport
+    // (flippping logginDone flag), and only after that remove the transport.
     logger.log('warn', '__DONE__');
-    // logging can be asynchronous, so we have to wait till all events are logged
-    await new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
       function wait() {
-        if (!loggingDone) {
-          setTimeout(wait, 100);
-        } else {
-          resolve(true);
-        }
+        loggingDone ? resolve(true) : setTimeout(wait, 100);
       }
       setImmediate(wait);
     });
     logger.remove(streamTransport);
+
     if (sendEmail) {
-      // notify via email
-      logger.remove(fileTransport!);
-      try {
-        console.log('Sending email notification with log and error');
-        const log = fs.readFileSync(logFilename, 'utf8');
-        notifyOnError(e, log, config);
-        console.log('Notification sent');
-      } catch (e2) {
-        logger.error(`[WebApi] Failed to read log file ${logFilename} for sending in email: ${e2}`);
-      }
+      logger.info('Sending email notification with log and error');
+      notifyOnError(e, logOutput!, config);
     }
-    next(e);
+
+    // NOTE: if isAsync=true then we have sent response already
+    if (!isAsync) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message });
+    }
+  } finally {
+    if (!isAsync) {
+      // NOTE: for async operation (isAsync=true) operation will be removed in querystatus
+      delete g_running_ops[opId];
+    }
   }
+}
+
+/**
+ * Endpoint for automated running engine execution (from Cloud Scheduler)
+ */
+router.post('/engine/:id/run', async (req: express.Request, res: express.Response, next) => {
+  let appId = <string>req.params.id;
+  const includeDebugLog = parseBool(req.query.debug);
+
+  await runExecutionEngine(appId, /*isAsync=*/ false, includeDebugLog, /*sendEmail=*/ true, req, res);
+});
+
+let g_running_ops: Record<string, string[]> = {};
+/**
+ * Endpoint for manual running engine execution from the client w/o stream, 
+ * this method starts an operation and return an opid which used later on with querystatus method
+ * to query the operation status and get log events.
+ */
+router.post('/engine/:id/run/legacy/start', async (req: express.Request, res: express.Response, next) => {
+  let appId = <string>req.params.id;
+  const includeDebugLog = parseBool(req.query.debug);
+  const sendEmail = parseBool(req.query.notify);
+
+  await runExecutionEngine(appId, /*isAsync=*/ true, includeDebugLog, sendEmail, req, res);
 });
 
 router.get('/engine/:id/run/legacy/querystatus', async (req: express.Request, res: express.Response, next) => {
@@ -560,7 +524,7 @@ router.get('/engine/:id/run/stream', async (req: express.Request, res: express.R
   // load and validate configuration
   let config = await getConfig(logger, appId, res);
   if (!config) return;
-  let errors = ConfigService.validateRuntimeConfiguration(config);
+  let errors = ConfigValidator.validateRuntimeConfiguration(config);
   if (errors && errors.length) {
     next(new Error(`[RuleEngineController] There are errors in configuration that prevents from running processing campaigns with it: ` +
       errors.map(e => e.message).join(',\n'))
@@ -646,7 +610,7 @@ router.get('/settings', async (req: express.Request, res: express.Response) => {
     env: {
       // Git commit hash that we put in app.yaml during deployment:
       GIT_COMMIT: process.env.GIT_COMMIT ? {
-        value:process.env.GIT_COMMIT, 
+        value: process.env.GIT_COMMIT,
         link: `https://github.com/google/triggerator/commit/` + process.env.GIT_COMMIT
       } : undefined,
       GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
