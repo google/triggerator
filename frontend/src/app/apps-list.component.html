@@ -53,8 +53,8 @@
   <!-- Scheduled Column -->
   <ng-container matColumnDef="scheduled">
     <th mat-header-cell *matHeaderCellDef> Scheduled </th>
-    <td mat-cell *matCellDef="let element" matTooltip="{{element.job?.schedule}}">
-      {{element.job?.enable}}
+    <td mat-cell *matCellDef="let element" matTooltip="{{element.job?.schedule}}" style="text-align: center;">
+      <mat-icon mat-icon-button *ngIf="element.job?.enable">check</mat-icon>
     </td>
   </ng-container>
 
