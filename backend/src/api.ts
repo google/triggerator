@@ -335,6 +335,8 @@ router.post('/config/:id/schedule/edit', async (req: express.Request, res: expre
 
 async function runExecutionEngine(appId: string, isAsync: boolean, includeDebugLog: boolean, sendEmail: boolean, req: express.Request, res: express.Response) {
   const logger = req.log;
+
+  logger.info(`Starting ExecutionEngine, appId=${appId}, isAsync=${isAsync}, includeDebugLog=${includeDebugLog}, sendEmail=${sendEmail}`, {component: 'WebApi'});
   // load and validate configuration
   let config = await getConfig(logger, appId, res);
   if (!config) return;

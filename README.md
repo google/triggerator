@@ -4,12 +4,11 @@ Decision engine for automated managing DV360 campaigns using signals from extern
 **This is not an officially supported Google product.**
 
 ## Description
-The idea behind this project is automating management of campaigns in Google Display&Video 360 (DV360) using data from external sources that we call data feeds (or just feeds). DV360 doesn't allow to change programmatically all settings of campaigns through API, such as bids and frequencies. That's because this project took the approach of generating up front all combinations of Insertion Orders/Line Items/etc as a SDF (Structured Data Files) and leave it to the user to import into DV360. Later during run-time the execution engine takes a campaign created from generated SDF and enables/disables particular campaign's objects (IO/LI) for each row from feed(s).  
-To decide which IOs/LIs should be enabled or disabled for each feed row the
-decision engine uses rules. A rule has a condition (expression in JavaScript) which either evaluated to true or false.  
-In the end after SDF is generated and imported into DV360 we have a total number of combinations of IOs and LIs equal to total number of combinations of feed's rows and rules.  
-Row name (a field's value which name specified in configuration) and rule name are used in templates for naming DV360 campaigns objects (IOs/LIs/AdGroups/Ads).  
-The tool support both Display and TrueView (YouTube) campaigns.
+The idea behind this project is automating management of campaigns in Google Display&Video 360 (DV360) using data from external sources that we call data feeds (or just feeds). DV360 doesn't allow to change programmatically all settings of campaigns through API.  
+This project takes an approach of generating ad campaigns up front with all possible combinations of Insertion Orders/Line Items/etc in a form of SDF (Structured Data Files) which should be imported into DV360 manually by the user. Later during runtime the execution engine takes a campaign created from generated SDF and enables/disables particular campaign's objects (IO/LI) for each row from feed(s).  
+To decide which IOs/LIs should be enabled or disabled for each feed row the decision engine uses rules. A rule has a condition (expression in JavaScript) which is either evaluated to true or false. Enabling a IO/LI corresponding to a rule means that we apply bid, frequency and creatives that were assigned with that LI during the generation phase.  
+With Triggerator scheduled to run periodically (it uses Cloud Scheduler for this) clients can dynamically adjust their ad campaigns based on external signals, such as weather, disease level, traffic, UV factor, inventory balances.  
+The tool supports both Display and TrueView (YouTube) campaigns.
 
 
 ## Deployment 
@@ -45,9 +44,10 @@ In such a case if there was not any other errors you can just redeploy applicati
 
 #### Customization
 `setup.sh` support several command line arguments with which we can customeze defaults:
+* `-m` | `--masterdoc` - A Google Spreadsheet Id to use as a master doc (it'll be created if omitted), do not forget to share it with AppEngine's service account
 * `-l` | `--location` - location region for App Engine applicatoin, please note that despite other GCP services GAE supports only two regions: `europe-west` and `us-central`. Default is `europe-west`
 * `-t` | `--title` - title for OAuth consent screen. Default is 'Triggerator'
-* `-u` | `--user` - user email for to be shown as contact of OAuth consent screen. Default is the current user's email
+* `-u` | `--user` - user email to be shown as contact of OAuth consent screen. Default is the current user's email
 
 
 ### Manual installation
@@ -146,7 +146,7 @@ The solution is a classic web application with front-end built in Angular (11+) 
 
 Backend app doesn't have any authentication, nor any user management. For this the solution solely rely on Identity-Aware Proxy. It's a GCP service for shielding cloud apps with authentication. 
 
-Please note that IAP manages user access with its own roles. So even project owner won't have access to a shielded app by default. To allow access for a user you need to go to IAP page in your GCP project - 
+Please note that IAP manages user access with its own roles. So even the project owner won't have access to a shielded app by default. To allow access for a user you need to go to IAP page in your GCP project - 
 https://console.cloud.google.com/security/iap and add a member with 'IAP-secured Web App User' role. If you installed app with setup.sh script  it's already done for you, but you need to add members for all other users. You can allow access for everyone by adding "allUsers" or "allAuthenticatedUsers" as a member with the IAP role, but obviously it's not recommended from security point of view.
 
 Also you can create a member for a Google Workspace domain or a Google Group.
@@ -159,14 +159,14 @@ The application does not use any database. Instead all data is kept in Google Sp
 ### GAE environemnt, instance class, scaling and costs
 
 There are two type of environment in GAE: standard and flexible. See https://cloud.google.com/appengine/docs/the-appengine-environments 
-As flexibile environment doesn't provide Free Tier we use standard. But we can manually change the environemnt in your `app.yaml`. Standard environment allows to scale down to 0 running instances when the application is not in use.
+As flexibile environment doesn't provide Free Tier we use standard. But you can manually change the environemnt in your `app.yaml`. Standard environment allows to scale down to 0 running instances when the application is not in use.
 
 There are several types of scaling in standard environment. By default automatic scaling is used. Different scaling type have [different characterictics](https://cloud.google.com/appengine/docs/standard/nodejs/how-instances-are-managed#scaling_types). For this solution the most important one is *request timeout*. During main execution there will lots of calls to DV360 API (to enable/disable IO/LI) and the API is quite slow. So one execution can last quite long.  
 Request timeouts are following:
 * Automatic scaling : 10 minutes
 * Basic/manual scaling: 24 hours
 
-Usually 10 minutes is not enough. That because the template for `app.yaml` contains basic_scaling:
+Usually 10 minutes is not enough. That because by design basic scalling is used and the template for `app.yaml` contains `basic_scaling` section:
 ```yaml
 runtime: nodejs14
 basic_scaling:
@@ -180,9 +180,9 @@ Why should you bother about scaling type? It's because that Free Tier provides d
 "F" instances means automatic scaling.  
 "B" instances means basic (or manual) scaling.  
 
-So using one instance in standard environment with basic scaling you have 9 hours of execution to use with free of change. After that we'll be billing - check [pricing](https://cloud.google.com/appengine/pricing) (at 2021 it's $0.05 per hour).
+So using one instance in standard environment with basic scaling you have 9 hours of execution to use free of change. After that we'll be billing - check [pricing](https://cloud.google.com/appengine/pricing) (at 2021 it's $0.05 per hour).
 
-You alway can change environemnt, scaling and instance class in your app.yaml, see detail here - 
+You always can change environemnt, scaling and instance class in your app.yaml, see detail here - 
 https://cloud.google.com/appengine/docs/standard/nodejs/config/appref.
 
 

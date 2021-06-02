@@ -141,19 +141,38 @@ class DV360Template {
 }
 
 export default class SdfGenerator {
+  /**
+   * A mapping of a composite key (sourceId + rowName + ruleName) to IO's index in currentSdf.insertionOrders,
+   * i.e. a map to find an exising IO (while updating) by template IO's id, row and rule.
+   */
   targetIoMap: Record<string, number> = {};
+  /**
+   * A mapping of a composite key (IoId + sourceId + rowName + ruleName) to LI's index in currentSdf.lineItems,
+   * i.e. a map to find an exising LI (while updating) by IO's id, template LI's id, row and rule.
+   */
   targetLiMap: Record<string, number> = {};
   /**
    * A mapping of IO Ids from template campaing to IsTrueView flag.
    */
   trueViewTmplIOs: Record<string, boolean> = {};
+  /** 
+   * A list (actually mapping to true) of existing IOs' ids that we're going to activate 
+   * (ids are from currentSdf.insertionOrders).
+   * So that all other IOs (absent in this map) will be archived.
+   */
   existingIosMap: Record<string, boolean> = {};
   /**
-   * A list (actually mapping to true) of existing "Line Item Id".
+   * A list (actually mapping to true) of existing LIs' ids that we're going to activate
+   * (ids are from currentSdf.lineItems).
+   * So that all other LIs (absent in this map) will be archived.
    */
   existingLisMap: Record<string, boolean> = {};
   existingAdGroupsMap: Record<string, boolean> = {};
   existingAdsMap: Record<string, boolean> = {};
+  /**
+   * A mapping for IOs of a composite key (template IO's id + rowName + ruleName) 
+   * to a new IO's id in a campaing being generated.
+   */
   resultIosMap: Record<string, string> = {};
   /**
    * A mapping of keys consisting of 'Line Item Id' + rowName + ruleName (rule) 
@@ -162,8 +181,11 @@ export default class SdfGenerator {
   sourceToDestLineItem: Record<string, number> = {};
   sourceToDestAdGroup: Record<string, number> = {};
   recalculateStatus = false;
+  /** Whether to make new campaign active or not */
   autoActivate = false;
+  /** Start date for new campaign */
   startDate?: Date;
+  /** End date for new campaign */
   endDate?: Date;
 
   constructor(private config: Config, 
@@ -338,14 +360,12 @@ export default class SdfGenerator {
           let new_io = this.sdf_io(isTrueViewIO, campaignId, tmplIo, null, null, tmpl, no);
           newSdf.insertionOrders.addRow(new_io);
         }
-      }
-      else {
+      } else {
         // IO depends on feed row (contains row_name in name template) or it's TrueView IO (and so must depend on feed row)
         for (let i = 0; i < this.feedData.rowCount; i++) {
           let feedRow = this.feedData.getRow(i);
           if (isTrueViewIO || tmpl.isDisplayIoPerRule()) {
-            // IO depends on rules and feed row
-            // если это TV IO или имя IO зависит от правила (есть rule_name в шаблоне имени)
+            // IO depends on rules (either TrV IO or IO's name contains rule_name) and feed row
             for (const ruleInfo of this.config.rules!) {
               // TODO:
               // Left from v1
@@ -627,9 +647,9 @@ export default class SdfGenerator {
     else {
       // creating a LI
       new_li[SDF.LI.LineItemId] = 'ext' + new_li[SDF.LI.LineItemId] + entryNum;
-      if (ioIndex > -1)
+      if (ioIndex > -1) {
         new_li[SDF.LI.IoId] = this.currentSdf!.insertionOrders.get(SDF.LI.IoId, ioIndex);
-      else {
+      } else {
         new_li[SDF.LI.IoId] = this.resultIosMap[ioKey];
       }
     }
@@ -648,6 +668,7 @@ export default class SdfGenerator {
         new_li[SDF.LI.Name],
         feedRow[feedInfo.name_column!],
         ruleName);
+    // set LI's geo-targeting
     if (feedInfo.geo_code_column) {
       const geo_code = feedRow[feedInfo.geo_code_column];
       if (_.isFinite(geo_code) && _.isInteger(geo_code)) {
@@ -657,6 +678,7 @@ export default class SdfGenerator {
         this.logger.warn(`[SdfGenerator] Ignoring non-integer geo code '${geo_code}' for LI '${new_li[SDF.LI.Name]}'`);
       }
     }
+    // set in LI's Details field some meta-info that allows us to correlate later the LI and row/rule
     new_li[SDF.LI.Details] =
       'source:' + tmplLi[SDF.LI.LineItemId] + '\n' +
       'row:' + rowName + '\n' +
