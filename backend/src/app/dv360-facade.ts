@@ -220,11 +220,15 @@ export default class DV360Facade {
         },
       })).data;
     } catch(e) {
-      throw new Error(`[DV360Facade] sdfdownloadtasks.create for campaign ${campaignId} failed: code=${e.error!.code}, message=${e.error!.message}`);
+      if (e.error) {
+        throw new Error(`[DV360Facade] sdfdownloadtasks.create for campaign ${campaignId} failed: code=${e.error.code}, message=${e.error.message}`);
+      } else {
+        throw e;
+      }
     }
     if (op.error) {
       // TODO: should we log error.details as well?
-      throw new Error(`[DV360Facade] sdfdownloadtasks.create for campaign ${campaignId} failed: code=${op.error!.code}, message=${op.error!.message}`);
+      throw new Error(`[DV360Facade] sdfdownloadtasks.create for campaign ${campaignId} failed: code=${op.error.code}, message=${op.error.message}`);
     }
     const op_name = op.name!;
 

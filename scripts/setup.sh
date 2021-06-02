@@ -24,6 +24,7 @@ USER_EMAIL=$(gcloud config get-value account 2> /dev/null)
 PROJECT_ID=$(gcloud config get-value project 2> /dev/null) #"$(gcloud app describe --format='value(id)')"
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID | grep projectNumber | sed "s/.* '//;s/'//g")
 SERVICE_ACCOUNT=$PROJECT_ID@appspot.gserviceaccount.com
+MASTER_SPREADSHEET=
 
 enable_apis() {
   echo -e "${COLOR}Enabling APIs:${NC}"
@@ -61,6 +62,10 @@ urlencode() {
 # apply overwrites from command line arguments
 while :; do
     case $1 in
+  -m|--masterdoc)
+      shift
+      MASTER_SPREADSHEET=$1
+      ;;
   -t|--title)
       shift
       PROJECT_TITLE=$1
@@ -84,14 +89,18 @@ LOCATION=${GAE_LOCATION}1
 # enable required APIs
 enable_apis
 
-
-# create a master spreadsheet and share it with the  SA
-# NOTE: to access Sheets and Drive APIs we can't use gcloud's access token, 
-# so we'll use GAE's default service account. 
-# For this we'll export its key and set it up in well-known envvar GOOGLE_APPLICATION_CREDENTIALS
-gcloud iam service-accounts keys create key.json --iam-account=$SERVICE_ACCOUNT
-export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/key.json
-spreadsheetId=$(python3 ./create-spreadsheet.py  --user $USER_EMAIL)
+spreadsheetId=$MASTER_SPREADSHEET
+if [ -z "$spreadsheetId" ]; then
+  # master spreadsheet wasn't specified via cli arguments
+  # create a master spreadsheet and share it with the  SA
+  # NOTE: to access Sheets and Drive APIs we can't use gcloud's access token, 
+  # so we'll use GAE's default service account. 
+  # For this we'll export its key and set it up in well-known envvar GOOGLE_APPLICATION_CREDENTIALS,
+  # where Python client (used in create-spreadsheet.py) can find it.
+  gcloud iam service-accounts keys create key.json --iam-account=$SERVICE_ACCOUNT
+  export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/key.json
+  spreadsheetId=$(python3 ./create-spreadsheet.py  --user $USER_EMAIL)
+fi
 
 if [ -z "$spreadsheetId" ]; then
   echo "Spreadsheet was not created, unable to proceed"
