@@ -240,8 +240,12 @@ export default class SdfGenerator {
         SDF.Campaign.Name, SDF.Campaign.CampaignId, SDF.Campaign.Timestamp, SDF.Campaign.Status,
         SDF.Campaign.CampaignStartDate, SDF.Campaign.CampaignEndDate);
       this.logger.log('debug', `[SdfGenerator] Updating campaign ${campaignId}`, {campaing: new_campaign});
+      if (!currentSdf.insertionOrders || currentSdf.insertionOrders.rowCount == 0) {
+        throw new Error(`[SdfGenerator] Campaign ${campaignId} that's beign updated doesn't contain Insertion Orders`);
+      }      
     } else {
       // generating new
+      currentSdf = null;
       if (!dv360Template.campaign_name)
         throw new Error(`[SdfGenerator] New campaign name is not specified in configuration`);
       campaignId = 'ext' + tmplSdf.campaigns.get(SDF.Campaign.CampaignId, -1);
@@ -275,7 +279,7 @@ export default class SdfGenerator {
     // template campaign can be empty, or contains only IOs, or IOs and LIs, or IOs/LIs and AdGroups (for TrueView only)
     // The only requirement is existence of IOs
     if (!tmplSdf.insertionOrders || tmplSdf.insertionOrders.rowCount == 0) {
-      throw new Error(`[SdfGenerator] Template campaign ${campaignId} doesn't contain Insertion Orders`);
+      throw new Error(`[SdfGenerator] Template campaign ${tmplSdf.campaigns.get(SDF.Campaign.CampaignId, -1)} doesn't contain Insertion Orders`);
     }
     let newSdf: SdfFull = {
       advertiserId: this.config.execution!.advertiserId!,
@@ -309,6 +313,7 @@ export default class SdfGenerator {
       // Updating
       // fill out two dictionaries: targetIoMap and targetLiMap,
       // they map keys (which includes some data from Detail field) to IO/LI indecies.
+      // NOTE: we checked above that currentSdf.insertionOrders isn't empty
       for (let i = 0; i < currentSdf.insertionOrders.rowCount; i++) {
         let details = currentSdf.insertionOrders.get(SDF.IO.Details, i);
         let source: any = /source:(\d+)(?:\\n|$)/m.exec(details);
