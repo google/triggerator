@@ -18,7 +18,7 @@ import { AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChild, View
 import { ActivatedRoute, Router } from '@angular/router';
 import { Config, FeedInfo, JobInfo } from '../../../backend/src/types/config';
 import { ConfigService } from './shared/config.service';
-import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
 import { FeedEditorDialogComponent } from './feed-editor-dialog.component';
@@ -142,6 +142,17 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
           this.formExecution.get('schedule').disable({ emitEvent: false, onlySelf: true });
           this.formExecution.get('timeZone').disable({ emitEvent: false, onlySelf: true });
         }
+      });
+    // prevent appearing of "there are unsaved changes" notification for swtiches 
+    this.formExecution.controls.runDebugLogging.valueChanges
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(statuses => {
+        this.formExecution.controls.runDebugLogging.markAsPristine();
+      });
+    this.formExecution.controls.runSendEmail.valueChanges
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(statuses => {
+        this.formExecution.controls.runSendEmail.markAsPristine();
       });
     this.timeZonesFiltered = this.formExecution.controls.timeZone.valueChanges
       .pipe(
@@ -364,28 +375,29 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     //   this.handleApiError('fail', e);
     // }
     // return;
+    if (this.executing) return;
     const includeDebugLogging = this.formExecution.get('runDebugLogging').value;
-    const sendNotification  = this.formExecution.get('runSendEmail').value;
+    const sendNotification = this.formExecution.get('runSendEmail').value;
     try {
-      this.executing = true;
+      setTimeout(() => {this.executing = true;}, 1);
       this.eventList.addMessage('Starting execution');
       this.eventList.open();
       this.configService.runExecution(
         this.appId, {
-          debugLogging: includeDebugLogging,
-          sendNotification: sendNotification
-        }).subscribe({
+        debugLogging: includeDebugLogging,
+        sendNotification: sendNotification
+      }).subscribe({
         next: (msg) => {
           this.eventList.addMessage(msg);
         },
         error: (msg) => {
-          this.executing = false;
+          setTimeout(() => {this.executing = false;}, 1);
           this.eventList.addMessage(msg);
           this.eventList.addMessage('Execution failed');
           this.showSnackbar('Execution failed');
         },
         complete: () => {
-          this.executing = false;
+          setTimeout(() => {this.executing = false;}, 1);
           this.eventList.addMessage('Execution completed');
           this.showSnackbar('Execution completed');
         }
@@ -394,7 +406,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       // we don't expect an error here, but just in case
       console.error(e);
     } finally {
-      this.executing = false;
+      setTimeout(() => {this.executing = false;}, 1);
     }
   }
 
@@ -598,12 +610,12 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   mouseOverIndex = -1;
   validateColumn(object: any, path: string): boolean {
     const parts = path.split('.');
-    for(let i=0; i < parts.length - 1; i++) {
+    for (let i = 0; i < parts.length - 1; i++) {
       object = object[parts[i]];
       if (!object) return false;
     }
     if (!object) return false;
-    return object.hasOwnProperty(parts[parts.length-1]);
+    return object.hasOwnProperty(parts[parts.length - 1]);
   }
 
   validateFeedColumns() {

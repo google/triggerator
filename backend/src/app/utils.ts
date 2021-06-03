@@ -64,10 +64,11 @@ export function tryParseNumber(str: any): number | undefined {
  */
 export function parseBool(params: any): boolean {
   return !(
-    params === "false" ||
+    !params ||
+    params.toLowerCase() === "false" ||
     params === "0" ||
-    params === "" ||
-    params === undefined
+    params === "null" ||
+    params === "undefined"
   );
 };
 

@@ -148,7 +148,7 @@
         </div>
         <div class="row">
           <div class="col">
-            <button mat-raised-button (click)="runExecution()" [disabled]="executing" color="accent"
+            <button mat-raised-button (click)="runExecution()" [disabled]="executing ? true : null" color="accent"
               class="mat-elevation-z2">
               <mat-icon>bolt</mat-icon> Run
             </button>
@@ -315,11 +315,11 @@
         <!-- Operations -->
         <div class="row">
           <div class="col">
-            <button mat-raised-button (click)="generateSdf()" [disabled]="executing" color="accent"
+            <button mat-raised-button (click)="generateSdf()" [disabled]="executing ? true : null" color="accent"
               class="mat-elevation-z2">
               <mat-icon>bolt</mat-icon> Generate SDF
             </button>
-            <button mat-raised-button (click)="updateSdf()" [disabled]="executing" color="accent"
+            <button mat-raised-button (click)="updateSdf()" [disabled]="executing ? true : null" color="accent"
               class="mat-elevation-z2 ml-4">
               <mat-icon>bolt</mat-icon> Update SDF
             </button>
@@ -397,7 +397,7 @@
         </div>
         <div class="row">
           <div class="col text-left">
-            <button mat-raised-button (click)="loadAllFeeds()" [disabled]="!this.dataSourceFeeds.data?.length"
+            <button mat-raised-button (click)="loadAllFeeds()" [disabled]="!this.dataSourceFeeds.data?.length ? true : null"
               color="accent" class="mat-elevation-z2" matTooltip="Load combined feed (with join)">
               <mat-icon>bolt</mat-icon> Preview
             </button>
