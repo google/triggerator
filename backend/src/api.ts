@@ -333,7 +333,11 @@ router.post('/config/:id/schedule/edit', async (req: express.Request, res: expre
   }
 });
 
-async function runExecutionEngine(appId: string, isAsync: boolean, includeDebugLog: boolean, sendEmail: boolean, req: express.Request, res: express.Response) {
+async function runExecutionEngine(appId: string, isAsync: boolean, 
+  includeDebugLog: boolean, sendEmail: boolean, 
+  forceUpdate: boolean, dryRun: boolean,
+  req: express.Request, res: express.Response
+  ) {
   const logger = req.log;
 
   logger.info(`Starting ExecutionEngine, appId=${appId}, isAsync=${isAsync}, includeDebugLog=${includeDebugLog}, sendEmail=${sendEmail}`, {component: 'WebApi'});
@@ -395,11 +399,11 @@ async function runExecutionEngine(appId: string, isAsync: boolean, includeDebugL
   try {
     let updatedItems: number;
     if (isAsync) {
-      let task = controller.run(appId);
+      let task = controller.run(appId, {forceUpdate, dryRun});
       res.status(StatusCodes.OK).send({ operation: opId });
       updatedItems = await task;
     } else {
-      updatedItems = await controller.run(appId);
+      updatedItems = await controller.run(appId, {forceUpdate, dryRun});
       res.sendStatus(StatusCodes.OK);
     }
     logger.info(`RuleEngine compeleted. Updated items: ${updatedItems}`);
@@ -467,7 +471,9 @@ router.post('/engine/:id/run', async (req: express.Request, res: express.Respons
   let appId = <string>req.params.id;
   const includeDebugLog = parseBool(req.query.debug);
 
-  await runExecutionEngine(appId, /*isAsync=*/ false, includeDebugLog, /*sendEmail=*/ true, req, res);
+  await runExecutionEngine(appId, /*isAsync=*/ false, includeDebugLog, /*sendEmail=*/ true, 
+    /*forceUpdate=*/ false, /*dryRun=*/ false,
+    req, res);
 });
 
 let g_running_ops: Record<string, string[]> = {};
@@ -480,8 +486,10 @@ router.post('/engine/:id/run/legacy/start', async (req: express.Request, res: ex
   let appId = <string>req.params.id;
   const includeDebugLog = parseBool(req.query.debug);
   const sendEmail = parseBool(req.query.notify);
+  const forceUpdate = parseBool(req.query.forceUpdate);
+  const dryRun = parseBool(req.query.dryRun);
 
-  await runExecutionEngine(appId, /*isAsync=*/ true, includeDebugLog, sendEmail, req, res);
+  await runExecutionEngine(appId, /*isAsync=*/ true, includeDebugLog, sendEmail, forceUpdate, dryRun, req, res);
 });
 
 router.get('/engine/:id/run/legacy/querystatus', async (req: express.Request, res: express.Response, next) => {
@@ -511,7 +519,7 @@ router.get('/engine/:id/run/legacy/querystatus', async (req: express.Request, re
 
 /**
  * Endpoint for manual running engine execution (from the client) with streaming logs back to client.
- * WARN: streaming isn't supported by Google App Engine, so the endpoint isn't used currently.
+ * WARN: streaming isn't supported by Google App Engine, so the endpoint isn't currently used.
  */
 router.get('/engine/:id/run/stream', async (req: express.Request, res: express.Response, next) => {
   let started = new Date();

@@ -157,6 +157,10 @@
             <mat-slide-toggle formControlName="runDebugLogging">Detailed (debug) logging</mat-slide-toggle><br>
             <mat-slide-toggle formControlName="runSendEmail">Send email notification</mat-slide-toggle>
           </div>
+          <div class="col">
+            <mat-slide-toggle formControlName="runForceUpdate">Force update</mat-slide-toggle>
+            <mat-slide-toggle formControlName="dryRun">Dry run (do not call DV360 API)</mat-slide-toggle>
+          </div>
         </div>
         <div class="row">
           <div class="col-12 full-width">
@@ -276,7 +280,7 @@
         <div class="row">
           <div class="col">
             <mat-slide-toggle formControlName="activateCampaign">Activate campaign</mat-slide-toggle>
-            <mat-icon matTooltip="Updated or generated campaign will have active status" style="vertical-align: bottom; margin-left: 5px">help_outline</mat-icon>
+            <mat-icon matTooltip="Updated or generated campaign will have Active status, otherwise - Draft" style="vertical-align: bottom; margin-left: 5px">help_outline</mat-icon>
           </div>
         </div>
         <!-- date range -->
