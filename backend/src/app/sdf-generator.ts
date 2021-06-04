@@ -356,10 +356,10 @@ export default class SdfGenerator {
       if (!isTrueViewIO && !tmpl.isDisplayIoPerFeedRow()) {
         if (tmpl.isDisplayIoPerRule()) {
           // IO doesn't depend on feed row but depends on rules (NOTE: new v2 feature)
-          for (const ruleInfo of this.config.rules!) {
-            let new_io = this.sdf_io(isTrueViewIO, campaignId, tmplIo, null, ruleInfo, tmpl, no);
-            newSdf.insertionOrders.addRow(new_io);
-          }
+          // for (const ruleInfo of this.config.rules!) {
+          //   let new_io = this.sdf_io(isTrueViewIO, campaignId, tmplIo, null, ruleInfo, tmpl, no);
+          //   newSdf.insertionOrders.addRow(new_io);
+          // }
         } else {
           // IO doesn't depend on anything (neither feed row nor rules)
           let new_io = this.sdf_io(isTrueViewIO, campaignId, tmplIo, null, null, tmpl, no);

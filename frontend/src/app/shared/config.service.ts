@@ -91,10 +91,15 @@ export class ConfigService {
     return this.backendService.getApi(`/config/${configId}/schedule`);
   }
 
-  runExecution(configId: string, options?: { debugLogging?: boolean, sendNotification?: boolean }): Observable<string> {
+  runExecution(configId: string, options?: { debugLogging?: boolean, sendNotification?: boolean, forceUpdate?: boolean, dryRun?: boolean }): Observable<string> {
     return this.backendService.getEventsLegacy(
       `/engine/${configId}/run/legacy`,
-      { debug: options?.debugLogging, notify: options?.sendNotification }
+      { 
+        debug: options?.debugLogging, 
+        notify: options?.sendNotification,
+        forceUpdate: options?.forceUpdate,
+        dryRun: options?.dryRun
+      }
     );
     //return this.backendService.getEvents(`/engine/${configId}/run/stream`, {debug: options?.debugLogging});
   }

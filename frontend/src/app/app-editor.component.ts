@@ -93,7 +93,9 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       timeZone: { value: null, disabled: true },
       enable: null,
       runDebugLogging: null,
-      runSendEmail: null
+      runSendEmail: null,
+      runForceUpdate: null,
+      dryRun: null
     });
     this.formSdf = this.fb.group({
       template_campaign: null,
@@ -142,18 +144,22 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
           this.formExecution.get('schedule').disable({ emitEvent: false, onlySelf: true });
           this.formExecution.get('timeZone').disable({ emitEvent: false, onlySelf: true });
         }
+        // prevent appearing of "there are unsaved changes" notification for swtiches 
+        if (values.hasOwnProperty('runDebugLogging')) {
+          this.formExecution.controls.runDebugLogging.markAsPristine();
+        }
+        if (values.hasOwnProperty('runSendEmail')) {
+          this.formExecution.controls.runSendEmail.markAsPristine();
+        }
+        if (values.hasOwnProperty('runForceUpdate')) {
+          this.formExecution.controls.runForceUpdate.markAsPristine();
+        }
+        if (values.hasOwnProperty('dryRun')) {
+          this.formExecution.controls.dryRun.markAsPristine();
+        }
       });
-    // prevent appearing of "there are unsaved changes" notification for swtiches 
-    this.formExecution.controls.runDebugLogging.valueChanges
-      .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(statuses => {
-        this.formExecution.controls.runDebugLogging.markAsPristine();
-      });
-    this.formExecution.controls.runSendEmail.valueChanges
-      .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(statuses => {
-        this.formExecution.controls.runSendEmail.markAsPristine();
-      });
+
+    // intellisence for entering TimeZone
     this.timeZonesFiltered = this.formExecution.controls.timeZone.valueChanges
       .pipe(
         startWith(''),
@@ -376,28 +382,33 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     // }
     // return;
     if (this.executing) return;
-    const includeDebugLogging = this.formExecution.get('runDebugLogging').value;
+    const debugLogging = this.formExecution.get('runDebugLogging').value;
     const sendNotification = this.formExecution.get('runSendEmail').value;
+    const forceUpdate = this.formExecution.get('runForceUpdate').value;
+    const dryRun = this.formExecution.get('dryRun').value;
+
     try {
-      setTimeout(() => {this.executing = true;}, 1);
+      this.executing = true;
       this.eventList.addMessage('Starting execution');
       this.eventList.open();
       this.configService.runExecution(
         this.appId, {
-        debugLogging: includeDebugLogging,
-        sendNotification: sendNotification
+        debugLogging,
+        sendNotification,
+        forceUpdate,
+        dryRun
       }).subscribe({
         next: (msg) => {
           this.eventList.addMessage(msg);
         },
         error: (msg) => {
-          setTimeout(() => {this.executing = false;}, 1);
+          this.executing = true;
           this.eventList.addMessage(msg);
           this.eventList.addMessage('Execution failed');
           this.showSnackbar('Execution failed');
         },
         complete: () => {
-          setTimeout(() => {this.executing = false;}, 1);
+          this.executing = true;
           this.eventList.addMessage('Execution completed');
           this.showSnackbar('Execution completed');
         }
@@ -405,8 +416,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     } catch (e) {
       // we don't expect an error here, but just in case
       console.error(e);
-    } finally {
-      setTimeout(() => {this.executing = false;}, 1);
+      this.executing = true;
     }
   }
 

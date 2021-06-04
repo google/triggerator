@@ -47,11 +47,17 @@ const allWithCustomFunctions = {
 const parseCustom = create(allWithCustomFunctions).parse;
 const evaluateCustom = create(allWithCustomFunctions).evaluate;
 
-//interface DV360Gateway {}
-interface RuleEngineOptions {
+export interface RuleEngineOptions {
+  /**
+   * Forcely update statuses (of IO/LI) despite their current status.
+   */
   forceUpdate?: boolean;
-  dontUpdate?: boolean;
+  /**
+   * Do not issue actual API call.
+   */
+  dryRun?: boolean;
 }
+
 export class RuleEvaluator {
   parsed_conditions: Record<string, MathNode> = {};
 
@@ -91,10 +97,11 @@ export class RuleEvaluator {
     return null;
   }
 }
+
 export default class RuleEngine {
   private config: Config;
-  forceUpdate;
-  dontUpdate;
+  private forceUpdate;
+  private dryRun;
   updateLog: string[] = [];
 
   constructor(config: Config, 
@@ -109,7 +116,7 @@ export default class RuleEngine {
     if (!ruleEvaluator) throw new Error(`[RuleEngine] ArgumentException: RuleEvaluator should be specified`);
     if (!dv_facade) throw new Error(`[RuleEngine] ArgumentException: DV360Facade should be specified`);
     this.config = config;
-    this.dontUpdate = options?.dontUpdate ?? false;
+    this.dryRun = options?.dryRun ?? false;
     this.forceUpdate = options?.forceUpdate ?? false;
   }
 
@@ -231,8 +238,8 @@ export default class RuleEngine {
         this.logger.debug(`[RuleEngine] activation IO ${io.ioId} skipped because it's already active`);
         continue;
       };
-      if (!this.dontUpdate) {
-        this.logger.debug('[RuleEngine] activating IO ' + io.ioId);
+      this.logger.debug('[RuleEngine] activating IO ' + io.ioId);
+      if (!this.dryRun) {
         await this.dv_facade.updateInsertionOrderStatus(advertiserId, io.ioId, 'active');
       }
       changesCount++;
@@ -249,8 +256,8 @@ export default class RuleEngine {
         this.logger.debug(`[RuleEngine] deactivation IO ${io.ioId} skipped because it's already non-active`);
         continue;
       };
-      if (!this.dontUpdate) {
-        this.logger.debug('[RuleEngine] deactivating IO ' + io.ioId);
+      this.logger.debug('[RuleEngine] deactivating IO ' + io.ioId);
+      if (!this.dryRun) {
         await this.dv_facade.updateInsertionOrderStatus(advertiserId, io.ioId, 'paused');
       }
       changesCount++;
@@ -267,8 +274,8 @@ export default class RuleEngine {
         this.logger.debug(`[RuleEngine] activation LI ${li.liId} skipped because it's already active`);
         continue;
       };
-      if (!this.dontUpdate) {
-        this.logger.debug('[RuleEngine] activating Li ' + li.liId);
+      this.logger.debug('[RuleEngine] activating Li ' + li.liId);
+      if (!this.dryRun) {
         await this.dv_facade.updateLineItemStatus(advertiserId, li.liId, 'active');
       }        
       changesCount++;
@@ -286,8 +293,8 @@ export default class RuleEngine {
         continue;
       };
 
-      if (!this.dontUpdate) {
-        this.logger.debug('[RuleEngine] deactivating Li ' + li.liId);
+      this.logger.debug('[RuleEngine] deactivating Li ' + li.liId);
+      if (!this.dryRun) {
         await this.dv_facade.updateLineItemStatus(advertiserId, li.liId, 'paused');
       }
       changesCount++;
@@ -302,6 +309,7 @@ export default class RuleEngine {
     let changesCount = 0;
     for (let io of ioIds) {
       let lis = lineItems.findAll('Io Id', io.ioId);
+      this.logger.debug(`[RuleEngine] Processing LIs of IO ${io.ioId}: ${lis}`);
       for (let index of lis) {
         
         let liId = lineItems.get('Line Item Id', index);
@@ -311,17 +319,30 @@ export default class RuleEngine {
         if (!ruleName) continue;
 
         let status = lineItems.get('Status', index);
-        if (this.forceUpdate || (ruleName != activeRule?.name && status == 'Active')) {
-          this.logger.debug('[RuleEngine] deactivating LI ' + liId);
-          await this.dv_facade.updateLineItemStatus(advertiserId, liId, 'paused');
-          changesCount++;
-          this.updateLog.push(`LI:${liId}:Status=Paused`);
-        }
-        else if (this.forceUpdate || (ruleName == activeRule?.name && status != 'Active')) {
-          this.logger.debug('[RuleEngine] activating LI ' + liId);
-          await this.dv_facade.updateLineItemStatus(advertiserId, liId, 'active');
-          changesCount++;
-          this.updateLog.push(`LI:${liId}:Status=Active`);
+        if (ruleName != activeRule?.name) {
+          // deactivate
+          if (this.forceUpdate || status == 'Active') {
+            this.logger.debug('[RuleEngine] deactivating LI ' + liId);
+            if (!this.dryRun) {
+              await this.dv_facade.updateLineItemStatus(advertiserId, liId, 'paused');
+            }
+            changesCount++;
+            this.updateLog.push(`LI:${liId}:Status=Paused`);
+          } else {
+            this.logger.debug(`[RuleEngine] deactivating LI ${liId} skipped because it's already non-active and forceUpdate=false`);
+          }
+        } else if (ruleName == activeRule?.name) {
+          // activate
+          if (this.forceUpdate || status != 'Active') {
+            this.logger.debug('[RuleEngine] activating LI ' + liId);
+            if (!this.dryRun) {
+              await this.dv_facade.updateLineItemStatus(advertiserId, liId, 'active');
+            }
+            changesCount++;
+            this.updateLog.push(`LI:${liId}:Status=Active`);
+          } else {
+            this.logger.debug(`[RuleEngine] activating LI ${liId} skipped because it's already active and forceUpdate=false`);
+          }
         }
       }
     }

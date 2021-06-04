@@ -15,7 +15,7 @@
  */
 import { Config } from '../types/config';
 import FeedService from './feed-service';
-import RuleEngine, { RuleEvaluator } from './rule-engine';
+import RuleEngine, { RuleEngineOptions, RuleEvaluator } from './rule-engine';
 import DV360Facade from './dv360-facade';
 import { Logger } from '../types/logger';
 import logger from './logger-winston';
@@ -29,14 +29,14 @@ export default class RuleEngineController {
       if (!logger) throw new Error('[RuleEngineController] Required argument logger is missing');
   }
 
-  async run(configSpreadsheetId: string): Promise<number> {
+  async run(configSpreadsheetId: string, options?: RuleEngineOptions): Promise<number> {
     if (!configSpreadsheetId) throw new Error(`[RuleEngineController] Configuration was not specified`);
     const config = this.config;
     let advertiserId = config.execution!.advertiserId!;
     let campaignId = config.execution!.campaignId!;
 
     logger.info(`Starting engine execution for configuration ${config.title} (${config.id}), advertiserId=${advertiserId}, campaignId=${campaignId} `, {config: config, component: 'RuleEngineController'})
-    const engine = new RuleEngine(config, this.logger, this.dv_facade, this.ruleEvaluator);
+    const engine = new RuleEngine(config, this.logger, this.dv_facade, this.ruleEvaluator, options);
     // load data from feed(s) and download SDF from DV350 in parallel
     let feedDataPromise = this.feedService.loadAll(config.feedInfo!);
     let sdfPromise = this.dv_facade.downloadSdf(advertiserId, campaignId);
