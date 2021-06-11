@@ -18,7 +18,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableDataSource } from '@angular/material/table';
 import { Router } from '@angular/router';
-import { AppInfo } from '../../../backend/src/types/config';
+import { AppInfo, Config } from '../../../backend/src/types/config';
 import { ComponentBase } from './component-base';
 import { NewAppDialogComponent } from './new-app-dialog.component';
 import { ConfigService } from './shared/config.service';

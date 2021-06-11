@@ -395,6 +395,10 @@ export default class ConfigService {
         configurations: []
       };
     }
+    // start async fetching of Scheduler jobs
+    let scheduler = new SchedulerService(this.logger);
+    let jobListTask = scheduler.getJobList();
+
     let appList: AppList = {
       spreadsheetId: masterSpreadsheetId,
       configurations: []
@@ -424,8 +428,7 @@ export default class ConfigService {
     }
 
     // fetch all jobs and enrich the app list with their corresponding job infos
-    let scheduler = new SchedulerService(this.logger);
-    let jobList = await scheduler.getJobList();
+    let jobList = await jobListTask;
     for (const job of jobList) {
       if (!job.name) continue;
       let jobId = job.name.substring(job.name.indexOf('/jobs/') + '/jobs/'.length);
@@ -540,6 +543,18 @@ export default class ConfigService {
       }
       throw e;
     }
+    // put default values into the newly created configuration
+    let config: Config = {
+      dv360Template: {
+        io_template: "{base_name}",
+        li_template: "{base_name}-{row_name}-{rule_name}",
+        yt_li_template: "{base_name}-{row_name}-{rule_name}",
+        yt_io_template: "{base_name}",
+        adgroup_template: "{base_name}",
+        ad_template: "{base_name}"
+      }
+    };
+    await this.applyChanges(appId, config);
 
     let result: AppInfo = {
       name: name,

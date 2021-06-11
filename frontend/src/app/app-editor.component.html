@@ -16,8 +16,13 @@
       <div class="col">
         Application
       </div>
-      <div class="col text-right" style="font-size: 14px">
-        <mat-slide-toggle [(ngModel)]="autoSave">Auto-save</mat-slide-toggle>
+      <div class="col-2 text-right" style="font-size: 14px">
+        <button mat-icon-button (click)="undo()" [disabled]="undoStack.length === 0" color="accent" aria-label="Undo last change" title="Undo last change">
+        <mat-icon>undo</mat-icon>
+      </button>
+      </div>
+      <div class="col-2 text-right" style="font-size: 14px">
+        <mat-slide-toggle [(ngModel)]="autoSave" class="mt-2">Auto-save</mat-slide-toggle>
       </div>
     </div>
   </mat-card-title>
@@ -33,6 +38,7 @@
   <mat-tab label="General">
     <form [formGroup]="formGeneral" novalidate>
       <mat-card>
+        <!-- AdvertiserId -->
         <div class="row">
           <div class="col">
             <mat-form-field appearance="outline" color="accent">
@@ -45,6 +51,7 @@
             </mat-form-field>
           </div>
         </div>
+        <!-- CampaignId -->
         <div class="row">
           <div class="col">
             <mat-form-field appearance="outline" class="full-width" color="accent">
@@ -56,7 +63,7 @@
             </mat-form-field>
           </div>
         </div>
-
+        <!-- notificationEmail -->
         <div class="row">
           <div class="col">
             <mat-form-field appearance="outline" class="full-width" color="accent">
@@ -217,9 +224,12 @@
               macros:
               <ul>
                 <li>{{ '{' }}base_name{{ '}' }} - entity (IO/LI/etc) name from template campaign</li>
-                <li>{{ '{' }}row_name{{ '}' }} - name column's value of feed row</li>
+                <li>{{ '{' }}row_name{{ '}' }} - feed row name (a value of feed row's column specified as name column - see <a href="#" (click)="switchToTab('Feeds & Rules');$event.preventDefault()">Columns</a>)</li>
                 <li>{{ '{' }}rule_name{{ '}' }} - rule name - see <a href="#" (click)="switchToTab('Feeds & Rules');$event.preventDefault()">Rules</a></li>
               </ul>
+            </div>
+            <div class="mb-3">
+              <button mat-raised-button (click)="generateDefaultTemplates()" color="accent">Generate default templates</button>
             </div>
           </div>
         </div>

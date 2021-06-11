@@ -121,14 +121,17 @@ export default class RuleEngine {
   }
 
   async run(feedData: FeedData, sdf: SdfFull): Promise<number> {
+    if (!this.config.rules || !this.config.rules.length)
+      throw new Error(`[RuleEngine] There no rules in configuration to process`);
+    if (!sdf.insertionOrders) 
+      throw new Error(`[RuleEngine] Campaign has no insersion orders`);
     let nameColumn = this.config.feedInfo!.name_column!;
     let iosMap: Record<string, Array<{ ioId: string, status: string }>> = {};
     let updatedItems = 0;
-    if (!this.config.rules || !this.config.rules.length)
-      throw new Error(`[RuleEngine] There no rules in configuration to process`);
     let advertiserId = sdf.advertiserId;
-    if (!sdf.insertionOrders) throw new Error(`[RuleEngine] Campaign has no insersion orders`);
     this.logger.info(`[RuleEngine] Starting execution with feed data of ${feedData.rowCount} rows`);
+    
+    // build a map iosMap for composite key to IO
     for (let i = 0; i < sdf.insertionOrders.rowCount; i++) {
       let io = sdf.insertionOrders.getRow(i);
       // extract a reference to a rule from the IO (it's kept in Detail field)
@@ -149,7 +152,7 @@ export default class RuleEngine {
         status: io[SDF.LI.Status]
       });
     }
-    // TODO: comment what's happening here
+    // build a map lisMap for composite key to LI for those LIs that are in "static" IO
     let lisMap: Record<string, Array<{ liId: string, status: string }>> = {};
     if (sdf.lineItems && '' in iosMap) {
       for (let item of iosMap['']) {
@@ -171,12 +174,14 @@ export default class RuleEngine {
         }
       }
     }
+
     // calculate for each row from data feed what rule is effective for it
     let effective_rules: Array<RuleInfo | null> = []
     for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
       effective_rules[rowNo] = this.ruleEvaluator.getActiveRule(this.config.rules, feedData.getRow(rowNo));
     }
-    // activate and deactivate IOs
+
+    // Process case #1 IOs depend on rows and rules - we'll be enabling/disabling IOs (and don't touch LIs)
     for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
       let rule = effective_rules[rowNo];
       let rowName = feedData.get(nameColumn, rowNo);
@@ -195,7 +200,8 @@ export default class RuleEngine {
         updatedItems += await this.activateIos(advertiserId, ioIds);
       }
     }
-    // activate and deactivate LIs
+
+    // Process case #2 - IOs depends on rows only - we'll be enabling/disabling LIs (and don't touch IOs)
     if (sdf.lineItems) {
       for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
         let rule = effective_rules[rowNo];
@@ -206,7 +212,10 @@ export default class RuleEngine {
         }
       }
     }
-    // TODO: comment what's happening here (and what's the difference with the previous part (processIoLineItems))
+
+    // Process case #3 - IOs don't depend on anything ("static")
+    // Again we'll be enabling/disabling LIs
+    // TODO: look like it can be brought to the case #2
     if ('' in iosMap) {
       for (let rowNo = 0; rowNo < feedData.rowCount; rowNo++) {
         let rule = effective_rules[rowNo];

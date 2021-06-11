@@ -15,9 +15,10 @@
  */
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Config } from '../../../backend/src/types/config';
 import { ConfirmationDialogComponent, ConfirmationDialogModes } from './components/confirmation-dialog.component';
 
-export class ComponentBase {
+export abstract class ComponentBase {
   errorMessage: string;
 
   constructor(
@@ -25,6 +26,8 @@ export class ComponentBase {
     private snackBar: MatSnackBar) {
 
   }
+  saveState(original?: Config) {};
+  
   handleApiError(message, e) {
     let details = e.message;
     let error = e;

@@ -16,7 +16,7 @@
 import * as _ from 'lodash';
 import { AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Config, FeedInfo, JobInfo } from '../../../backend/src/types/config';
+import { Config, DV360TemplateInfo, FeedInfo, JobInfo } from '../../../backend/src/types/config';
 import { ConfigService } from './shared/config.service';
 import { FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -63,6 +63,8 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   dataSourceFeedData: Record<string, MatTableDataSource<any>>;
   feedDataColumns: Record<string, string[]>;
   ngUnsubscribe: Subject<void> = new Subject<void>();
+
+  undoStack = [];
 
   constructor(
     private fb: FormBuilder,
@@ -288,9 +290,27 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
   private reactiveSave(updated: Config) {
     this.configService.saveConfig(this.appId, updated, this.config).then(() => {
-      // TODO: update config with values
+      this.saveState();
       this.config = updated;
+    }, (e) => {
+      this.handleApiError('Save failed', e);
     });
+  }
+
+  saveState(original?: Config) {
+    this.undoStack.push(_.cloneDeep(original ?? this.config));
+  }
+
+  undo() {
+    if (this.undoStack.length > 0) {
+      let newState = this.undoStack.pop();
+      let oldState = _.cloneDeep(this.config);
+      this.config = newState;
+      this.updateFormValues();
+      this.configService.saveConfig(this.appId, newState, oldState).catch((e) => {
+        this.handleApiError('Failed to save restore state, please save manually', e);
+      });
+    }
   }
 
   editTitle() {
@@ -309,6 +329,8 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
           this.config.title = result;
           this.loading = false;
           this.showSnackbar('Saved');
+        }, (e) => {
+          this.handleApiError('Save failed', e);
         });
       }
     });
@@ -404,12 +426,12 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         error: (msg) => {
           this.executing = true;
           this.eventList.addMessage(msg);
-          this.eventList.addMessage('Execution failed');
+          this.eventList.addMessage('<span class="text-danger">Execution failed</span>');
           this.showSnackbar('Execution failed');
         },
         complete: () => {
           this.executing = true;
-          this.eventList.addMessage('Execution completed');
+          this.eventList.addMessage('<span class="text-success">Execution completed</span>');
           this.showSnackbar('Execution completed');
         }
       });
@@ -473,6 +495,25 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     }
   }
 
+  generateDefaultTemplates() {
+    let dv360Template: DV360TemplateInfo = {
+        io_template: "{base_name}",
+        li_template: "{base_name}-{row_name}-{rule_name}",
+        yt_li_template: "{base_name}-{row_name}-{rule_name}",
+        yt_io_template: "{base_name}",
+        adgroup_template: "{base_name}",
+        ad_template: "{base_name}"
+      };
+    this.formSdf.patchValue({
+      io_template: dv360Template.io_template,
+      li_template: dv360Template.li_template,
+      yt_io_template: dv360Template.yt_io_template,
+      yt_li_template: dv360Template.yt_li_template,
+      adgroup_template: dv360Template.adgroup_template,
+      ad_template: dv360Template.ad_template,
+    }, {emitEvent: true});
+  }
+
   // Feeds Tab
   onFeedRowClick($event: MouseEvent, feed: FeedInfo) {
     if (!this.onTableRowClick($event)) { return; }
@@ -488,13 +529,14 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         console.log(result);
+        const original = _.cloneDeep(this.config);
         feed.name = result.name;
         feed.type = result.type;
         feed.url = result.url;
         feed.charset = result.charset;
         feed.key_column = result.key_column;
         feed.external_key = result.external_key;
-        this.saveFeeds();
+        this.saveFeeds(original);
       }
     });
   }
@@ -504,9 +546,10 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         console.log(result);
+        const original = _.cloneDeep(this.config);
         this.config.feedInfo.feeds.splice(this.config.feedInfo.feeds.indexOf(feed), 1);
         this.dataSourceFeeds.data = this.config.feedInfo.feeds;
-        this.saveFeeds();
+        this.saveFeeds(original);
       }
     });
   }
@@ -526,17 +569,20 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
           key_column: result.key_column,
           external_key: result.external_key
         };
+        const original = _.cloneDeep(this.config);
         this.config.feedInfo.feeds.push(feed);
         this.dataSourceFeeds.data = this.dataSourceFeeds.data;
-        this.saveFeeds();
+        this.saveFeeds(original);
       }
     });
   }
 
-  saveFeeds() {
+  async saveFeeds(original: Config) {
     const feeds = this.config.feedInfo.feeds.slice();
+    let updated = { feedInfo: { feeds } };
     try {
-      this.configService.saveConfig(this.appId, { feedInfo: { feeds } }, null);
+      await this.configService.saveConfig(this.appId, updated, null);
+      this.saveState(original);
     } catch (e) {
       this.handleApiError('Configuration failed to save', e);
     }
