@@ -99,7 +99,6 @@ export class RuleEditorDialogComponent extends ComponentBase implements OnInit {
   }
 
   async save() {
-    // TODO: validation: name, type, url
     this.loading = true;
     try {
       const rules = this.config.rules.slice();

@@ -26,6 +26,14 @@ export type DV360TemplateInfo = {
   //sdf_version?: string;
   destination_folder?: string;
 }
+/**
+ * Macros for using in name templates for IO/LI/etc
+ */
+export enum TemplateMacros {
+  row_name = '{row_name}',
+  rule_name = '{rule_name}',
+  base_name = '{base_name}'
+}
 export enum FrequencyPeriod {
   "week" = "week",
   "day" = "day",

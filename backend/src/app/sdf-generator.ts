@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash';
-import { Config, DV360TemplateInfo, FrequencyPeriod, RuleInfo, SdfElementType } from '../types/config';
+import { Config, DV360TemplateInfo, FrequencyPeriod, RuleInfo, SdfElementType, TemplateMacros } from '../types/config';
 import { RuleEvaluator } from './rule-engine';
 import { FeedData, SDF, SdfFull } from '../types/types';
 import { Logger } from '../types/logger';
@@ -47,14 +47,14 @@ class DV360Template {
    * Whather Display IO's template contains row_name (a unique label per data feed's row)
    */
   isDisplayIoPerFeedRow(): boolean {
-    return this.info.io_template?.indexOf('{row_name}') != -1;
+    return this.info.io_template?.indexOf(TemplateMacros.row_name) != -1;
   }
 
   /**
    * Whather Display IO's template contains rule_name 
    */
   isDisplayIoPerRule(): boolean {
-    return this.info.io_template?.indexOf('{rule_name}') != -1;
+    return this.info.io_template?.indexOf(TemplateMacros.rule_name) != -1;
   }
 
   /**
@@ -222,7 +222,7 @@ export default class SdfGenerator {
   }
 
   generate() {
-    // NOTE: we assume that config has been validated already (via ConfigService)
+    // NOTE: we assume that config has been validated already (via ConfigValidator)
     let dv360Template = this.config.dv360Template;
     this.validateTemplates(dv360Template);
 

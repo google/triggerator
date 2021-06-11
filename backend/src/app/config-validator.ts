@@ -14,7 +14,7 @@
  * limitations under the License.
  */
  import _ from 'lodash';
-import { Config, FeedConfig, RuleInfo } from "../types/config";
+import { Config, DV360TemplateInfo, FeedConfig, RuleInfo, TemplateMacros } from "../types/config";
 import { FeedData } from "../types/types";
 
 interface ValidationError {
@@ -102,6 +102,45 @@ export default class ConfigValidator {
     return errors;
   }
 
+  static validateTemplates(templ: DV360TemplateInfo): ValidationError[] {
+    let errors: ValidationError[] = [];
+    if (templ.io_template && templ.li_template) {
+      // the only combinations allows are:
+      // 1. IO depends on row and rule
+      // 2. IO depends on row
+      // 3. IO depends on nothing
+      let io_templ = templ.io_template || '';
+      let li_templ = templ.li_template || '';
+      if (io_templ.includes(TemplateMacros.rule_name) && !io_templ.includes(TemplateMacros.row_name)) {
+        errors.push({
+          message: `Template for IO contains rule_name macro without row_name`
+        });
+      }
+      // If IO doesn't depend on rule then LI must depend on rule
+      if (io_templ.includes(TemplateMacros.row_name) && !io_templ.includes(TemplateMacros.rule_name) && !li_templ.includes(TemplateMacros.rule_name)) {
+        errors.push({ 
+          message: `If IO template doesn't depend on rule (no rule_name macro) then LI template must depend on rule but it doesn't`
+        });
+      }
+      // If IO depends on nothing then LI must depend on rule and row
+      if (!io_templ.includes(TemplateMacros.row_name) && !io_templ.includes(TemplateMacros.rule_name)) {
+        errors.push({
+          message: `If IO template depend on nothing (no rule_name/row_name macros) then LI template must depend on row and rule but it doesn't`
+        });
+      }
+    }
+
+    // TrueVuew IO must depend on row and rule always
+    if (templ.yt_io_template) {
+      if (!templ.yt_io_template.includes(TemplateMacros.row_name) || !templ.yt_io_template.includes(TemplateMacros.rule_name)) {
+        errors.push({
+          message: `TrueView IO template always must depend on row and rule (has rule_name/row_name macros) but it doesn't`
+        });
+      }
+    }
+    return errors;
+  }
+  
   /**
    * Validate a configuration for generating SDF with new/updated campaign.
    * @param config Configuration to validate
@@ -114,6 +153,9 @@ export default class ConfigValidator {
       throw new Error(`[validateConfiguration] Template DV360 campaign id is missing in configuration`);
     if (update && !config.execution!.campaignId)
       throw new Error(`[validateConfiguration] Existing DV360 campaign id is missing in configuration`);
+
+    combineErrors(errors,
+        this.validateTemplates(config.dv360Template!));
 
     return errors;
   }

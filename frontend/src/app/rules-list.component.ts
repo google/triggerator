@@ -17,6 +17,7 @@ import { Overlay } from '@angular/cdk/overlay';
 import { Component, Input, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
+import * as _ from 'lodash';
 import { Config, RuleInfo } from '../../../backend/src/types/config';
 import { ComponentBase } from './component-base';
 import { ConfirmationDialogComponent, ConfirmationDialogModes } from './components/confirmation-dialog.component';
@@ -61,10 +62,12 @@ export class RulesListComponent implements OnInit {
         config: this._data
       }
     });
+    const original = _.cloneDeep(this._data);
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.dataSource.data = this._data.rules;
+        this.parent.saveState(original);
       }
     });
   }
@@ -78,11 +81,13 @@ export class RulesListComponent implements OnInit {
         rule: rule
       }
     });
+    const original = _.cloneDeep(this._data);
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         console.log(result);
         this.dataSource.data = this._data.rules;
+        this.parent.saveState(original);
       }
     });
   }
@@ -95,14 +100,16 @@ export class RulesListComponent implements OnInit {
       }
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe(async result => {
       if (result) {
         console.log(result);
+        const original = _.cloneDeep(this._data);
         const idx2del = this._data.rules.indexOf(rule);
         const rules = this._data.rules.slice();
         rules.splice(idx2del, 1);
         try {
-          this.configService.saveConfig(this.appId, { rules }, null);
+          await this.configService.saveConfig(this.appId, { rules }, null);
+          this.parent.saveState(original);
         } catch (e) {
           this.parent.handleApiError('Deletion failed', e);
           return;
