@@ -2,6 +2,17 @@
 
 >NOTE: BE is backend (server application), FE - frontend (client applciation)
 
+## 2021-06-12
+* BE: set reasonable defaults for campaign name templates during new configuration creation
+* BE: implemented validation for templates (correctness of rule_name/row_name macros usage)
+* FE: app-editor: implemented 'Undo last change' editor-wide operation, added 'Generate default templates' operation
+
+## 2021-06-04
+* Support two new flags for manual execution: forceUpdate (issue DV360 API call to activate/deiactive even if an IO/LI alread activated/paused), dryRun (do not issue real DV360 API calls)
+
+## 2021-06-02
+* setup: `setup.sh` support `-m` argument with a master spreadsheet id to skip spreadsheet creation for environments where it's not possible/not needed (e.g. you can't export private key for your service account)
+
 ## 2021-05-24 (1.2.0)
 * Logging with winston and cloud-logging
 * Rewrite of 'Run Execution' due to the lack of support of Server-Sent Events (and any streaming) in Google AppEngine Std 
