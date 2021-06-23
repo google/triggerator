@@ -384,6 +384,9 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         schedule: job.schedule,
         timeZone: job.timeZone
       });
+      if (job.schedule) {
+        this.scheduleLink = job.schedule.replace(/ /g, '_')
+      }
       this.showSnackbar('Configuration loaded');
     } catch (e) {
       this.handleApiError('Couldn\'t load schedule', e);

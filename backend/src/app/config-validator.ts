@@ -145,7 +145,7 @@ export default class ConfigValidator {
    * Validate a configuration for generating SDF with new/updated campaign.
    * @param config Configuration to validate
    * @param update true if updating an existing campaign or false if generating a new one
-   * @returns Errors
+   * @returns ValidationError[]
    */
   static validateGeneratingConfiguration(config: Config, update: boolean): ValidationError[] {
     let errors = this.validateConfigurationBase(config);
@@ -194,7 +194,7 @@ export default class ConfigValidator {
   /**
    * Validate a configuration for main execution
    * @param config Configuration to validate
-   * @returns 
+   * @returns ValidationError[]
    */
   static validateRuntimeConfiguration(config: Config): ValidationError[] {
     let errors = this.validateConfigurationBase(config);
