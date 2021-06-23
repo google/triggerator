@@ -244,7 +244,7 @@ export default class RuleEngine {
     let changesCount = 0;
     for (const io of ios) {
       if (!this.forceUpdate && io.status == 'Active') {
-        this.logger.debug(`[RuleEngine] activation IO ${io.ioId} skipped because it's already active`);
+        this.logger.info(`[RuleEngine] activating IO ${io.ioId} skipped because it's already active and forceUpdate=false`);
         continue;
       };
       this.logger.debug('[RuleEngine] activating IO ' + io.ioId);
@@ -262,7 +262,7 @@ export default class RuleEngine {
     var changesCount = 0;
     for (const io of ios) {
       if (!this.forceUpdate && io.status != 'Active') {
-        this.logger.debug(`[RuleEngine] deactivation IO ${io.ioId} skipped because it's already non-active`);
+        this.logger.info(`[RuleEngine] deactivating IO ${io.ioId} skipped because it's already non-active and forceUpdate=false`);
         continue;
       };
       this.logger.debug('[RuleEngine] deactivating IO ' + io.ioId);
@@ -280,7 +280,7 @@ export default class RuleEngine {
     let changesCount = 0;
     for (let li of lis) {
       if (!this.forceUpdate && li.status == 'Active') {
-        this.logger.debug(`[RuleEngine] activation LI ${li.liId} skipped because it's already active`);
+        this.logger.info(`[RuleEngine] activating LI ${li.liId} skipped because it's already active and forceUpdate=false`);
         continue;
       };
       this.logger.debug('[RuleEngine] activating Li ' + li.liId);
@@ -298,7 +298,7 @@ export default class RuleEngine {
     let changesCount = 0;
     for (let li of lis) {
       if (!this.forceUpdate && li.status != 'Active') {
-        this.logger.debug(`[RuleEngine] deactivation LI ${li.liId} skipped because it's already non-active`);
+        this.logger.info(`[RuleEngine] deactivating LI ${li.liId} skipped because it's already non-active and forceUpdate=false`);
         continue;
       };
 
@@ -338,7 +338,7 @@ export default class RuleEngine {
             changesCount++;
             this.updateLog.push(`LI:${liId}:Status=Paused`);
           } else {
-            this.logger.debug(`[RuleEngine] deactivating LI ${liId} skipped because it's already non-active and forceUpdate=false`);
+            this.logger.info(`[RuleEngine] deactivating LI ${liId} skipped because it's already non-active and forceUpdate=false`);
           }
         } else if (ruleName == activeRule?.name) {
           // activate
@@ -350,7 +350,7 @@ export default class RuleEngine {
             changesCount++;
             this.updateLog.push(`LI:${liId}:Status=Active`);
           } else {
-            this.logger.debug(`[RuleEngine] activating LI ${liId} skipped because it's already active and forceUpdate=false`);
+            this.logger.info(`[RuleEngine] activating LI ${liId} skipped because it's already active and forceUpdate=false`);
           }
         }
       }
