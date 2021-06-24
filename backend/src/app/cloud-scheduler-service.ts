@@ -97,12 +97,8 @@ export default class SchedulerService {
   async updateJob(appId: string, jobInfo: JobInfo) {
     this.logger.info(`Updating scheduler job for configuration ${appId}`, {component: COMPONENT});
   
-    // let projectId = await google.auth.getProjectId();
-    // let locationId: string = await getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
-    // let fullpath = `projects/${projectId}/locations/${locationId}`;
     const jobParent = await this.getJobParent();
     const jobName = `${jobParent}/jobs/${appId}`;
-    //let jobName = await getJobName(appId);
     let jobInfoExist = await this.getJob(jobName);
     if (jobInfoExist) {
       this.logger.debug(`Found an existing job: ${jobName}`, {component: COMPONENT})

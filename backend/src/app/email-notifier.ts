@@ -16,7 +16,7 @@
 import nodemailer from 'nodemailer';
 import { MAILER_CONFIG } from './../env';
 
-export async function sendEmail(to: string, subject: string, text: string, html?: string) {
+export async function sendEmail(to: string, subject: string, text: string, html?: string): Promise<any> {
   if (!MAILER_CONFIG) return;
   let transporter = nodemailer.createTransport(MAILER_CONFIG);
   var message = {
@@ -26,10 +26,6 @@ export async function sendEmail(to: string, subject: string, text: string, html?
     text,
     html
   };
-  try {
-    let info = await transporter.sendMail(message);
-    console.log(`Notification to ${to} sent:` + JSON.stringify(info));
-  } catch(e) {
-    console.error(`nodemailer failed to send an email:\n`, e);
-  }
+  let info = await transporter.sendMail(message);
+  return info;
 }

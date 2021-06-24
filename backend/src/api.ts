@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import path from 'path';
-import fs from 'fs';
 import _ from 'lodash';
 import { Writable } from 'stream';
 import express from 'express';
@@ -333,13 +332,17 @@ router.post('/config/:id/schedule/edit', async (req: express.Request, res: expre
   }
 });
 
+function initRequestBoundLogger(logger: winston.Logger, appId: string) {
+  logger.defaultMeta = Object.assign(logger.defaultMeta || {}, {appId: appId})
+}
+
 async function runExecutionEngine(appId: string, isAsync: boolean, 
   includeDebugLog: boolean, sendEmail: boolean, 
   forceUpdate: boolean, dryRun: boolean,
   req: express.Request, res: express.Response
   ) {
   const logger = req.log;
-
+  initRequestBoundLogger(logger, appId);
   logger.info(`Starting ExecutionEngine, appId=${appId}, isAsync=${isAsync}, includeDebugLog=${includeDebugLog}, sendEmail=${sendEmail}`, {component: 'WebApi'});
   // load and validate configuration
   let config = await getConfig(logger, appId, res);
@@ -406,7 +409,7 @@ async function runExecutionEngine(appId: string, isAsync: boolean,
       updatedItems = await controller.run(appId, {forceUpdate, dryRun});
       res.sendStatus(StatusCodes.OK);
     }
-    logger.info(`RuleEngine compeleted. Updated items: ${updatedItems}`);
+    logger.info(`[RuleEngine] Execution compeleted. Updated items: ${updatedItems}`);
 
     // NOTE: we can't simply remove streamTransport because
     // winston can do asynchronous logging and not all events where flushed to our transport,
@@ -423,12 +426,14 @@ async function runExecutionEngine(appId: string, isAsync: boolean,
 
     if (sendEmail) {
       logger.info('Sending email notification with log');
-      notifyOnSuccess(logOutput!, config);
+      notifyOnSuccess(logOutput!, config, logger);
     }
   } catch (e) {
     if (!e.logged)
-      logger.error(`[WebApi] Execution (${appId}) failed: ${e.message}`, e);
-
+      logger.error(`[RuleEngine] Execution failed. Error: ${e.message}`, e);
+    else
+      logger.error(`[RuleEngine] Execution failed.`);
+    
     // this is a special event for client (anythings starting with 'error:') telling that the op was failed
     if (isAsync) {
       logger.error('error:' + e.message);
@@ -449,7 +454,7 @@ async function runExecutionEngine(appId: string, isAsync: boolean,
 
     if (sendEmail) {
       logger.info('Sending email notification with log and error');
-      notifyOnError(e, logOutput!, config);
+      notifyOnError(e, logOutput!, config, logger);
     }
 
     // NOTE: if isAsync=true then we have sent response already
@@ -531,6 +536,7 @@ router.get('/engine/:id/run/stream', async (req: express.Request, res: express.R
   let appId = <string>req.params.id;
   const includeDebugLog = parseBool(req.query.debug);
   const logger = req.log;
+  initRequestBoundLogger(logger, appId);
   // load and validate configuration
   let config = await getConfig(logger, appId, res);
   if (!config) return;
@@ -587,21 +593,47 @@ router.get('/engine/:id/run/stream', async (req: express.Request, res: express.R
   }
 });
 
-function notifyOnError(e: Error, log: string, config: Config) {
-  if (config.execution!.notificationEmails) {
+/**
+ * Return a host name of the current GAE application
+ * @returns host name
+ */
+async function getGAEAppUrl(): Promise<string> {
+  let projectId = await google.auth.getProjectId();
+  let gae = (await google.appengine("v1").apps.get({ appsId: `${projectId}` })).data;
+  return gae.defaultHostname!;
+}
+
+async function notifyOnError(e: Error, log: string, config: Config, logger: Logger) {
+  const reciever = config.execution!.notificationEmails;
+  if (reciever) {
     let campaignId = config.execution!.campaignId!;
     let advertiserId = config.execution!.advertiserId!;
-    const text = `Execution for advertiser=${advertiserId} campaign=${campaignId} failed: \n${e}\n\nLog:\n${log}`;
-    sendEmail(config.execution!.notificationEmails, 'Triggerator Status: Failure', text);
+    try {
+      let appurl = await getGAEAppUrl();
+      appurl = `https://${appurl}/apps/${config.id}/edit`;
+      const text = `Execution for advertiser=${advertiserId} campaign=${campaignId} failed (configuration: ${appurl}): \n${e}\n\nLog:\n${log}`;
+      let info = await sendEmail(reciever, 'Triggerator Status: Failure', text);
+      logger.debug(`Notification to ${reciever} sent:` + JSON.stringify(info));
+    } catch (e) {
+      logger.error("[WebApi] An error occured on sending email notification about execution error", e);
+    }
   }
 }
 
-function notifyOnSuccess(log: string, config: Config) {
-  if (config.execution!.notificationEmails) {
+async function notifyOnSuccess(log: string, config: Config, logger: Logger) {
+  const reciever = config.execution!.notificationEmails;
+  if (reciever) {
     let campaignId = config.execution!.campaignId!;
     let advertiserId = config.execution!.advertiserId!;
-    const text = `Execution for advertiser=${advertiserId} campaign=${campaignId} succeeded\n\nLog:\n${log}`;
-    sendEmail(config.execution!.notificationEmails, 'Triggerator Status: Success', text);
+    try {
+      let appurl = await getGAEAppUrl();
+      appurl = `https://${appurl}/apps/${config.id}/edit`;
+      const text = `Execution for advertiser=${advertiserId} campaign=${campaignId} succeeded (configuration: ${appurl})\n\nLog:\n${log}`;
+      let info = await sendEmail(reciever, 'Triggerator Status: Success', text);
+      logger.debug(`Notification to ${reciever} sent:` + JSON.stringify(info));
+    } catch(e) {
+      logger.error("[WebApi] An error occured on sending email notification about execution success", e);
+    }
   }
 }
 

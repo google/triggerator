@@ -30,17 +30,18 @@ const colors = {
 
 winston.addColors(colors)
 
+export const CLOUD_LOG_NAME = 'Triggerator';
+
 const transports: winston.transport[] = []
 if ((IS_GAE || CLOUD_LOGGING) && CLOUD_LOGGING !== false) {
   // we're in GAE, or Cloud Logging excplicitly enabled and it wasn't disabled
   transports.push(new LoggingWinston({
     projectId: process.env.GOOGLE_CLOUD_PROJECT, 
     keyFilename: argv.keyFile,
-    logName: 'Triggerator',
+    logName: CLOUD_LOG_NAME,
     labels: {
       name: 'Triggerator'
     },
-    
   })
   );
 }

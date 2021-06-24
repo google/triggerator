@@ -61,6 +61,7 @@ export default class DV360Facade {
         entityStatus: status === 'active' ? 'ENTITY_STATUS_ACTIVE' : 'ENTITY_STATUS_PAUSED'
       }
     })).data;
+    // NOTE: the format of log message is important, it's used in reportin (search before changing)
     this.logger.info(`[DV360Facade] InsertionOrder ${io.name}(${ioId}) now has entity status ${io.entityStatus}.`);
   }
 
@@ -73,6 +74,7 @@ export default class DV360Facade {
         entityStatus: status === 'active' ? 'ENTITY_STATUS_ACTIVE' : 'ENTITY_STATUS_PAUSED'
       }
     })).data;
+    // NOTE: the format of log message is important, it's used in reportin (search before changing)
     this.logger.info(`[DV360Facade] LineItem ${li.name}(${liId}) now has entity status ${li.entityStatus}.`);
     
     /*
@@ -150,6 +152,8 @@ export default class DV360Facade {
     if (!fileName) {
       ({ fileName, resourceName } = await this._downloadSdf(advertiserId, campaignId, opt));
     }
+    this.logger.debug(`[DV360Facade] SDF was downloaded into a zip archive ${fileName}`);
+
     let files = await this.unzipAndReadSdf(fileName, resourceName!);
 
     // remove downloaded archive
@@ -191,11 +195,12 @@ export default class DV360Facade {
           break;
       }
     });
-    return Object.assign(
+    let sdf2 = Object.assign(
       { advertiserId: advertiserId },
       _.pick(sdf, 'campaigns', 'insertionOrders', 'lineItems', 'adGroups', 'ads')
     );
-    //return _.pick(sdf, 'campaigns', 'insertionOrders', 'lineItems', 'adGroups', 'ads');
+    this.logger.info(`[DV360Facade] SDF structure successfully read from zip archive. IO count: ${sdf2.insertionOrders?.rowCount}, LI count: ${sdf2.lineItems?.rowCount}`);
+    return sdf2;
   }
 
   private async _downloadSdf(advertiserId: string, campaignId: string, opt: DownloadOptionsRuntime): Promise<{ fileName: string, resourceName: string }> {
