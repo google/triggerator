@@ -427,13 +427,13 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
           this.eventList.addMessage(msg);
         },
         error: (msg) => {
-          this.executing = true;
+          this.executing = false;
           this.eventList.addMessage(msg);
           this.eventList.addMessage('<span class="text-danger">Execution failed</span>');
           this.showSnackbar('Execution failed');
         },
         complete: () => {
-          this.executing = true;
+          this.executing = false;
           this.eventList.addMessage('<span class="text-success">Execution completed</span>');
           this.showSnackbar('Execution completed');
         }
@@ -441,7 +441,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     } catch (e) {
       // we don't expect an error here, but just in case
       console.error(e);
-      this.executing = true;
+      this.executing = false;
     }
   }
 

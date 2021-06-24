@@ -39,7 +39,7 @@ def main(emailAddress):
 
     result = sheetsAPI.spreadsheets().create(body={
         "sheets": [{"properties": {"title": "Main"}}],
-        "properties": {"title": "Master doc"}
+        "properties": {"title": "[Triggerator] Master doc for " + project_id}
     }).execute()
     spreadsheetId = result['spreadsheetId']
 

@@ -244,6 +244,7 @@ export default class RuleEngine {
     let changesCount = 0;
     for (const io of ios) {
       if (!this.forceUpdate && io.status == 'Active') {
+        // NOTE: the format of log message is important, it's used in reportin (search before changing)
         this.logger.info(`[RuleEngine] activating IO ${io.ioId} skipped because it's already active and forceUpdate=false`);
         continue;
       };
@@ -262,6 +263,7 @@ export default class RuleEngine {
     var changesCount = 0;
     for (const io of ios) {
       if (!this.forceUpdate && io.status != 'Active') {
+        // NOTE: the format of log message is important, it's used in reportin (search before changing)
         this.logger.info(`[RuleEngine] deactivating IO ${io.ioId} skipped because it's already non-active and forceUpdate=false`);
         continue;
       };
@@ -280,6 +282,7 @@ export default class RuleEngine {
     let changesCount = 0;
     for (let li of lis) {
       if (!this.forceUpdate && li.status == 'Active') {
+        // NOTE: the format of log message is important, it's used in reportin (search before changing)
         this.logger.info(`[RuleEngine] activating LI ${li.liId} skipped because it's already active and forceUpdate=false`);
         continue;
       };
@@ -298,6 +301,7 @@ export default class RuleEngine {
     let changesCount = 0;
     for (let li of lis) {
       if (!this.forceUpdate && li.status != 'Active') {
+        // NOTE: the format of log message is important, it's used in reportin (search before changing)
         this.logger.info(`[RuleEngine] deactivating LI ${li.liId} skipped because it's already non-active and forceUpdate=false`);
         continue;
       };
@@ -338,6 +342,7 @@ export default class RuleEngine {
             changesCount++;
             this.updateLog.push(`LI:${liId}:Status=Paused`);
           } else {
+            // NOTE: the format of log message is important, it's used in reportin (search before changing)
             this.logger.info(`[RuleEngine] deactivating LI ${liId} skipped because it's already non-active and forceUpdate=false`);
           }
         } else if (ruleName == activeRule?.name) {
@@ -350,6 +355,7 @@ export default class RuleEngine {
             changesCount++;
             this.updateLog.push(`LI:${liId}:Status=Active`);
           } else {
+            // NOTE: the format of log message is important, it's used in reportin (search before changing)
             this.logger.info(`[RuleEngine] activating LI ${liId} skipped because it's already active and forceUpdate=false`);
           }
         }
