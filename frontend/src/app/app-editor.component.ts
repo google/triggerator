@@ -128,7 +128,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
         start: null,
         end: null
       }),
-      format: null,
+      format: ReportFormat.CSV,
       ownerUser: null,
       excludeEmpty: null,
       destination_folder: null
