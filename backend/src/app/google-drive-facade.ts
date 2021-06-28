@@ -16,14 +16,15 @@
 import { google, drive_v3 } from 'googleapis';
 import path from 'path';
 import fs from 'fs';
+import logger from './logger-winston';
 
 export async function uploadFile(filePath: string, destinationUrl: string): Promise<string> {
   if (!destinationUrl || !destinationUrl.startsWith("drive://"))
     throw new Error(`[GoogleDriveFacade] destination (${destinationUrl}) is in incorrect format, expected 'drive://folderid'`);
     
   let folderId = destinationUrl.substring("drive://".length);
-  const drive = google.drive({ version: 'v3' });
-  const res = await drive.files.create(
+  const driveAPI = google.drive({ version: 'v3' });
+  const res = await driveAPI.files.create(
     {
       requestBody: {
         name: path.basename(filePath),
@@ -47,9 +48,9 @@ export async function downloadFile(url: string): Promise<Buffer> {
   let folderId = matches[1];
   let fileName = matches[2];
 
-  const drive = google.drive({ version: 'v3' });
+  const driveAPI = google.drive({ version: 'v3' });
   let res: drive_v3.Schema$FileList;
-  res = (await drive.files.list({
+  res = (await driveAPI.files.list({
     //mimeType='application/vnd.google-apps.folder'
     q: `'${folderId}' in parents and name = '${fileName}'`,
     fields: 'files(id, name)',
@@ -62,7 +63,7 @@ export async function downloadFile(url: string): Promise<Buffer> {
   const fileId = res.files[0].id!;
   return new Promise(async (resolve, reject) => {
     let fileContents = Buffer.from('');
-    (await drive.files.get({
+    (await driveAPI.files.get({
       fileId: fileId,
       alt: 'media'
     }, { responseType: "stream" }))
@@ -80,8 +81,8 @@ export async function importCsvAsSpreadsheet(filePath: string, title: string, ow
     mimeType: 'text/csv',
     body: fs.createReadStream(filePath)
   };
-  const drive = google.drive({ version: 'v3' });
-  let result = await drive.files.create({
+  const driveAPI = google.drive({ version: 'v3' });
+  let result = await driveAPI.files.create({
     requestBody: {
       'name': title,
       'mimeType': 'application/vnd.google-apps.spreadsheet'
@@ -91,16 +92,31 @@ export async function importCsvAsSpreadsheet(filePath: string, title: string, ow
   });
   let fileId = result.data.id!;
   if (ownerEmail) {
-    await drive.permissions.create({
-      fileId: fileId,
-      requestBody: {
-        type: 'user',
-        role: 'owner',
-        emailAddress: ownerEmail,
-      },
-      transferOwnership: true,
-      fields: 'id'
-    });
+    try {
+      await driveAPI.permissions.create({
+        fileId: fileId,
+        requestBody: {
+          type: 'user',
+          role: 'owner',
+          emailAddress: ownerEmail,
+        },
+        transferOwnership: true,
+        fields: 'id'
+      });
+    } catch (e) {
+      logger.warn(`Failed to transfer ownership for documenet ${fileId}: ${e.message}`, e);
+      // there could be a case when transfering ownership doesn't work - 
+      // "Sorry, cannot transfer ownership to xxx@xxx.com. Ownership can only be transferred to another user in the same organization as the current owner."
+      // so in a case of error just share the doc with the user instead
+      (await driveAPI.permissions.create({
+        fileId: fileId,
+        requestBody: {
+          type: 'user',
+          role: 'writer',
+          emailAddress: ownerEmail
+        }
+      }));
+    }
   }
   return fileId;
 }
