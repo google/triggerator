@@ -186,12 +186,11 @@ export default class ConfigInfo implements Config {
   }
 }
 
-export type AppStatus = "active" | "invalid"
 export interface AppInfo {
   name?: string;
   configId: string; 
   version: string;
-  status: AppStatus;
+  status: string;
   statusDetails?: string;
   job?: JobInfo;
 }
@@ -205,4 +204,9 @@ export interface JobInfo {
   enable?: boolean;
   schedule?: string;
   timeZone?: string;
+}
+
+export enum ReportFormat {
+  CSV = 'CSV',
+  Spreadsheet = 'Spreadsheet'
 }

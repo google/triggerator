@@ -15,7 +15,7 @@
  */
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Config, AppList, FeedConfig, FeedInfo, JobInfo } from '../../../../backend/src/types/config';
+import { Config, AppList, JobInfo, ReportFormat } from '../../../../backend/src/types/config';
 import { BackendService } from './backend.service';
 
 export interface GenerateSdfOptions {
@@ -102,5 +102,13 @@ export class ConfigService {
       }
     );
     //return this.backendService.getEvents(`/engine/${configId}/run/stream`, {debug: options?.debugLogging});
+  }
+
+  buildReport(configId: string, format: ReportFormat, options: Record<string,string>): any {
+    if (format === ReportFormat.CSV) {
+      return this.backendService.getFile(`/reports/${configId}/activationtimes`, options);
+    } else {
+      return this.backendService.getApi(`/reports/${configId}/activationtimes`, options);
+    }
   }
 }

@@ -16,7 +16,7 @@
 import * as _ from 'lodash';
 import { AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Config, DV360TemplateInfo, FeedInfo, JobInfo } from '../../../backend/src/types/config';
+import { Config, DV360TemplateInfo, FeedInfo, JobInfo, ReportFormat } from '../../../backend/src/types/config';
 import { ConfigService } from './shared/config.service';
 import { FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -33,6 +33,7 @@ import timezones from './timezones';
 import { Observable, Subject } from 'rxjs';
 import { map, startWith, takeUntil } from 'rxjs/operators';
 import { ObjectDetailsDialogComponent } from './components/object-details-dialog.component';
+import { ConfirmationDialogComponent, ConfirmationDialogModes } from './components/confirmation-dialog.component';
 
 @Component({
   selector: 'app-app-editor',
@@ -54,6 +55,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   formSdf: FormGroup;
   formFeeds: FormGroup;
   formExecution: FormGroup;
+  formReports: FormGroup;
   scheduleLink: string;
   timeZones: string[] = timezones;
   timeZonesFiltered: Observable<string[]>;
@@ -121,7 +123,16 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       geo_code_column: null,
       budget_factor_column: null
     }, { updateOn: 'blur' });
-
+    this.formReports = this.fb.group({
+      reportPeriod: this.fb.group({
+        start: null,
+        end: null
+      }),
+      format: null,
+      ownerUser: null,
+      excludeEmpty: null,
+      destination_folder: null
+    });
     this.appId = this.route.snapshot.paramMap.get('id');
     this.formGeneral.valueChanges
       .pipe(takeUntil(this.ngUnsubscribe))
@@ -500,13 +511,13 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
   generateDefaultTemplates() {
     let dv360Template: DV360TemplateInfo = {
-        io_template: "{base_name}",
-        li_template: "{base_name}-{row_name}-{rule_name}",
-        yt_li_template: "{base_name}-{row_name}-{rule_name}",
-        yt_io_template: "{base_name}",
-        adgroup_template: "{base_name}",
-        ad_template: "{base_name}"
-      };
+      io_template: "{base_name}",
+      li_template: "{base_name}-{row_name}-{rule_name}",
+      yt_li_template: "{base_name}-{row_name}-{rule_name}",
+      yt_io_template: "{base_name}",
+      adgroup_template: "{base_name}",
+      ad_template: "{base_name}"
+    };
     this.formSdf.patchValue({
       io_template: dv360Template.io_template,
       li_template: dv360Template.li_template,
@@ -514,7 +525,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       yt_li_template: dv360Template.yt_li_template,
       adgroup_template: dv360Template.adgroup_template,
       ad_template: dv360Template.ad_template,
-    }, {emitEvent: true});
+    }, { emitEvent: true });
   }
 
   // Feeds Tab
@@ -709,6 +720,52 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       this.formFeeds.controls.budget_factor_column.setErrors({ required: true });
     } else if (!this.validateColumn(row, budget_factor_column)) {
       this.formFeeds.controls.budget_factor_column.setErrors({ unknownColumn: true });
+    }
+  }
+
+  // Reports tab
+  async buildReport() {
+    const dates = this.formReports.get('reportPeriod').value;
+
+    if (!dates.start) {
+      this.formReports.get('reportPeriod.start').setErrors({ invalid: true });
+      return;
+    }
+    if (!dates.end) {
+      this.formReports.get('reportPeriod.end').setErrors({ invalid: true });
+      return;
+    }
+    let format = this.formReports.get('format').value;
+    let excludeEmpty = this.formReports.get('excludeEmpty').value;
+    let ownerUser = this.formReports.get('ownerUser').value;
+    let destination_folder = this.formReports.get('destination_folder').value;
+
+    this.errorMessage = null;
+    this.loading = true;
+    try {
+      let result = await this.configService.buildReport(this.appId, format, {
+        from: dates?.start?.toISOString(),
+        to: dates?.end?.toISOString(),
+        format: format.toString().toLowerCase(),
+        excludeEmpty,
+        ownerUser,
+        destination_folder
+      });
+      if (format === ReportFormat.Spreadsheet) {
+        let docurl = `https://docs.google.com/spreadsheets/d/${result.fileId}`;
+        console.log('Report generated: ' + docurl);
+        const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+          data: {
+            html: `Report has been successfully built, please open the <a target='_blank' href='${docurl}'>Spreadsheet</a> to make sure you have access`,
+            header: 'Report',
+            mode: ConfirmationDialogModes.Ok
+          }
+        });
+      }
+    } catch (e) {
+      this.handleApiError('Report generation failed', e);
+    } finally {
+      this.loading = false;
     }
   }
 }

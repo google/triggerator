@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import path from 'path';
+import fs from 'fs';
 import _ from 'lodash';
 import { Writable } from 'stream';
 import express from 'express';
@@ -29,7 +30,7 @@ import DV360Facade, { DV360FacadeOptions } from './app/dv360-facade';
 import FeedService from './app/feed-service';
 import { RuleEvaluator } from './app/rule-engine';
 import SdfController from './app/sdf-controller';
-import { difference, getCurrentDateTimestamp, parseBool, parseDate } from './app/utils';
+import { difference, getCurrentDateTimestamp, parseBool, parseDate, parseString } from './app/utils';
 import { AppList, Config, JobInfo } from './types/config';
 import RuleEngineController from './app/rule-engine-controller';
 import SchedulerService from './app/cloud-scheduler-service';
@@ -37,6 +38,7 @@ import { sendEmail } from './app/email-notifier';
 import { Logger } from './types/logger';
 import { v4 as uuidv4 } from 'uuid';
 import ConfigValidator from './app/config-validator';
+import ReportService from './app/report-service';
 
 let router = express.Router();
 
@@ -164,6 +166,10 @@ async function getConfig(logger: Logger, configId: string, res: express.Response
     return;
   }
   return config;
+}
+async function trackExecutionStatus(logger: Logger, appId: string, status: string) {
+  let cfgSvc = new ConfigService(logger);
+  await cfgSvc.trackExecution(MASTER_SPREADSHEET, appId, status);
 }
 
 router.get('/config/:id/feeds/_all_', async (req: express.Request, res: express.Response) => {
@@ -333,17 +339,28 @@ router.post('/config/:id/schedule/edit', async (req: express.Request, res: expre
 });
 
 function initRequestBoundLogger(logger: winston.Logger, appId: string) {
-  logger.defaultMeta = Object.assign(logger.defaultMeta || {}, {appId: appId})
+  logger.defaultMeta = Object.assign(logger.defaultMeta || {}, { appId: appId })
 }
 
-async function runExecutionEngine(appId: string, isAsync: boolean, 
-  includeDebugLog: boolean, sendEmail: boolean, 
+/**
+ * Run exution engine. Basically there're two modes: interactive (isAsync=true) - run manually by user, batch (isAsync=false) - run by Scheduler's job.
+ * @param appId application (configuration) id
+ * @param isAsync true if executing interactively (from within application), false if executing from a Scheduler's job
+ * @param includeDebugLog true to do debug logging
+ * @param sendEmail true to send email notifications on finish
+ * @param forceUpdate true to do force activation/deactivation of IO/LI even if they are already in a desired state
+ * @param dryRun true to do dry run (do not call DV360 API but only pretend)
+ * @param req express' request
+ * @param res express' response
+ */
+async function runExecutionEngine(appId: string, isAsync: boolean,
+  includeDebugLog: boolean, sendEmail: boolean,
   forceUpdate: boolean, dryRun: boolean,
   req: express.Request, res: express.Response
-  ) {
+) {
   const logger = req.log;
   initRequestBoundLogger(logger, appId);
-  logger.info(`Starting ExecutionEngine, appId=${appId}, isAsync=${isAsync}, includeDebugLog=${includeDebugLog}, sendEmail=${sendEmail}`, {component: 'WebApi'});
+  logger.info(`Starting ExecutionEngine, appId=${appId}, isAsync=${isAsync}, includeDebugLog=${includeDebugLog}, sendEmail=${sendEmail}`, { component: 'WebApi' });
   // load and validate configuration
   let config = await getConfig(logger, appId, res);
   if (!config) return;
@@ -354,6 +371,9 @@ async function runExecutionEngine(appId: string, isAsync: boolean,
     );
     logger.error(err);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: err.message });
+    if (!isAsync) {
+      trackExecutionStatus(logger, appId, 'error');
+    }
     return;
   }
 
@@ -402,12 +422,15 @@ async function runExecutionEngine(appId: string, isAsync: boolean,
   try {
     let updatedItems: number;
     if (isAsync) {
-      let task = controller.run(appId, {forceUpdate, dryRun});
+      // interactive exection (manually from within application)
+      let task = controller.run(appId, { forceUpdate, dryRun });
       res.status(StatusCodes.OK).send({ operation: opId });
       updatedItems = await task;
     } else {
-      updatedItems = await controller.run(appId, {forceUpdate, dryRun});
+      // batch execution from Scheduler
+      updatedItems = await controller.run(appId, { forceUpdate, dryRun });
       res.sendStatus(StatusCodes.OK);
+      trackExecutionStatus(logger, appId, 'success');
     }
     logger.info(`[RuleEngine] Execution compeleted. Updated items: ${updatedItems}`);
 
@@ -433,10 +456,14 @@ async function runExecutionEngine(appId: string, isAsync: boolean,
       logger.error(`[RuleEngine] Execution failed. Error: ${e.message}`, e);
     else
       logger.error(`[RuleEngine] Execution failed.`);
-    
-    // this is a special event for client (anythings starting with 'error:') telling that the op was failed
+
     if (isAsync) {
+      // interactive exection (manually from within application)
+      // this is a special event for client (anythings starting with 'error:') telling that the op was failed
       logger.error('error:' + e.message);
+    } else {
+      // batch execution from Scheduler
+      trackExecutionStatus(logger, appId, 'error');
     }
 
     // NOTE: we can't simply remove streamTransport because
@@ -476,14 +503,14 @@ router.post('/engine/:id/run', async (req: express.Request, res: express.Respons
   let appId = <string>req.params.id;
   const includeDebugLog = parseBool(req.query.debug);
 
-  await runExecutionEngine(appId, /*isAsync=*/ false, includeDebugLog, /*sendEmail=*/ true, 
+  await runExecutionEngine(appId, /*isAsync=*/ false, includeDebugLog, /*sendEmail=*/ true,
     /*forceUpdate=*/ false, /*dryRun=*/ false,
     req, res);
 });
 
 let g_running_ops: Record<string, string[]> = {};
 /**
- * Endpoint for manual running engine execution from the client w/o stream, 
+ * Endpoint for manual starting engine execution from the client w/o streaming, 
  * this method starts an operation and return an opid which used later on with querystatus method
  * to query the operation status and get log events.
  */
@@ -631,7 +658,7 @@ async function notifyOnSuccess(log: string, config: Config, logger: Logger) {
       const text = `Execution for advertiser=${advertiserId} campaign=${campaignId} succeeded (configuration: ${appurl})\n\nLog:\n${log}`;
       let info = await sendEmail(reciever, 'Triggerator Status: Success', text);
       logger.debug(`Notification to ${reciever} sent:` + JSON.stringify(info));
-    } catch(e) {
+    } catch (e) {
       logger.error("[WebApi] An error occured on sending email notification about execution success", e);
     }
   }
@@ -672,6 +699,88 @@ router.get('/settings', async (req: express.Request, res: express.Response) => {
     "Mailer config": mailerInfo
   };
   res.send({ settings });
+});
+
+router.get('/reports/:id/activationtimes', async (req: express.Request, res: express.Response) => {
+  let appId = <string>req.params.id;
+  const logger = req.log;
+  initRequestBoundLogger(logger, appId);
+  let reportSvc = new ReportService(logger);
+  let fromDate = parseDate(req.query.from);
+  let toDate = parseDate(req.query.to);
+
+  if (!toDate) {
+    toDate = new Date();
+  }
+  if (!fromDate) {
+    throw new Error("[ReportService] Required argument 'from' is missing");
+  }
+  if (req.query.from && !_.isDate(fromDate)) {
+    throw new Error("[ReportService] Invalid date value for 'from' argument: " + req.query.from);
+  }
+  if (req.query.to && !_.isDate(toDate)) {
+    throw new Error("[ReportService] Invalid date value for 'to' argument: " + req.query.to);
+  }
+  const format = req.query.format;
+  const excludeEmpty = parseBool(req.query.excludeEmpty);
+  const ownerUser = parseString(req.query.ownerUser);
+  const destination_folder = parseString(req.query.destination_folder);
+
+  logger.info(`[WebApi] Generating a report ActivationTimeSummary for period ${fromDate.toISOString()}-${toDate.toISOString()}, format=${format}, excludeEmpty=${excludeEmpty}, ownerUser=${ownerUser}, destination_folder=${destination_folder}`);
+  let csvText: string;
+  // #1 generate CSV data
+  try {
+    csvText = await reportSvc.buildLineItemActiveTimeSummaryReport(appId, fromDate, toDate, excludeEmpty);
+  } catch (e) {
+    if (!e.logged)
+      logger.error(`[WebApi][ Report generation failed: ${e.message}`, e);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message, details: JSON.stringify(e) });
+    return;
+  }
+  logger.debug(`[WebApi] Report is generated:\n` + csvText);
+
+  // #2 write CSV into a file
+  let outputFile = path.join(path.resolve(getTempDir()), `report-activations-${fromDate.toISOString()}-${toDate.toISOString()}.csv`);
+  fs.writeFileSync(outputFile, csvText);
+
+  if (format === 'csv') {
+    // #3.1 return file as a download
+    logger.debug(`Sending a generated CSV file ${outputFile}`);
+    res.download(outputFile, async (err) => {
+      if (err) {
+        logger.error(`[WebApi][Report] Sending CSV ${outputFile} failed: ${err.message}`, err);
+        return;
+      }
+    });
+  } else if (format === 'spreadsheet') {
+    // #3.2 import file into gDrive as gSpreadsheet and transfer ownership to the specified (or current user)
+    const title = `Activation times between ${fromDate.toLocaleString()} and ${toDate.toLocaleString()}`;
+    try {
+      let fileId = await GoogleDriveFacade.importCsvAsSpreadsheet(outputFile, title, ownerUser || req.user);
+      res.status(StatusCodes.OK).send({fileId});
+    } catch (e) {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: 'Import CSV into Google Spreadsheet failed:' + e.message, details: JSON.stringify(e) });
+    }    
+  }
+
+  // #4 optionally save file to gDrive or GCS if the user asked for it
+  if (destination_folder) {
+    if (destination_folder.startsWith('gs://')) {
+      uploadFileToGCS(outputFile, destination_folder).catch(e => {
+        req.log.error(`[WebApi] Uploading report file ${outputFile} to GCS path ${destination_folder} failed: ${e.message}`, e);
+      }).then(() => {
+        req.log.info(`[WebApi] Generated report file ${outputFile} successfully uploaded to GCS '${destination_folder}'`);
+      });
+    } else if (destination_folder.startsWith('drive://')) {
+      try {
+        await GoogleDriveFacade.uploadFile(outputFile, destination_folder);
+        req.log.info(`[WebApi] Generated report file ${outputFile} successfully uploaded to Google Drive folder '${destination_folder}'`)
+      } catch (e) {
+        req.log.error(`[WebApi] Uploading report file ${outputFile} to Google Drive path ${destination_folder} failed: ${e.message}`, e);
+      }
+    }
+  }
+
 });
 
 export = router;
