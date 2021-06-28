@@ -52,3 +52,13 @@ form .col {
   text-decoration: dashed underline;
   cursor: pointer;
 }
+
+
+.reports-dates-radio-group {
+  display: flex;
+  flex-direction: column;
+  margin: 15px 0;
+}
+.reports-dates-radio-button {
+  margin: 5px;
+}

@@ -2,6 +2,10 @@
 
 >NOTE: BE is backend (server application), FE - frontend (client applciation)
 
+## 2021-06-28 (1.3.0)
+* Reporting introduced: report "Activation times" (summary of time when LIs were activated for a period) 
+* Tracking of last run status in master spreadsheet, statuses are visible in application list
+
 ## 2021-06-12
 * BE: set reasonable defaults for campaign name templates during new configuration creation
 * BE: implemented validation for templates (correctness of rule_name/row_name macros usage)

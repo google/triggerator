@@ -75,7 +75,38 @@ export async function downloadFile(url: string): Promise<Buffer> {
   });
 }
 
+export async function importCsvAsSpreadsheet(filePath: string, title: string, ownerEmail?: string | undefined | null): Promise<string> {
+  var media = {
+    mimeType: 'text/csv',
+    body: fs.createReadStream(filePath)
+  };
+  const drive = google.drive({ version: 'v3' });
+  let result = await drive.files.create({
+    requestBody: {
+      'name': title,
+      'mimeType': 'application/vnd.google-apps.spreadsheet'
+    },
+    media: media,
+    fields: 'id'
+  });
+  let fileId = result.data.id!;
+  if (ownerEmail) {
+    await drive.permissions.create({
+      fileId: fileId,
+      requestBody: {
+        type: 'user',
+        role: 'owner',
+        emailAddress: ownerEmail,
+      },
+      transferOwnership: true,
+      fields: 'id'
+    });
+  }
+  return fileId;
+}
+
 export default {
+  importCsvAsSpreadsheet,
   downloadFile,
   uploadFile
 };

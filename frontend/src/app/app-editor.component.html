@@ -17,17 +17,17 @@
         Application
       </div>
       <div class="col-2 text-right" style="font-size: 14px">
-        <button mat-icon-button (click)="undo()" [disabled]="undoStack.length === 0" color="accent" aria-label="Undo last change" title="Undo last change">
-        <mat-icon>undo</mat-icon>
-      </button>
+        <button mat-icon-button (click)="undo()" [disabled]="undoStack.length === 0" color="accent"
+          aria-label="Undo last change" title="Undo last change">
+          <mat-icon>undo</mat-icon>
+        </button>
       </div>
       <div class="col-2 text-right" style="font-size: 14px">
         <mat-slide-toggle [(ngModel)]="autoSave" class="mt-2">Auto-save</mat-slide-toggle>
       </div>
     </div>
   </mat-card-title>
-  <mat-card-subtitle class="editable-title" (click)="editTitle();$event.preventDefault()">{{config?.title}}<a href=""
-      >
+  <mat-card-subtitle class="editable-title" (click)="editTitle();$event.preventDefault()">{{config?.title}}<a href="">
       <mat-icon class="float-edit-icon">edit</mat-icon>
     </a></mat-card-subtitle>
 </mat-card>
@@ -224,12 +224,15 @@
               macros:
               <ul>
                 <li>{{ '{' }}base_name{{ '}' }} - entity (IO/LI/etc) name from template campaign</li>
-                <li>{{ '{' }}row_name{{ '}' }} - feed row name (a value of feed row's column specified as name column - see <a href="#" (click)="switchToTab('Feeds & Rules');$event.preventDefault()">Columns</a>)</li>
-                <li>{{ '{' }}rule_name{{ '}' }} - rule name - see <a href="#" (click)="switchToTab('Feeds & Rules');$event.preventDefault()">Rules</a></li>
+                <li>{{ '{' }}row_name{{ '}' }} - feed row name (a value of feed row's column specified as name column -
+                  see <a href="#" (click)="switchToTab('Feeds & Rules');$event.preventDefault()">Columns</a>)</li>
+                <li>{{ '{' }}rule_name{{ '}' }} - rule name - see <a href="#"
+                    (click)="switchToTab('Feeds & Rules');$event.preventDefault()">Rules</a></li>
               </ul>
             </div>
             <div class="mb-3">
-              <button mat-raised-button (click)="generateDefaultTemplates()" color="accent">Generate default templates</button>
+              <button mat-raised-button (click)="generateDefaultTemplates()" color="accent">Generate default
+                templates</button>
             </div>
           </div>
         </div>
@@ -290,7 +293,8 @@
         <div class="row">
           <div class="col">
             <mat-slide-toggle formControlName="activateCampaign">Activate campaign</mat-slide-toggle>
-            <mat-icon matTooltip="Updated or generated campaign will have Active status, otherwise - Draft" style="vertical-align: bottom; margin-left: 5px">help_outline</mat-icon>
+            <mat-icon matTooltip="Updated or generated campaign will have Active status, otherwise - Draft"
+              style="vertical-align: bottom; margin-left: 5px">help_outline</mat-icon>
           </div>
         </div>
         <!-- date range -->
@@ -312,7 +316,8 @@
             </mat-form-field>
           </div>
           <div class="col">
-            <div class="alert alert-dark">Please keep in mind that you'll need to import the generated SDF till the specified start date ({{formSdf.get('newCampaignPeriod.start').value| date  }})</div>
+            <div class="alert alert-dark">Please keep in mind that you'll need to import the generated SDF till the
+              specified start date ({{formSdf.get('newCampaignPeriod.start').value| date }})</div>
           </div>
         </div>
         <!-- destination folder -->
@@ -411,8 +416,9 @@
         </div>
         <div class="row">
           <div class="col text-left">
-            <button mat-raised-button (click)="loadAllFeeds()" [disabled]="!this.dataSourceFeeds.data?.length ? true : null"
-              color="accent" class="mat-elevation-z2" matTooltip="Load combined feed (with join)">
+            <button mat-raised-button (click)="loadAllFeeds()"
+              [disabled]="!this.dataSourceFeeds.data?.length ? true : null" color="accent" class="mat-elevation-z2"
+              matTooltip="Load combined feed (with join)">
               <mat-icon>bolt</mat-icon> Preview
             </button>
             <mat-checkbox [checked]="evaluateRulesWithFeeds"
@@ -447,10 +453,11 @@
                     </ng-container>
                     <mat-header-row *matHeaderRowDef="(feedDataColumns[tab] )"></mat-header-row>
                     <!-- <mat-row *matRowDef="let row; columns: (feedDataColumns[tab] )"></mat-row> -->
-                    <mat-row *matRowDef="let row; let e = index; columns: (feedDataColumns[tab] )" class="remove-background"
-                    (mouseover)="mouseOverIndex = e" (mouseout)="mouseOverIndex=-1"
-                    [ngClass]="{'mat-elevation-z8' : e == mouseOverIndex}" (click)="onFeedRowDetails($event, row, index, dataSourceFeedData[tab])"></mat-row>
-    
+                    <mat-row *matRowDef="let row; let e = index; columns: (feedDataColumns[tab] )"
+                      class="remove-background" (mouseover)="mouseOverIndex = e" (mouseout)="mouseOverIndex=-1"
+                      [ngClass]="{'mat-elevation-z8' : e == mouseOverIndex}"
+                      (click)="onFeedRowDetails($event, row, index, dataSourceFeedData[tab])"></mat-row>
+
                     <ng-template matNoDataRow>
                       <div class="alert">Load a feed or click Preview to load a combined feed</div>
                     </ng-template>
@@ -562,6 +569,84 @@
         <div class="row">
           <div class="col">
             <app-rules-list [data]="config" [appId]="appId" [parent]="this"></app-rules-list>
+          </div>
+        </div>
+      </mat-card>
+    </form>
+  </mat-tab>
+  <!-- Reports tab -->
+  <mat-tab label="Reports">
+    <form [formGroup]="formReports" novalidate>
+      <mat-card>
+        <div class="row">
+          <div class="col" style="margin:0">
+            <h3 mat-subheader color="primary">Activation times</h3>
+          </div>
+        </div>
+        <div class="alert">
+          Report lists all line items with amount of time they were activated in a specified period.
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="fill" color="accent">
+              <mat-label>Enter reporting report</mat-label>
+              <mat-date-range-input formGroupName="reportPeriod" [rangePicker]="pickerReport">
+                <input matStartDate formControlName="start" placeholder="Start date" required>
+                <input matEndDate formControlName="end" placeholder="End date" required>
+              </mat-date-range-input>
+              <mat-datepicker-toggle matSuffix [for]="pickerReport"></mat-datepicker-toggle>
+              <mat-date-range-picker #pickerReport></mat-date-range-picker>
+
+              <mat-error *ngIf="formReports.get('reportPeriod.start').hasError('invalid')">Invalid start date
+              </mat-error>
+              <mat-error *ngIf="formReports.get('reportPeriod.start').hasError('invalid')">Invalid end date
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <label id="reports-dates-radio-group-label">Choose a reporting period:</label>
+            <mat-radio-group formControlName="format" class="reports-dates-radio-group" required
+              aria-labelledby="reports-dates-radio-group-label">
+              <mat-radio-button [checked]=true class="reports-dates-radio-button" value="CSV">Download a CSV file
+              </mat-radio-button>
+              <mat-radio-button class="reports-dates-radio-button" value="Spreadsheet">Create a Google Spreadsheet
+              </mat-radio-button>
+            </mat-radio-group>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <mat-slide-toggle formControlName="excludeEmpty">Exclude LIs with zero active time</mat-slide-toggle><br>
+          </div>
+        </div>
+        <!-- name_column -->
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>Spreadsheet owner</mat-label>
+              <input matInput formControlName="ownerUser">
+              <mat-hint>User email to transfer ownership of generated report (if empty, current user will be used)
+              </mat-hint>
+            </mat-form-field>
+          </div>
+        </div>
+        <!-- destination folder -->
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
+              <mat-label>Destination path</mat-label>
+              <input matInput formControlName="destination_folder">
+              <mat-hint>Destination for generated report: either "gs://" (GCS) or "drive://" (Google Drive) path
+              </mat-hint>
+            </mat-form-field>
+          </div>
+        </div>
+        <!-- Operations -->
+        <div class="row">
+          <div class="col">
+            <button mat-raised-button (click)="buildReport()" color="accent" class="mat-elevation-z2">Create</button>
           </div>
         </div>
       </mat-card>

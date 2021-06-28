@@ -16,7 +16,7 @@
 import { PORT, IS_GAE } from './env';
 import argv from './argv';
 if (IS_GAE) {
-  require('@google-cloud/debug-agent').start({serviceContext: {enableCanary: false}});
+  require('@google-cloud/debug-agent').start({ serviceContext: { enableCanary: false } });
 }
 import { google } from 'googleapis';
 import { OAUTH_SCOPES } from './consts';

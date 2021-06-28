@@ -13,24 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Component, Input, OnInit, ViewChild, TemplateRef, ViewContainerRef, DoCheck, Inject } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, TemplateRef, ViewContainerRef, DoCheck, Inject, SecurityContext } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 export enum ConfirmationDialogModes {
   YesNo = 'YesNo',
   Ok = 'Ok'
 }
 export interface ConfirmationDialogData {
-  message: string;
+  message?: string;
+  html?: string;
   mode: ConfirmationDialogModes;
+  header?: string;
 }
 @Component({
   template: `
 <h1 mat-dialog-title>
   <span *ngIf="data.mode === 'YesNo'">Confirm action</span>
-  <span *ngIf="data.mode === 'Ok'">Warning</span>
+  <span *ngIf="data.mode === 'Ok'">{{ data.header || 'Warning' }}</span>
 </h1>
-<div mat-dialog-content>{{ data.message }}</div>
+<div mat-dialog-content [innerHtml]="html">{{ data.message }}</div>
 <div mat-dialog-actions class="mt-15" style="text-align: center;">
   <div *ngIf="data.mode === 'YesNo'" class="full-width">
     <button mat-raised-button color="primary" [mat-dialog-close]="true" cdkFocusInitial>Yes</button>
@@ -43,5 +46,12 @@ export interface ConfirmationDialogData {
   `
 })
 export class ConfirmationDialogComponent {
-  constructor(@Inject(MAT_DIALOG_DATA) public data: ConfirmationDialogData) {}
+  html: SafeHtml;
+  constructor(@Inject(MAT_DIALOG_DATA) public data: ConfirmationDialogData, private sanitized: DomSanitizer) {
+    if (data.html) {
+      this.html = this.sanitized.bypassSecurityTrustHtml(data.html);
+    } else {
+      this.html = this.sanitized.sanitize(SecurityContext.HTML, data.message);
+    }
+  }
 }

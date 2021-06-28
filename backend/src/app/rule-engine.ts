@@ -71,7 +71,7 @@ export class RuleEvaluator {
     }
   }
 
-  getActiveRule(rules: RuleInfo[], row: Record<string, any>): RuleInfo | null {        
+  getActiveRule(rules: RuleInfo[], row: Record<string, any>): RuleInfo | null {
     for (let i = 0; i < rules.length; i++) {
       let rule = rules[i];
       if (rule.condition) {
@@ -88,7 +88,7 @@ export class RuleEvaluator {
           if (expr.evaluate(row)) {
             return rule;
           }
-        } catch(e) {
+        } catch (e) {
           throw new Error(`[RuleEvaluator] '${rule.name}' rule's evaluation failed: ${e.message}`);
         }
       }
@@ -104,10 +104,10 @@ export default class RuleEngine {
   private dryRun;
   updateLog: string[] = [];
 
-  constructor(config: Config, 
+  constructor(config: Config,
     private logger: Logger,
-    private dv_facade: DV360Facade, 
-    private ruleEvaluator: RuleEvaluator, 
+    private dv_facade: DV360Facade,
+    private ruleEvaluator: RuleEvaluator,
     options?: RuleEngineOptions) {
     if (!logger) throw new Error('[RuleEngine] ArgumentException: Required argument logger is missing');
     if (!config) throw new Error(`[RuleEngine] ArgumentException: Config should be specified`);
@@ -123,14 +123,14 @@ export default class RuleEngine {
   async run(feedData: FeedData, sdf: SdfFull): Promise<number> {
     if (!this.config.rules || !this.config.rules.length)
       throw new Error(`[RuleEngine] There no rules in configuration to process`);
-    if (!sdf.insertionOrders) 
+    if (!sdf.insertionOrders)
       throw new Error(`[RuleEngine] Campaign has no insersion orders`);
     let nameColumn = this.config.feedInfo!.name_column!;
     let iosMap: Record<string, Array<{ ioId: string, status: string }>> = {};
     let updatedItems = 0;
     let advertiserId = sdf.advertiserId;
     this.logger.info(`[RuleEngine] Starting execution with feed data of ${feedData.rowCount} rows`);
-    
+
     // build a map iosMap for composite key to IO
     for (let i = 0; i < sdf.insertionOrders.rowCount; i++) {
       let io = sdf.insertionOrders.getRow(i);
@@ -140,7 +140,7 @@ export default class RuleEngine {
       let ruleName: any = /rule:(.*?)(?:\\n|$)/m.exec(details);
       rowName = (rowName && rowName[1].trim());
       ruleName = (ruleName && ruleName[1].trim());
-      this.logger.debug(`[RuleEngine] processing insertionOrder ${io[SDF.IO.Name]} (status=${io[SDF.LI.Status]}), rowName=${rowName}, ruleName=${ruleName}`);
+      this.logger.debug(`[RuleEngine] processing insertionOrder ${io[SDF.IO.Name]} (status=${io[SDF.IO.Status]}), rowName=${rowName}, ruleName=${ruleName}`);
       if (rowName === null || ruleName === null) {
         this.logger.warn(`[RuleEngine] skipping IO '${io[SDF.IO.Name]}' (${io[SDF.IO.IoId]}) as its Details field contains no row/rule: ${details}`);
         continue;
@@ -148,8 +148,8 @@ export default class RuleEngine {
       const key = rowName + ruleName;
       iosMap[key] = iosMap[key] || [];
       iosMap[key].push({
-        ioId: io[SDF.LI.IoId],
-        status: io[SDF.LI.Status]
+        ioId: io[SDF.IO.IoId],
+        status: io[SDF.IO.Status]
       });
     }
     // build a map lisMap for composite key to LI for those LIs that are in "static" IO
@@ -190,14 +190,14 @@ export default class RuleEngine {
         if (!rule || ruleInfo.name != rule.name) {
           let ioIds = iosMap[rowName + ruleInfo.name];
           if (ioIds) {
-            updatedItems += await this.deactivateIos(advertiserId, ioIds);
+            updatedItems += await this.deactivateIos(advertiserId, ioIds, sdf.lineItems);
           }
         }
       }
       // activate
       let ioIds = iosMap[rowName + (rule ? rule.name : '')];
       if (ioIds) {
-        updatedItems += await this.activateIos(advertiserId, ioIds);
+        updatedItems += await this.activateIos(advertiserId, ioIds, sdf.lineItems);
       }
     }
 
@@ -237,15 +237,17 @@ export default class RuleEngine {
       }
     }
 
+    // TODO: check of LIs that weren't touched and log a warning
     return updatedItems;
   }
 
-  private async activateIos(advertiserId: string, ios: Array<{ ioId: string, status: string }>): Promise<number> {
+  private async activateIos(advertiserId: string, ios: Array<{ ioId: string, status: string }>, lineItems: RecordSet | undefined): Promise<number> {
     let changesCount = 0;
     for (const io of ios) {
       if (!this.forceUpdate && io.status == 'Active') {
-        // NOTE: the format of log message is important, it's used in reportin (search before changing)
+        // NOTE: the format of log message is important, it's used in reporting (search before changing)
         this.logger.info(`[RuleEngine] activating IO ${io.ioId} skipped because it's already active and forceUpdate=false`);
+        this.logLineItemsOfIO(io.ioId, lineItems, 'activated', /*skipped=*/ true);
         continue;
       };
       this.logger.debug('[RuleEngine] activating IO ' + io.ioId);
@@ -254,17 +256,21 @@ export default class RuleEngine {
       }
       changesCount++;
       this.updateLog.push(`IO:${io.ioId}:Status=Active`);
+
+      // we need to log about all active nested line items
+      this.logLineItemsOfIO(io.ioId, lineItems, 'activated', /*skipped=*/ false);
     }
 
     return changesCount;
   }
 
-  private async deactivateIos(advertiserId: string, ios: Array<{ ioId: string, status: string }>): Promise<number> {
+  private async deactivateIos(advertiserId: string, ios: Array<{ ioId: string, status: string }>, lineItems: RecordSet | undefined): Promise<number> {
     var changesCount = 0;
     for (const io of ios) {
       if (!this.forceUpdate && io.status != 'Active') {
-        // NOTE: the format of log message is important, it's used in reportin (search before changing)
+        // NOTE: the format of log message is important, it's used in reporting (search before changing)
         this.logger.info(`[RuleEngine] deactivating IO ${io.ioId} skipped because it's already non-active and forceUpdate=false`);
+        this.logLineItemsOfIO(io.ioId, lineItems, 'deactivated', /*skipped=*/ true);
         continue;
       };
       this.logger.debug('[RuleEngine] deactivating IO ' + io.ioId);
@@ -273,9 +279,26 @@ export default class RuleEngine {
       }
       changesCount++;
       this.updateLog.push(`IO:${io.ioId}:Status=Paused`);
+
+      // we need to log about all active nested line items
+      this.logLineItemsOfIO(io.ioId, lineItems, 'deactivated', false);
     }
 
     return changesCount;
+  }
+
+  private logLineItemsOfIO(ioId: string, lineItems: RecordSet | undefined, statusName: string, skipped: boolean) {
+    if (lineItems) {
+      let lis = lineItems.findAll('Io Id', ioId);
+      for (let index of lis) {
+        let liId = lineItems.get('Line Item Id', index);
+        let status = lineItems.get('Status', index);
+        if (status === 'Active') {
+          // NOTE: the format of log message is important, it's used in reporting (search before changing)
+          this.logger.info(`[RuleEngine] ${skipped ? 'skipped ' : ''}${statusName} IO ${ioId} has active LI ${liId}`);
+        }
+      }
+    }
   }
 
   private async activateLis(advertiserId: string, lis: Array<{ liId: string, status: string }>): Promise<number> {
@@ -289,7 +312,7 @@ export default class RuleEngine {
       this.logger.debug('[RuleEngine] activating Li ' + li.liId);
       if (!this.dryRun) {
         await this.dv_facade.updateLineItemStatus(advertiserId, li.liId, 'active');
-      }        
+      }
       changesCount++;
       this.updateLog.push(`LI:${li.liId}:Status=Active`);
     }
@@ -317,14 +340,14 @@ export default class RuleEngine {
     return changesCount;
   }
 
-  private async processIoLineItems(advertiserId: string, activeRule: RuleInfo|null, 
+  private async processIoLineItems(advertiserId: string, activeRule: RuleInfo | null,
     ioIds: Array<{ ioId: string, status: string }>, lineItems: RecordSet) {
     let changesCount = 0;
     for (let io of ioIds) {
       let lis = lineItems.findAll('Io Id', io.ioId);
       this.logger.debug(`[RuleEngine] Processing LIs of IO ${io.ioId}: ${lis}`);
       for (let index of lis) {
-        
+
         let liId = lineItems.get('Line Item Id', index);
         let details = lineItems.get('Details', index);
         let ruleName: any = /rule:(.+?)(?:\\n|$)/m.exec(details);
@@ -342,7 +365,7 @@ export default class RuleEngine {
             changesCount++;
             this.updateLog.push(`LI:${liId}:Status=Paused`);
           } else {
-            // NOTE: the format of log message is important, it's used in reportin (search before changing)
+            // NOTE: the format of log message is important, it's used in reporting (search before changing)
             this.logger.info(`[RuleEngine] deactivating LI ${liId} skipped because it's already non-active and forceUpdate=false`);
           }
         } else if (ruleName == activeRule?.name) {
@@ -355,7 +378,7 @@ export default class RuleEngine {
             changesCount++;
             this.updateLog.push(`LI:${liId}:Status=Active`);
           } else {
-            // NOTE: the format of log message is important, it's used in reportin (search before changing)
+            // NOTE: the format of log message is important, it's used in reporting (search before changing)
             this.logger.info(`[RuleEngine] activating LI ${liId} skipped because it's already active and forceUpdate=false`);
           }
         }

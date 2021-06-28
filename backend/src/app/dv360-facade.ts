@@ -61,7 +61,7 @@ export default class DV360Facade {
         entityStatus: status === 'active' ? 'ENTITY_STATUS_ACTIVE' : 'ENTITY_STATUS_PAUSED'
       }
     })).data;
-    // NOTE: the format of log message is important, it's used in reportin (search before changing)
+    // NOTE: the format of log message is important, it's used in reporting (search before changing)
     this.logger.info(`[DV360Facade] InsertionOrder ${io.name}(${ioId}) now has entity status ${io.entityStatus}.`);
   }
 
@@ -74,7 +74,7 @@ export default class DV360Facade {
         entityStatus: status === 'active' ? 'ENTITY_STATUS_ACTIVE' : 'ENTITY_STATUS_PAUSED'
       }
     })).data;
-    // NOTE: the format of log message is important, it's used in reportin (search before changing)
+    // NOTE: the format of log message is important, it's used in reporting (search before changing)
     this.logger.info(`[DV360Facade] LineItem ${li.name}(${liId}) now has entity status ${li.entityStatus}.`);
     
     /*

@@ -85,6 +85,12 @@ export function parseDate(params: any): Date | undefined {
   return undefined;
 }
 
+export function parseString(params: any): string | undefined {
+  if (!params || params === 'undefined' || params === 'null')
+    return undefined;
+  return params;
+}
+
 /**
  * Compares two object and returns a difference as a new obejct
  * @param object An object being compared with the base

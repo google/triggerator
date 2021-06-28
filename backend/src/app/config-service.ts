@@ -16,10 +16,10 @@
 import { sheets_v4, google } from 'googleapis';
 import _ from 'lodash';
 import { SERVICE_ACCOUNT } from '../env';
-import { FeedInfo, FeedType, RuleInfo, RuleState, Config, AppList, CustomFields, AppInfo, FeedConfig, SdfElementType } from '../types/config';
+import { FeedInfo, FeedType, RuleInfo, RuleState, Config, AppList, CustomFields, AppInfo, FeedConfig, SdfElementType, JobInfo } from '../types/config';
 import { FeedData } from '../types/types';
 import { RuleEvaluator } from './rule-engine';
-import { Logger} from '../types/logger';
+import { Logger } from '../types/logger';
 import SchedulerService from './cloud-scheduler-service';
 
 export const CONFIG_SHEETS = {
@@ -28,10 +28,16 @@ export const CONFIG_SHEETS = {
   Feeds: "Feeds",
   CustomFields: "SDF Fields"
 }
+type AppData = {
+  id: string;
+  status: string | undefined;
+  timestampt: string | undefined;
+}
+type AppListData = AppData[];
 
 export default class ConfigService {
   sheetsAPI: sheets_v4.Sheets;
-  
+
   constructor(public logger: Logger) {
     if (!logger) throw new Error('[ConfigService] Required argument logger is missing');
     this.sheetsAPI = google.sheets({ version: "v4" });
@@ -169,7 +175,7 @@ export default class ConfigService {
   private loadFeeds(values: any[][], config: Config) {
     config.feedInfo = config.feedInfo || {};
     config.feedInfo.feeds = config.feedInfo.feeds || [];
-    
+
     if (!values) return;
     let feeds: FeedInfo[] = [];
     for (const row of values) {
@@ -218,7 +224,7 @@ export default class ConfigService {
     if (!values) return;
     let fields: CustomFields[] = [];
     for (const row of values) {
-      let sdf_type: SdfElementType|undefined = undefined;
+      let sdf_type: SdfElementType | undefined = undefined;
       switch (row[2]) {
         case "Campaigns": sdf_type = SdfElementType.Campaign; break;
         case "Insertion Orders": sdf_type = SdfElementType.IO; break;
@@ -297,7 +303,7 @@ export default class ConfigService {
     return config;
   }
 
-  async validateMasterSpreadsheet(masterSpreadsheetId: string): Promise<string[]> {
+  private async validateMasterSpreadsheet(masterSpreadsheetId: string): Promise<AppListData> {
     try {
       this.logger.info(`[ConfigService] Fetching master spreadsheet ${masterSpreadsheetId}`);
       let values = (await this.sheetsAPI.spreadsheets.values.get({
@@ -306,7 +312,7 @@ export default class ConfigService {
         range: 'Main!A2:Z'
       })).data.values;
       if (values && values.length) {
-        return values.map(row => row[0]);
+        return values.map(row => { return {id: row[0], status: row[1], timestampt: row[2]}});
       }
       return [];
     } catch (e) {
@@ -387,7 +393,7 @@ export default class ConfigService {
 
   }
 
-  async loadApplicationList(masterSpreadsheetId: string): Promise<AppList> {
+  async loadApplicationList(masterSpreadsheetId: string, includeJobs: boolean = true): Promise<AppList> {
     let app_ids = await this.validateMasterSpreadsheet(masterSpreadsheetId);
     if (!app_ids || app_ids.length === 0) {
       return {
@@ -396,30 +402,33 @@ export default class ConfigService {
       };
     }
     // start async fetching of Scheduler jobs
-    let scheduler = new SchedulerService(this.logger);
-    let jobListTask = scheduler.getJobList();
+    let jobListTask: Promise<JobInfo[]>;
+    if (includeJobs) {
+      let scheduler = new SchedulerService(this.logger);
+      jobListTask = scheduler.getJobList();
+    }
 
     let appList: AppList = {
       spreadsheetId: masterSpreadsheetId,
       configurations: []
     }
-    for (const docid of app_ids) {
+    for (const appdata of app_ids) {
       try {
         let props = (await this.sheetsAPI.spreadsheets.get({
-          spreadsheetId: docid,
+          spreadsheetId: appdata.id,
           fields: "properties"
         })).data.properties;
         appList.configurations.push({
           name: props?.title || '',
-          configId: docid,
+          configId: appdata.id,
           version: "1",
-          status: "active"
+          status: appdata.status ? 'last run ' + (appdata.status === 'error' ? 'failed' : 'succeeded') : 'never ran'
         });
       } catch (e) {
-        this.logger.warn(`[ConfigService] Failed to fetch doc ${docid}: ${e.message}`, e);
+        this.logger.warn(`[ConfigService] Failed to fetch doc ${appdata.id}: ${e.message}`, e);
         appList.configurations.push({
           name: '',
-          configId: docid,
+          configId: appdata.id,
           version: "1",
           status: "invalid",
           statusDetails: e.message
@@ -428,13 +437,15 @@ export default class ConfigService {
     }
 
     // fetch all jobs and enrich the app list with their corresponding job infos
-    let jobList = await jobListTask;
-    for (const job of jobList) {
-      if (!job.name) continue;
-      let jobId = job.name.substring(job.name.indexOf('/jobs/') + '/jobs/'.length);
-      let app = appList.configurations.find(app => app.configId === jobId);
-      if (app) {
-        app.job = job;
+    if (includeJobs) {
+      let jobList = await jobListTask!;
+      for (const job of jobList) {
+        if (!job.name) continue;
+        let jobId = job.name.substring(job.name.indexOf('/jobs/') + '/jobs/'.length);
+        let app = appList.configurations.find(app => app.configId === jobId);
+        if (app && app.status !== 'invalid') {
+          app.job = job;
+        }
       }
     }
 
@@ -447,8 +458,8 @@ export default class ConfigService {
     // otherwise we need to create a new spreadsheet
     let sheetsAPI = google.sheets({ version: "v4" });
     if (appId) {
-      if (app_ids.includes(appId)) {
-        throw new Error(`[ConfigService] Application with id ${appId} alreday exists`);
+      if (app_ids.find(app => app.id === appId)) {
+        throw new Error(`[ConfigService] Application with id ${appId} already exists`);
       }
     }
     let attachingExisting = !!appId;
@@ -506,9 +517,9 @@ export default class ConfigService {
       }
     }
     // add the new appId into the master doc
-    app_ids.push(appId);
+    app_ids.push({id: appId, status: undefined, timestampt: undefined});
     // write it back
-    this.updateApplicationList(masterSpreadsheetId, app_ids);
+    this.updateApplicationList(masterSpreadsheetId, app_ids.map(app => app.id));
 
     // assign meta information to the spreadsheet
     try {
@@ -562,18 +573,18 @@ export default class ConfigService {
       status: 'active',
       version: "1"
     };
-    this.logger.info(`[ConfigService] Application created: `, JSON.stringify(result), {result: result});
+    this.logger.info(`[ConfigService] Application created: `, JSON.stringify(result), { result: result });
     return result;
   }
 
   async deleteApplication(masterSpreadsheetId: string, appId: string) {
     this.logger.info(`[ConfigService] Deleting an application ${appId}`);
     let app_ids = await this.validateMasterSpreadsheet(masterSpreadsheetId);
-    if (!app_ids.includes(appId)) {
+    if (!app_ids.find(app => app.id === appId)) {
       throw new Error(`[ConfigService] Application with id ${appId} doesn't exist`);
     }
-    app_ids.splice(app_ids.indexOf(appId), 1);
-    await this.updateApplicationList(masterSpreadsheetId, app_ids);
+    app_ids.splice(app_ids.findIndex(app => app.id === appId), 1);
+    await this.updateApplicationList(masterSpreadsheetId, app_ids.map(app => app.id));
     let driveAPI = google.drive({ version: "v3" });
     try {
       await driveAPI.files.delete({
@@ -583,6 +594,31 @@ export default class ConfigService {
       this.logger.error(`[ConfigService] An error occured on deleting spreadsheet ${appId}: ${e.message}`, e);
       e.logged = true;
       throw e;
+    }
+  }
+
+  async trackExecution(masterSpreadsheetId: string, appId: string, status: string) {
+    let apps = await this.loadApplicationList(masterSpreadsheetId, false);
+    let idx = apps.configurations.findIndex((val) => {
+      return val.configId === appId
+    });
+    if (idx >= 0) {
+      try {
+        let values = [[status, new Date().toISOString()]];
+        let row_idx = 2 + idx; // values starts from the 2nd rows, and format one-based (A1 - top left cell)
+        let res = (await this.sheetsAPI.spreadsheets.values.update({
+          spreadsheetId: masterSpreadsheetId,
+          range: 'Main!B' + row_idx,
+          valueInputOption: "USER_ENTERED",
+          requestBody: {
+            majorDimension: 'ROWS',
+            values: values
+          }
+        })).data;
+      } catch (e) {
+        this.logger.error(`[ConfigService] Couldn't update master spreadsheet with last execution status : ${e.message}`, e);
+        throw e;
+      }
     }
   }
 
