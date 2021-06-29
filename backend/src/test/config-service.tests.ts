@@ -232,16 +232,4 @@ suite('ConfigService', () => {
       console.error(err);
     }
   });
-
-  test('validate config: feeds', function() {
-    // no feeds
-    let errors = ConfigValidator.validateFeeds({});
-    assert.strictEqual(errors.length, 1);
-    // no feeds
-    errors = ConfigValidator.validateFeeds({feeds: []});
-    assert.strictEqual(errors.length, 1);
-    // no feeds
-    errors = ConfigValidator.validateFeeds({feeds: [{type:FeedType.Auto, url: 'url',name: "feed1"}]});
-    assert.strictEqual(errors.length, 1);
-  });
 });

@@ -52,6 +52,9 @@ enable_apis() {
   # create GAE
   echo -e "${COLOR}Creating App Engine application...${NC}"
   gcloud app create --region $GAE_LOCATION
+  # App Engine Admin API
+  echo -e "${COLOR}\tApp Engine Admin API...${NC}"
+  gcloud services enable appengine.googleapis.com
 }
 
 urlencode() {
