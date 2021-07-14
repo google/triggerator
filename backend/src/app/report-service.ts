@@ -19,6 +19,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { sheets_v4, google } from 'googleapis';
 import _ from 'lodash';
 import { Logger } from '../types/logger';
+import { getProjectId } from './cloud-utils';
 import { CLOUD_LOG_NAME } from './logger-winston';
 
 enum EntityStatus {
@@ -43,7 +44,7 @@ export default class ReportService {
   }
 
   async buildLineItemActiveTimeSummaryReport(appId: string, fromDate: Date, toDate: Date, excludeEmpty: boolean = false): Promise<string> {
-    const projectId = await google.auth.getProjectId();
+    const projectId = await getProjectId();
     //let keyFile = argv.keyFile;
     // const auth = new google.auth.GoogleAuth({
     //   keyFile: argv.keyFile,

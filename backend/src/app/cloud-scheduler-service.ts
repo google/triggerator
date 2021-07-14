@@ -17,6 +17,7 @@ import { cloudscheduler_v1, google } from 'googleapis';
 import { GAE_LOCATION } from '../env';
 import { JobInfo } from '../types/config';
 import { Logger } from '../types/logger';
+import { getProjectId } from './cloud-utils';
 
 let schedulerAPI = google.cloudscheduler({ version: "v1" });
 const COMPONENT = 'CloudSchedulerService';
@@ -26,7 +27,7 @@ export default class SchedulerService {
   }
 
   async getJobParent(): Promise<string> {
-    const projectId = await google.auth.getProjectId();
+    const projectId = await getProjectId();
     const locationId: string = await this.getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
     const parent = `projects/${projectId}/locations/${locationId}`; 
     return parent;

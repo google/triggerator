@@ -21,6 +21,7 @@ if (IS_GAE) {
 import { google } from 'googleapis';
 import { OAUTH_SCOPES } from './consts';
 import createApp from './app';
+import { getProjectId } from './app/cloud-utils';
 
 async function mainServer() {
   // NOTE: setup authetication for server-to-server communication 
@@ -38,10 +39,11 @@ async function mainServer() {
   google.options({
     auth: auth
   });
-
+  
+  const projectId = await getProjectId();
   const app = await createApp();
   app.listen(PORT, () => {
-    console.log(`Web server is listening on ${PORT}, NODE_ENV = '${process.env.NODE_ENV}'`)
+    console.log(`Web server is listening on ${PORT}, NODE_ENV = '${process.env.NODE_ENV}', GCP project id = '${projectId}'`);
   });
 }
 
