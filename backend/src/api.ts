@@ -39,6 +39,7 @@ import { Logger } from './types/logger';
 import { v4 as uuidv4 } from 'uuid';
 import ConfigValidator from './app/config-validator';
 import ReportService from './app/report-service';
+import { getProjectId } from './app/cloud-utils';
 
 let router = express.Router();
 
@@ -381,7 +382,7 @@ async function runExecutionEngine(appId: string, isAsync: boolean,
   g_running_ops[opId] = [];
   let traceid: string;
   let loggingDone = false;
-  let logOutput: string | null = null;
+  let logOutput: string | null = '';
   // a in-memory transport for winston logger to intercept all log events during execution
   const stream = new Writable({
     write: (chunk: any, encoding: BufferEncoding, next: (error?: Error | null | undefined) => void) => {
@@ -625,7 +626,7 @@ router.get('/engine/:id/run/stream', async (req: express.Request, res: express.R
  * @returns host name
  */
 async function getGAEAppUrl(): Promise<string> {
-  let projectId = await google.auth.getProjectId();
+  let projectId = await getProjectId();
   let gae = (await google.appengine("v1").apps.get({ appsId: `${projectId}` })).data;
   return gae.defaultHostname!;
 }
@@ -665,13 +666,16 @@ async function notifyOnSuccess(log: string, config: Config, logger: Logger) {
 }
 
 router.get('/settings', async (req: express.Request, res: express.Response) => {
-  let projectId = await google.auth.getProjectId();
+  let projectId = await getProjectId();
   let mailerInfo = "";
   if (MAILER_CONFIG) {
     mailerInfo = `SMTP: server=${MAILER_CONFIG.host}:${MAILER_CONFIG.port}, from=${MAILER_CONFIG.from}`;
   }
   let settings = {
-    "Master Spreadsheet": MASTER_SPREADSHEET,
+    "Master Spreadsheet": {
+      value: MASTER_SPREADSHEET,
+      link: `https://docs.google.com/spreadsheets/d/${MASTER_SPREADSHEET}/edit#gid=0`
+    },
     "Service Account": `${projectId}@appspot.gserviceaccount.com`,
     "Is GAE": IS_GAE,
     "GCP Project Id": projectId,

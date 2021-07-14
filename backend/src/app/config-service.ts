@@ -422,7 +422,9 @@ export default class ConfigService {
           name: props?.title || '',
           configId: appdata.id,
           version: "1",
-          status: appdata.status ? 'last run ' + (appdata.status === 'error' ? 'failed' : 'succeeded') : 'never ran'
+          status: appdata.status ? 'last run ' + (appdata.status === 'error' ? 'failed' : 'succeeded') : 'never ran',
+          statusDetails: appdata.timestampt
+          // ? `<a href='https://console.cloud.google.com/logs/query;query=;timeRange=PT1H;cursorTimestamp=${appdata.timestampt}?project='><${appdata.timestampt}/a>` : ''
         });
       } catch (e) {
         this.logger.warn(`[ConfigService] Failed to fetch doc ${appdata.id}: ${e.message}`, e);
