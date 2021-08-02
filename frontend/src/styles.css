@@ -25,35 +25,12 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 }
 
 /* Workaround for enabling scrolling in MatDialogs */
+.mat-dialog-container {
+  overflow-y: auto;
+  height: initial !important;
+  padding: 0;
+}
+/* alternative method is below, but it also creates scrolling in all select dropdowns 
 .cdk-overlay-pane {
   overflow-y: auto;
-}
-
-/* .mat-dialog-container {
-  overflow-y: auto;
-} */
-/* .cdk-global-overlay-wrapper {
-  overflow: auto;
-} */
-
-/* .cdk-global-overlay-wrapper {
-  pointer-events: auto;
-  display: block;
-  position: relative;
-  overflow: auto;
-  text-align: center;
-}
-
-.cdk-global-overlay-wrapper::before {
-  content: '';
-  display: inline-block;
-  height: 100%;
-  white-space: nowrap;
-}
-
-.cdk-overlay-pane {
-  display: inline-block;
-  position: relative;
-  text-align: left;
-  white-space: normal;
 } */

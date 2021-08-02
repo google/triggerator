@@ -16,7 +16,7 @@
 import 'mocha';
 import assert from 'assert';
 import ConfigService, { CONFIG_SHEETS } from '../app/config-service';
-import { FeedType, Config, SdfElementType } from '../types/config';
+import { FeedType, Config, SdfElementType, SDF } from '../types/config';
 import { sheets_v4, google } from 'googleapis';
 import { difference } from '../app/utils';
 import winston from 'winston';
@@ -61,10 +61,10 @@ suite('ConfigService', () => {
         }]
       },
       customFields: [{
-        element_state:'All',
-        feed_column:'value',
-        media:'Display',
-        sdf_field:'Budget Type',
+        rule_name: 'All',
+        value: 'value',
+        media: 'Display',
+        sdf_field: SDF.IO.BudgetType,
         sdf_type: SdfElementType.IO
       }],
       dv360Template: {

@@ -2,6 +2,9 @@
 
 >NOTE: BE is backend (server application), FE - frontend (client applciation)
 
+## 2021-08-02 (1.4.0)
+* UI for custom fields, support JS-expressions for custom field values
+
 ## 2021-06-28 (1.3.0)
 * Reporting introduced: report "Activation times" (summary of time when LIs were activated for a period) 
 * Tracking of last run status in master spreadsheet, statuses are visible in application list

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 import _ from 'lodash';
-import { Config, DV360TemplateInfo, FrequencyPeriod, RuleInfo, SdfElementType, TemplateMacros } from '../types/config';
+import { Config, DV360TemplateInfo, FrequencyPeriod, RuleInfo, SdfElementType, TemplateMacros, SDF } from '../types/config';
 import { RuleEvaluator } from './rule-engine';
-import { FeedData, SDF, SdfFull } from '../types/types';
+import { FeedData, SdfFull } from '../types/types';
 import { Logger } from '../types/logger';
 
 type FrequencyInfo = {
@@ -274,6 +274,8 @@ export default class SdfGenerator {
     if (this.endDate) {
       new_campaign[SDF.Campaign.CampaignEndDate] = this.formatDate(this.endDate);
     }
+    // TODO: support custom fields for campaigns
+
     this.recalculateStatus = new_campaign[SDF.Campaign.Status] == 'Active';
 
     // template campaign can be empty, or contains only IOs, or IOs and LIs, or IOs/LIs and AdGroups (for TrueView only)
@@ -355,11 +357,8 @@ export default class SdfGenerator {
       let isTrueViewIO = this.trueViewTmplIOs[sourceIoId];
       if (!isTrueViewIO && !tmpl.isDisplayIoPerFeedRow()) {
         if (tmpl.isDisplayIoPerRule()) {
-          // IO doesn't depend on feed row but depends on rules (NOTE: new v2 feature)
-          // for (const ruleInfo of this.config.rules!) {
-          //   let new_io = this.sdf_io(isTrueViewIO, campaignId, tmplIo, null, ruleInfo, tmpl, no);
-          //   newSdf.insertionOrders.addRow(new_io);
-          // }
+          // IO doesn't depend on feed row but depends on rules
+          // it's not allowed configuration!
         } else {
           // IO doesn't depend on anything (neither feed row nor rules)
           let new_io = this.sdf_io(isTrueViewIO, campaignId, tmplIo, null, null, tmpl, no);
@@ -509,21 +508,24 @@ export default class SdfGenerator {
   }
 
   private setCustomFields(row: Record<string, string>, sdfType: SdfElementType, ruleName: string,
-    media: 'YouTube' | 'Display', feedRow: Record<string, string> | null) {
+    media: 'YouTube' | 'Display' | null, feedRow: Record<string, string> | null) {
     if (!this.config.customFields)
       return;
     for (const cf of this.config.customFields) {
-      if ((cf.element_state == 'All' || cf.element_state == ruleName)
+      if ((cf.rule_name == 'All' || cf.rule_name == ruleName)
         && cf.sdf_type == sdfType
-        && (cf.media == media || cf.media == '')) {
-        var value = cf.feed_column;
-        // TODO: here is a problem: unsafe check for column name
-        if (feedRow && typeof value == 'string' && /^[a-zA-Z0-9_\-\[\]]+\.\w+$/i.test(value.trim())) {
-          value = feedRow[cf.feed_column];
-          if (value === undefined)
-            throw new Error(`[SdfGenerator] setCustomFields: Feed column '${cf.feed_column}' not found`);
+        && (!media || media && cf.media == media || cf.media == '')) {
+        let value = cf.value;
+        if (feedRow && value) {
+          // try to parse value as expression
+          value = this.ruleEvaluator.evaluateExpression(value, feedRow);
+          if (value == null) {
+            this.logger.warn(`CustomFields' expression '${value}' was evaluated to ${value}`);
+          }
         }
-        row[cf.sdf_field] = value;
+        if (value !== null && value !== undefined && value !== '' && <any>value !== NaN) {
+          row[cf.sdf_field] = value;
+        }
       }
     }
   }
@@ -676,10 +678,21 @@ export default class SdfGenerator {
     // set LI's geo-targeting
     if (feedInfo.geo_code_column) {
       const geo_code = feedRow[feedInfo.geo_code_column];
-      if (_.isFinite(geo_code) && _.isInteger(geo_code)) {
+      if (_.isInteger(+geo_code)) {
         new_li[SDF.LI.GeographyTargeting_Include] = geo_code;
-      } else {
-        // TODO: warning, or error?
+      } 
+      else if (geo_code.includes(';')) {
+        const res = _.every(geo_code.split(';'), (val) => {
+          return _.isInteger(+val);
+        });
+        if (res) {
+          new_li[SDF.LI.GeographyTargeting_Include] = `(${geo_code})`;
+        }
+        else {
+          this.logger.warn(`[SdfGenerator] Ignoring geo code '${geo_code}' for LI '${new_li[SDF.LI.Name]}', only numbers or lists of numbers (with ';' as separator) are supported`);
+        }
+      }
+      else {
         this.logger.warn(`[SdfGenerator] Ignoring non-integer geo code '${geo_code}' for LI '${new_li[SDF.LI.Name]}'`);
       }
     }

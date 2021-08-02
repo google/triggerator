@@ -1,0 +1,22 @@
+:host ::ng-deep mat-form-field.no-underline .mat-form-field-underline {
+  display: none;
+}
+/* remove default 180px width for textfields */
+::ng-deep .mat-form-field-infix {
+  width: auto !important;
+}
+.mat-header-cell, .mat-cell {
+  padding-right: 10px;
+}
+.mat-cell:first-of-type, 
+.mat-header-cell:first-of-type, 
+.mat-footer-cell:first-of-type {
+  padding-left: 0;
+  /* padding-right: 0; */
+}
+.mat-cell:last-of-type, 
+.mat-header-cell:last-of-type, 
+.mat-footer-cell:last-of-type {
+  /* padding-left: 0; */
+  padding-right: 0;
+}

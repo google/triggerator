@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 import math, { MathNode } from 'mathjs';
-import { Config, RuleInfo } from '../types/config';
+import { Config, RuleInfo, SDF } from '../types/config';
 import DV360Facade from './dv360-facade';
-import { FeedData, RecordSet, SDF, SdfFull } from '../types/types';
+import { FeedData, RecordSet, SdfFull } from '../types/types';
 import { Logger } from '../types/logger';
 
 const { create, all, factory } = require('mathjs');
@@ -60,7 +60,7 @@ export interface RuleEngineOptions {
 
 export class RuleEvaluator {
   parsed_conditions: Record<string, MathNode> = {};
-
+  
   validateRule(rule: RuleInfo) {
     if (rule.condition) {
       try {
@@ -70,7 +70,7 @@ export class RuleEvaluator {
       }
     }
   }
-
+  
   getActiveRule(rules: RuleInfo[], row: Record<string, any>): RuleInfo | null {
     for (let i = 0; i < rules.length; i++) {
       let rule = rules[i];
@@ -95,6 +95,23 @@ export class RuleEvaluator {
       //else throw new Error('Condition not set for rule ' + rule.name);
     }
     return null;
+  }
+
+  evaluateExpression(value: string, row: Record<string, string>): string {
+    let expr = this.parsed_conditions[value];
+    if (!expr) {
+      try {
+        expr = parseCustom(value)
+      } catch (e) {
+        throw new Error(`[RuleEvaluator] expression "${value}" can't be parsed: ${e.message}`);
+      }
+      this.parsed_conditions[value] = expr;
+    }
+    try {
+      return expr.evaluate(row);
+    } catch (e) {
+      throw new Error(`[RuleEvaluator] expressions "${value}" evaluation failed: ${e.message}`);
+    }
   }
 }
 

@@ -37,6 +37,7 @@ import { EditValueDialogComponent } from './components/edit-value-dialog.compone
 import { EventListComponent } from './event-list.component';
 import { JsonPipe } from './components/json.pipe';
 import { ObjectDetailsDialogComponent } from './components/object-details-dialog.component';
+import { CustomFieldsComponent } from './custom-fields.component';
 
 @NgModule({
   declarations: [
@@ -45,7 +46,7 @@ import { ObjectDetailsDialogComponent } from './components/object-details-dialog
     AboutComponent, ErrorComponent, FeedEditorDialogComponent,
     RulesListComponent, RuleEditorDialogComponent, NewAppDialogComponent,
     EditValueDialogComponent, EventListComponent, 
-    JsonPipe, ObjectDetailsDialogComponent
+    JsonPipe, ObjectDetailsDialogComponent, CustomFieldsComponent
   ],
   imports: [
     BrowserModule,
