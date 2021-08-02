@@ -276,6 +276,13 @@
             </mat-form-field>
           </div>
         </div>
+        <!-- divider -->
+        <div class="row">
+          <div class="col">
+            <mat-divider [inset]="true"></mat-divider>
+          </div>
+        </div>
+        <!-- TrueView ad name -->
         <div class="row">
           <div class="col">
             <mat-form-field appearance="outline" class="full-width" color="accent">
@@ -284,6 +291,13 @@
             </mat-form-field>
           </div>
         </div>
+        <!-- Custom Fields -->
+        <div class="row">
+          <div class="col-12 full-width">
+            <app-custom-fields [appId]="appId" [data]="config" [parent]="this"></app-custom-fields>
+          </div>
+        </div>
+        <!-- divider -->
         <div class="row">
           <div class="col">
             <mat-divider [inset]="true"></mat-divider>

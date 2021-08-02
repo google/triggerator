@@ -1,0 +1,154 @@
+<mat-expansion-panel #executionLogPanel>
+  <mat-expansion-panel-header>
+    <mat-panel-title>Custom Fields</mat-panel-title>
+    <mat-panel-description>Click to expand</mat-panel-description>
+  </mat-expansion-panel-header>
+  <!-- <div style="max-height: 400px; overflow: auto;">
+  </div> -->
+  <form [formGroup]="form">
+    <ng-container formArrayName="rows">
+      <mat-table #table [dataSource]="dataSource" class="full-width">
+
+        <!-- Rule Name Column -->
+        <ng-container matColumnDef="rule_name">
+          <mat-header-cell *matHeaderCellDef> Rule </mat-header-cell>
+          <mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+            <mat-form-field color="accent" appearance="legacy"
+              [ngClass]="{'no-underline' : !this.rows.value[i].isEditing}">
+              <input matInput type="text" formControlName="rule_name" [matAutocomplete]="autoRules" 
+                [readonly]="!this.rows.value[i].isEditing" [matTooltip]="this.rows.value[i].rule_name">
+              <mat-autocomplete #autoRules="matAutocomplete">
+                <mat-option *ngFor="let rule of ruleNames" [value]="rule">
+                  {{rule}}
+                </mat-option>
+              </mat-autocomplete>              
+            </mat-form-field>
+          </mat-cell>
+        </ng-container>
+        <!-- Media (Display/YT) -->
+        <ng-container matColumnDef="media">
+          <mat-header-cell *matHeaderCellDef> Media </mat-header-cell>
+          <mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+            <mat-form-field appearance="legacy" color="accent" class="full-width"
+              [ngClass]="{'no-underline' : !this.rows.value[i].isEditing}" 
+              >
+              <input matInput type="text" *ngIf="!this.rows.value[i].isEditing" formControlName="media" 
+                [readonly]="true" [matTooltip]="this.rows.value[i].media">
+              <mat-select *ngIf="this.rows.value[i].isEditing" formControlName="media" >
+                <mat-option *ngFor="let type of mediaTypes" [value]="type">
+                  {{type}}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>            
+          </mat-cell>
+        </ng-container>
+        <!-- sdf_type -->
+        <ng-container matColumnDef="sdf_type">
+          <mat-header-cell *matHeaderCellDef> SDF Type </mat-header-cell>
+          <mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+            <mat-form-field appearance="legacy" color="accent" class="full-width"
+              [ngClass]="{'no-underline' : !this.rows.value[i].isEditing}">
+              <input matInput type="text" *ngIf="!this.rows.value[i].isEditing" formControlName="sdf_type" 
+                [readonly]="true" [matTooltip]="this.rows.value[i].sdf_type">
+              <mat-select *ngIf="this.rows.value[i].isEditing" formControlName="sdf_type" (selectionChange)="onSdfTypeChange(i, element)">
+                <mat-option *ngFor="let type of sdfTypes" [value]="type">
+                  {{type}}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>            
+          </mat-cell>
+        </ng-container>
+        <!-- sdf_field -->
+        <ng-container matColumnDef="sdf_field">
+          <mat-header-cell *matHeaderCellDef> SDF Field </mat-header-cell>
+          <mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+            <mat-form-field appearance="legacy" color="accent" class="full-width"
+              [ngClass]="{'no-underline' : !this.rows.value[i].isEditing}">
+              <input matInput type="text" *ngIf="!this.rows.value[i].isEditing" formControlName="sdf_field" 
+                [readonly]="true" [matTooltip]="this.rows.value[i].sdf_field">
+              <mat-select *ngIf="this.rows.value[i].isEditing" formControlName="sdf_field" >
+                <mat-option *ngFor="let type of sdfFields[i]" [value]="type">
+                  {{type}}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>            
+          </mat-cell>
+        </ng-container>
+        <!-- Value Column -->
+        <ng-container matColumnDef="value">
+          <mat-header-cell *matHeaderCellDef> Value 
+            <mat-icon matTooltip="The column can contain a feed column name or a constant value."
+              style="vertical-align: bottom; margin-left: 5px">help_outline</mat-icon>
+          </mat-header-cell>
+          <mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+            <mat-form-field appearance="legacy" color="accent"
+              [ngClass]="{'no-underline' : !this.rows.value[i].isEditing}">
+              <input matInput type="text" formControlName="value" [matAutocomplete]="autoColumns"
+                [readonly]="!this.rows.value[i].isEditing"
+                [matTooltip]="this.rows.value[i].value">
+              <mat-autocomplete #autoColumns="matAutocomplete">
+                <mat-option *ngFor="let option of this.getFeedDataColumns()" [value]="option">
+                  {{option}}
+                </mat-option>
+              </mat-autocomplete>
+            </mat-form-field>
+          </mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="action">
+          <mat-header-cell *matHeaderCellDef> Action </mat-header-cell>
+          <mat-cell *matCellDef="let element; let i = index" [formGroup]="element">
+            <span style="white-space:nowrap;">
+              <button mat-icon-button class="material-icons app-toolbar-menu save-button"
+                      (click)="saveRow(i)"
+                      *ngIf="this.rows.value[i].isEditing"
+                      matTooltip="Save Changes"
+                      color="accent">
+                      <mat-icon>check_circle</mat-icon>
+                  </button>
+
+              <button mat-icon-button class="material-icons app-toolbar-menu cancel-button"
+                      *ngIf="this.rows.value[i].isEditing"
+                      (click)="cancelRow(i)"
+                      matTooltip="Cancel Changes" 
+                      color="warn">
+                      <mat-icon>cancel</mat-icon>
+                  </button>
+
+              <button mat-icon-button class="material-icons app-toolbar-menu save-button"
+                      *ngIf="!this.rows.value[i].isEditing"
+                      (click)="editRow(i)"
+                      matTooltip="Edit" 
+                      color="accent">
+                      <mat-icon>edit</mat-icon>
+                  </button>
+
+              <button mat-icon-button class="material-icons app-toolbar-menu delete-button"
+                      *ngIf="!this.rows.value[i].isEditing"
+                      (click)="deleteRow(i)"
+                      matTooltip="Delete" 
+                      color="warn">
+                      <mat-icon>delete</mat-icon>
+                  </button>
+            </span>
+          </mat-cell>
+        </ng-container>
+
+        <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+        <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+
+        <!-- Row shown when there is no matching data. -->
+        <ng-template matNoDataRow>
+          <div class="alert">No custom fields yet, ready to <a href="#"
+              (click)="addNewRow();$event.preventDefault()">create</a>?</div>
+        </ng-template>
+
+      </mat-table>
+    </ng-container>
+  </form>
+  <mat-action-row>
+    <button mat-icon-button>
+      <mat-icon (click)="addNewRow()" class="add-button">add_box</mat-icon>
+    </button>
+  </mat-action-row>
+</mat-expansion-panel>

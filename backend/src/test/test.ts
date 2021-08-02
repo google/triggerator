@@ -98,9 +98,9 @@ async function test_sdf_download() {
   //console.log(JSON.stringify(res));
 }
 
+/* DBP API deprecated
 async function test_sdf_download_dbm(campaignId: string) {
-  const dbm_api = google.doubleclickbidmanager({version: "v1.1"/* , auth: auth */})
-  //const dbm_api = new dbm.Doubleclickbidmanager({});
+  const dbm_api = google.doubleclickbidmanager({version: "v1.1"})
   let sdf = (await dbm_api.sdf.download({
     //auth: auth,
     requestBody: {
@@ -111,6 +111,7 @@ async function test_sdf_download_dbm(campaignId: string) {
   })).data;
   console.log(JSON.stringify(sdf));
 }
+*/
 
 async function test_config_service() {
   const spreadsheetId = '1KkKLHlxBEEhdLsxjK9RXSh9I7eO6bJinxZsi1XgjsBI';//'1Zf5MpraZTY8kWPm8is6tAAcywsIc3P-X_acwIwXRAhs';

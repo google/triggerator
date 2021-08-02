@@ -60,9 +60,13 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   timeZones: string[] = timezones;
   timeZonesFiltered: Observable<string[]>;
 
+  /** datasource of feeds (definitions) */
   dataSourceFeeds: MatTableDataSource<FeedInfo>;
+  /** columns of list of feeds */
   feedsColumns: string[] = ['name', 'type', 'url', 'charset', 'key_column', 'external_key', 'actions'];
+  /** map of datasources with data of all feeds */
   dataSourceFeedData: Record<string, MatTableDataSource<any>>;
+  /** map feed name to its columns */
   feedDataColumns: Record<string, string[]>;
   ngUnsubscribe: Subject<void> = new Subject<void>();
 
@@ -157,7 +161,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
           this.formExecution.get('schedule').disable({ emitEvent: false, onlySelf: true });
           this.formExecution.get('timeZone').disable({ emitEvent: false, onlySelf: true });
         }
-        // prevent appearing of "there are unsaved changes" notification for swtiches 
+        // prevent appearing of "there are unsaved changes" notification for switches 
         if (values.hasOwnProperty('runDebugLogging')) {
           this.formExecution.controls.runDebugLogging.markAsPristine();
         }
@@ -654,6 +658,10 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     ds.data = feedData;
     this.feedDataPanel.open();
     this.tabsFeedDataSelected = this.tabsFeedData.indexOf(dataSetName);
+  }
+  
+  getFeedDataColumns() {
+    return this.feedDataColumns['Result'];
   }
 
   onFeedRowDetails($event: MouseEvent, row: any, index: number, ds: MatTableDataSource<any>) {

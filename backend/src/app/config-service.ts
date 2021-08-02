@@ -130,7 +130,7 @@ export default class ConfigService {
     }
   }
 
-  private loadStates(values: any[][], config: Config) {
+  private loadRules(values: any[][], config: Config) {
     if (!values) return;
     let rules_map: Record<string, RuleInfo> = {};
     let rules: RuleInfo[] = [];
@@ -150,7 +150,7 @@ export default class ConfigService {
       } else {
         rule.condition = rule.condition || row[1];
       }
-      // TODO: стоит ли генерить исключение пори чтении? (нет)
+      // TODO: стоит ли генерить исключение при чтении? (нет)
       if (!row[2]) throw new Error(`[ConfigService] Rule's media is empty (should be either Display or YouTube): ${row}`);
       let isYT = row[2].toLowerCase() === 'youtube';
       let state = {
@@ -226,18 +226,22 @@ export default class ConfigService {
     for (const row of values) {
       let sdf_type: SdfElementType | undefined = undefined;
       switch (row[2]) {
+        // support values from v1
         case "Campaigns": sdf_type = SdfElementType.Campaign; break;
         case "Insertion Orders": sdf_type = SdfElementType.IO; break;
         case "Line Items": sdf_type = SdfElementType.LI; break;
         case "Ad Groups": sdf_type = SdfElementType.AdGroup; break;
         case "Ads": sdf_type = SdfElementType.Ad; break;
+        default:
+          // or just value as is
+          sdf_type = row[2];
       }
       fields.push({
-        element_state: row[0],
+        rule_name: row[0],
         media: row[1],
         sdf_type: sdf_type,
         sdf_field: row[3],
-        feed_column: row[4]
+        value: row[4]
       });
     }
     config.customFields = fields;
@@ -284,7 +288,7 @@ export default class ConfigService {
             this.loadGeneralSettings(range.values!, config);
             break;
           case CONFIG_SHEETS.States:
-            this.loadStates(range.values!, config);
+            this.loadRules(range.values!, config);
             break;
           case CONFIG_SHEETS.Feeds:
             this.loadFeeds(range.values!, config);
@@ -827,7 +831,7 @@ export default class ConfigService {
     if (diff.customFields) {
       let values: any[][] = [];
       for (let field of diff.customFields) {
-        values.push([field.element_state, field.media, field.sdf_type, field.sdf_field, field.feed_column]);
+        values.push([field.rule_name, field.media, field.sdf_type, field.sdf_field, field.value]);
       }
       for (let i = 0; i < 10; i++) {
         values.push(["", "", "", "", "", "", ""]);
