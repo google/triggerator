@@ -1,8 +1,23 @@
+/**
+ * Copyright 2021 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Component, Input, OnInit } from '@angular/core';
-import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatTable, MatTableDataSource } from '@angular/material/table';
+import { MatTableDataSource } from '@angular/material/table';
 import { Config, SdfElementType, SDF, CustomFields } from '../../../backend/src/types/config';
 import { AppEditorComponent } from './app-editor.component';
 import { ComponentBase } from './component-base';
@@ -27,7 +42,7 @@ export class CustomFieldsComponent extends ComponentBase implements OnInit {
   constructor(
     dialog: MatDialog,
     snackBar: MatSnackBar,
-    private fb: FormBuilder, 
+    private fb: FormBuilder,
     private configService: ConfigService) {
     super(dialog, snackBar);
   }
@@ -58,7 +73,7 @@ export class CustomFieldsComponent extends ComponentBase implements OnInit {
       )); //end of fb array
       this.form = this.fb.group({
         rows: this.rows
-      }); // end of form group cretation      
+      }); // end of form group cretation
       this.dataSource.data = this.rows.controls;
       this.ruleNames = ['All'].concat(config.rules.map(r => r.name));
     }
@@ -83,7 +98,7 @@ export class CustomFieldsComponent extends ComponentBase implements OnInit {
       isNew: new FormControl(true)
     }));
     this.dataSource.data = control.controls;
-    this.sdfFields[control.length-1] = [];
+    this.sdfFields[control.length - 1] = [];
   }
 
   onSdfTypeChange(index: number, formGroup: FormGroup) {
@@ -106,7 +121,7 @@ export class CustomFieldsComponent extends ComponentBase implements OnInit {
 
   /**
    * Enables the selected row for editing.
-   * @param i 
+   * @param i
    */
   editRow(i) {
     let row = this.rows.at(i);
@@ -117,7 +132,7 @@ export class CustomFieldsComponent extends ComponentBase implements OnInit {
 
   /**
    * On click of correct button in table (after click on edit) this method will call
-   * @param i 
+   * @param i
    */
   saveRow(i) {
     let elementGroup = this.rows.at(i);
@@ -146,7 +161,7 @@ export class CustomFieldsComponent extends ComponentBase implements OnInit {
 
   /**
    * On click of cancel button in the table (after click on edit) this method will call and reset the previous data
-   * @param i 
+   * @param i
    */
   cancelRow(i) {
     let elementGroup = this.rows.at(i);

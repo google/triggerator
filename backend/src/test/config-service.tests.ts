@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import 'mocha';
 import assert from 'assert';
 import ConfigService, { CONFIG_SHEETS } from '../app/config-service';
 import { FeedType, Config, SdfElementType, SDF } from '../types/config';
 import { sheets_v4, google } from 'googleapis';
 import { difference } from '../app/utils';
 import winston from 'winston';
-import ConfigValidator from '../app/config-validator';
 
 const spreadsheetId = "1fOjOPQ9TKnoGGXPbG5d34YrkxivwePegLrVhtjbaoFA";
 
@@ -31,6 +29,7 @@ suite('ConfigService', () => {
     console.log(JSON.stringify(config, null, 2));
     let expected: Config = {
       title: '[DEBUG] Triggerator v2 Unit-Test Configuration',
+      id: spreadsheetId,
       execution: {
         advertiserId: "506732",
         campaignId: "3242703",
@@ -41,20 +40,20 @@ suite('ConfigService', () => {
         //run_at: ""
       },
       feedInfo: {
-        name_column: "main.city.name", 
-        geo_code_column: "extra.geo_code", 
-        budget_factor_column: "extra.budget", 
+        name_column: "main.city.name",
+        geo_code_column: "extra.geo_code",
+        budget_factor_column: "extra.budget",
         feeds: [{
-          name: "main", 
-          type: FeedType.JSONL, 
-          url: "http://bulk.openweathermap.org/snapshot/aa5da7731af5e37b07dace380595f152/weather_14.json.gz", 
+          name: "main",
+          type: FeedType.JSONL,
+          url: "http://bulk.openweathermap.org/snapshot/aa5da7731af5e37b07dace380595f152/weather_14.json.gz",
           charset: "",
           key_column: "city.id",
           external_key: undefined
         }, {
-          name: "extra", 
-          type: FeedType.GoogleSpreadsheet, 
-          url: "https://docs.google.com/spreadsheets/d/1UPLlQu6CEkqSldvLcjPwIOuWJ2nvw4RyP4QZNWuES_w/edit#gid=1292883752", 
+          name: "extra",
+          type: FeedType.GoogleSpreadsheet,
+          url: "https://docs.google.com/spreadsheets/d/1UPLlQu6CEkqSldvLcjPwIOuWJ2nvw4RyP4QZNWuES_w/edit#gid=1292883752",
           charset: "",
           key_column: "city_id",
           external_key: "main.city.id"
@@ -102,7 +101,7 @@ suite('ConfigService', () => {
           bid: "2.1",
           frequency_io: "3/week",
           frequency_li: "3/day"
-        }, 
+        },
         youtube_state: {
           creatives: "ggraAYSxy1M",
           bid: "2.2",
@@ -156,20 +155,20 @@ suite('ConfigService', () => {
           notificationEmails: "me@example.com",
         },
         feedInfo: {
-          name_column: "main.city.name", 
-          geo_code_column: "extra.geo_code", 
-          budget_factor_column: "extra.budget", 
+          name_column: "main.city.name",
+          geo_code_column: "extra.geo_code",
+          budget_factor_column: "extra.budget",
           feeds: [{
-            name: "main", 
-            type: FeedType.JSONL, 
-            url: "http://bulk.openweathermap.org/snapshot/aa5da7731af5e37b07dace380595f152/weather_14.json.gz", 
+            name: "main",
+            type: FeedType.JSONL,
+            url: "http://bulk.openweathermap.org/snapshot/aa5da7731af5e37b07dace380595f152/weather_14.json.gz",
             charset: "",
             key_column: "city.id",
             external_key: undefined
           }, {
-            name: "extra", 
-            type: FeedType.GoogleSpreadsheet, 
-            url: "https://docs.google.com/spreadsheets/d/1UPLlQu6CEkqSldvLcjPwIOuWJ2nvw4RyP4QZNWuES_w/edit#gid=1292883752", 
+            name: "extra",
+            type: FeedType.GoogleSpreadsheet,
+            url: "https://docs.google.com/spreadsheets/d/1UPLlQu6CEkqSldvLcjPwIOuWJ2nvw4RyP4QZNWuES_w/edit#gid=1292883752",
             charset: "",
             key_column: "city_id",
             external_key: "main.city.id"
@@ -211,7 +210,7 @@ suite('ConfigService', () => {
             bid: "2.1",
             frequency_io: "3/week",
             frequency_li: "3/day"
-          }, 
+          },
           youtube_state: {
             creatives: "ggraAYSxy1M",
             bid: "2.2",
@@ -227,7 +226,7 @@ suite('ConfigService', () => {
       let loadedConfig = await svc.loadConfiguration(spreadsheetId);
       console.log('difference', difference(config, loadedConfig));
       assert.deepStrictEqual(loadedConfig, config);
-      
+
     } catch (err) {
       console.error(err);
     }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import assert from 'assert';
-import { Config, FeedInfo, FeedType } from '../types/config';
 import { RuleEvaluator } from '../app/rule-engine';
 import { FeedData, RecordSet, SdfFull } from '../types/types';
 

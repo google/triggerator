@@ -15,8 +15,8 @@
  */
 import SchedulerService from './../app/cloud-scheduler-service';
 import winston from 'winston';
-
 import assert from 'assert';
+
 suite('CloudSchedulerService', async function() {
   
   test('List jobs', async function() {
