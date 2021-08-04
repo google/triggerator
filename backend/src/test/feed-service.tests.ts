@@ -16,7 +16,6 @@
 import fs from 'fs';
 import path from 'path';
 import http from 'http';
-import 'mocha';
 import assert from 'assert';
 import FeedService from '../app/feed-service';
 import { FeedConfig, FeedInfo, FeedType } from '../types/config';

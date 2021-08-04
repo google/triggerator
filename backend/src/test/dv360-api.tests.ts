@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import assert from 'assert';
-import { Config, FeedInfo } from '../types/config';
 import DV360Facade from '../app/dv360-facade';
 import winston from 'winston';
 
