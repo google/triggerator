@@ -16,7 +16,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { FeedInfo } from '../../../backend/src/types/config';
+import { FeedInfo, FeedType } from '../../../backend/src/types/config';
 
 @Component({
   templateUrl: './feed-editor-dialog.component.html',
@@ -24,10 +24,12 @@ import { FeedInfo } from '../../../backend/src/types/config';
 })
 export class FeedEditorDialogComponent implements OnInit {
   feedTypes = [
-    { value: 'JSON', title: 'JSON'},
-    { value: 'JSONL', title: 'JSONL (JSON New Lines)'},
-    { value: 'CSV', title: 'CSV (comma-separated values)'},
-    { value: 'Google Spreadsheet', title: 'Google Spreadsheet'}
+    { value: FeedType.Auto, title: 'Auto-detect'},
+    { value: FeedType.JSON, title: 'JSON'},
+    { value: FeedType.JSONL, title: 'JSONL (JSON New Lines)'},
+    { value: FeedType.CSV, title: 'CSV (comma-separated values)'},
+    { value: FeedType.GoogleSpreadsheet, title: FeedType.GoogleSpreadsheet},
+    { value: FeedType.GoogleCloudBigQuery, title: FeedType.GoogleCloudBigQuery}
   ];
   form: FormGroup;
 

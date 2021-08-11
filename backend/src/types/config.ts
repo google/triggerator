@@ -69,6 +69,7 @@ export enum FeedType {
   "JSONL" = "JSONL",
   "CSV" = "CSV",
   "GoogleSpreadsheet" = "Google Spreadsheet",
+  "GoogleCloudBigQuery" = "Google Cloud BigQuery"
 }
 export type FeedInfo = {
   name: string,
@@ -232,7 +233,7 @@ export enum ReportFormat {
     FrequencyEnabled: "Frequency Enabled",    // TRUE, FALSE
     FrequencyExposures: "Frequency Exposures",// int
     FrequencyPeriod: "Frequency Period",      // Minutes, Hours, Days, Weeks, Months, Lifetime
-    FrequencyAmount: "Frequency Amount",      // int 
+    FrequencyAmount: "Frequency Amount",      // int
     DemographicTargetingGender: "Demographic Targeting Gender",
     DemographicTargetingAge: "Demographic Targeting Age",
     DemographicTargetingHouseholdIncome: "Demographic Targeting Household Income",

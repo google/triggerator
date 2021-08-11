@@ -19,15 +19,19 @@ import _ from 'lodash';
 import { GaxiosError, GaxiosOptions, GaxiosResponse, request } from 'gaxios';
 import { google, sheets_v4, drive_v3 } from 'googleapis';
 import { Storage } from '@google-cloud/storage';
+import { BigQuery } from '@google-cloud/bigquery';
 import zlib from 'zlib';
 import yauzl from 'yauzl';
 import csv_parse from 'csv-parse/lib/sync';
 import { decode } from 'iconv-lite';
+import argv from './../argv';
 import { FeedConfig, FeedInfo, FeedType } from '../types/config';
 import { FeedData } from '../types/types';
 import { tryParseNumber } from './utils';
 import GoogleDriveFacade from './google-drive-facade';
 import { Logger } from '../types/logger';
+import { getProjectId } from './cloud-utils';
+import { OAUTH_SCOPES } from '../consts';
 
 
 type FeedInfoData = { feed: FeedData, info: FeedInfo };
@@ -37,14 +41,14 @@ export default class FeedService {
   constructor(public logger: Logger) {
     if (!logger) throw new Error('[FeedService] Required argument logger is missing');
   }
-  
+
   async loadSpreadsheet(feedInfo: FeedInfo): Promise<FeedData> {
     const sheetsAPI = google.sheets({ version: "v4" });
 
     // NOTE: for gSheets url can be either a full url or just an spreadsheet id:
     //  full url: https://docs.google.com/spreadsheets/d/1Zf5MpraZTY8kWPm8is6tAAcywsIc3P-X_acwIwXRAhs/edit
     //  optionally urls can contain a hash with sheet id, e.g.: #gid=343890871
-    //  spreadsheet id:  1Zf5MpraZTY8kWPm8is6tAAcywsIc3P-X_acwIwXRAhs  
+    //  spreadsheet id:  1Zf5MpraZTY8kWPm8is6tAAcywsIc3P-X_acwIwXRAhs
     const url = feedInfo.url;
     let spreadsheetId = url;
     let sheetId: number = -1;
@@ -144,10 +148,16 @@ export default class FeedService {
     //return new FeedData(feedInfo, columns, values);
 
     // construct array of objects from matrix
+    let objects: Record<string, any>[] = this.createObjectsFromRows(values, columns);
+    this.logger.debug(`[FeedService] Loaded ${values.length} rows, columns: ${JSON.stringify(columns)}`);
+    return new FeedData(objects);
+  }
+
+  private createObjectsFromRows(values: any[][], columns: string[]) {
     let objects: Record<string, any>[] = [];
     for (let i = 0; i < values.length; i++) {
       let row = values[i];
-      let obj: Record<string, any> = {}
+      let obj: Record<string, any> = {};
       for (let j = 0; j < row.length; j++) {
         let val = row[j];
         let parsed = tryParseNumber(val);
@@ -157,8 +167,68 @@ export default class FeedService {
       }
       objects.push(obj);
     }
-    this.logger.debug(`[FeedService] Loaded ${values.length} rows, columns: ${JSON.stringify(columns)}`);
-    return new FeedData(objects);
+    return objects;
+  }
+
+  async loadBigQuery(feedInfo: FeedInfo): Promise<FeedData> {
+    // supported syntax for url:
+    //  - projects/project_id/datasets/dataset_id/tables/table_id
+    //  - datasets/dataset_id/tables/table_id (project_id will be used from current auth)
+    //  - datasets/dataset_id/views/view_id
+    let rePath = /(projects\/(?<project>[^\/]+)\/)?datasets\/(?<dataset>[^\/]+)\/(tables\/(?<table>.+)|views\/(?<view>.+)|procedures\/(?<proc>.+))/;
+    let match = rePath.exec(feedInfo.url);
+    if (!match || !match.groups) {
+      throw new Error(`Unsupported BigQuery url (${feedInfo.url}), expected projects/project_id/datasets/dataset_id/[tables/table_id|views/view_id|procedures/proc_id]`);
+    }
+
+    let projectId = match.groups['project'];
+    if (!projectId) {
+      projectId = await getProjectId();
+    }
+    let datasetId = match.groups['dataset'];
+    let tableId = match.groups['table'];
+    let viewId = match.groups['view'];
+    let procedure = match.groups['proc']
+
+    // Using old api client (supports global auth via google.auth)
+    // const bigquery = google.bigquery('v2');
+    // const res = (await bigquery.tabledata.list({
+    //   projectId: projectId,
+    //   datasetId: datasetId,
+    //   tableId: tableId,
+    //   maxResults: 1000,
+    // })).data;
+    // let values = res.rows!;
+    //return new FeedData(values);
+
+    //let auth = google._options.auth;
+    // NOTE: we have to pass oauth scope explicitly as BigQuery doesn't support auth object from google-auth-library
+    // and for accessing external tables (even through a view) additional scope (drive) is required
+    const bigquery = new BigQuery({
+      projectId: projectId,
+      //credentials: await (<GoogleAuth>auth).getCredentials(),
+      scopes: OAUTH_SCOPES,
+      keyFilename: argv.keyFile,
+    });
+    if (tableId) {
+      const dataset = bigquery.dataset(datasetId);
+      const table = await dataset.table(tableId);
+      let [metadata] = await table.getMetadata();
+      let columns = metadata.schema.fields.map((field:any) => field.name);
+      let [values] = <any[][]>await table.getRows();
+      return new FeedData(values);
+    }
+    if (viewId) {
+      let [values] = (await bigquery.query(`select * from \`${projectId}.${datasetId}.${viewId}\``));
+      this.logger.debug(`[FeedService] Loaded ${values.length} rows from BigQuery view ${projectId}.${datasetId}.${viewId}`);
+      return new FeedData(values);
+    }
+    else if (procedure) {
+      let [values] = (await bigquery.query(`call \`${projectId}.${datasetId}.${procedure}\`()`));
+      this.logger.debug(`[FeedService] Loaded ${values.length} rows from BigQuery stored procedure ${projectId}.${datasetId}.${procedure}`);
+      return new FeedData(values);
+    }
+    throw new Error(`Unsupported BigQuery url (${feedInfo.url})`);
   }
 
   unzip(rawData: ArrayBuffer, url: string): Promise<Buffer> {
@@ -271,7 +341,7 @@ export default class FeedService {
     // The server can return a file as an archive, such as .zip, .gz, .tar.gz,
     // In such a case response's Content-Type can not to mention actual format, can be just 'application/binary'
     // So we need to parse a file's extension from the url to understand how to read the response.
-    // On the other hand, the server can return a normal text content (JSON/CSV) but gzipped 
+    // On the other hand, the server can return a normal text content (JSON/CSV) but gzipped
     // (as we allowed it to do this via Accept-Encoding). But in such a case gaxios (and underlying node-fetch lib)
     // should ungzip response stream automatically
     let parsedUrl = new URL(feedInfo.url);
@@ -371,7 +441,7 @@ export default class FeedService {
         column2idx[field] = columns.length;
         columns.push(field);
       }, []);
-  
+
       let rows: any[][] = [];
       for (let i = 0; i < objects.length; i++) {
         const item = objects[i];
@@ -380,7 +450,7 @@ export default class FeedService {
           let field = path.join('.');
           let idx = column2idx[field];
           row[idx] = value;
-        }, []);      
+        }, []);
         rows.push(row);
       }
       return new FeedData(feedInfo, columns, rows);
@@ -481,8 +551,11 @@ export default class FeedService {
       throw new Error(`[FeedService] Feed ${feedInfo.name} has incorrect url`);
     }
     let feed: Promise<FeedData>;
-    if (feedInfo.type == 'Google Spreadsheet' || url.startsWith('https://docs.google.com/spreadsheets/')) {
+    if (feedInfo.type == FeedType.GoogleSpreadsheet || url.startsWith('https://docs.google.com/spreadsheets/')) {
       feed = this.loadSpreadsheet(feedInfo);
+    }
+    else if (feedInfo.type == FeedType.GoogleCloudBigQuery) {
+      feed = this.loadBigQuery(feedInfo);
     }
     else {
       // direct link to file. type defined by the protocol: https, gs or drive
@@ -502,14 +575,6 @@ export default class FeedService {
     }
     return feed;
   }
-
-  // private processFeed(feed: FeedData): FeedData {
-  //   // prepend column names with the feed name
-  //   for (let i = 0; i < feed.columns.length; i++) {
-  //     feed.columns[i] = feed.name + "." + feed.columns[i];
-  //   }
-  //   return feed;
-  // }
 
   private join(feedLeft: FeedData, feedRight: FeedJoinData): FeedData {
     let ext_key = feedRight.ext_key!;
@@ -597,9 +662,9 @@ export default class FeedService {
     // build a map: feed name => feed data
     let feeds_src: Record<string, FeedData> = {};
     let feeds_dst: Record<string, { feed: FeedData, sources: Set<string> }> = {};
-    feeds.forEach(f => feeds_src[f.info.name] = f.feed);    
+    feeds.forEach(f => feeds_src[f.info.name] = f.feed);
     this.logger.debug(`[FeedService] Joining ${feeds.length} feeds containing ${feeds.map(f => f.feed.rowCount)} rows`);
-    
+
     // the main feed will be the one without external key
     let finalFeedName: string | undefined;
     for (const feed_ of feeds) {

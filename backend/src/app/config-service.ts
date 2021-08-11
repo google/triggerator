@@ -135,7 +135,7 @@ export default class ConfigService {
     let rules_map: Record<string, RuleInfo> = {};
     let rules: RuleInfo[] = [];
     for (const row of values) {
-      // row's columns: 
+      // row's columns:
       // State (req) | Condition (req) | Media (req) | Creatives | Bid | IO Frequency | LI Frequency
       const name = row[0];
       if (!name) throw new Error(`[ConfigService] Rule's name is empty: ${row}`);
@@ -201,6 +201,9 @@ export default class ConfigService {
         //   break;
         case 'google spreadsheet':
           type = FeedType.GoogleSpreadsheet
+          break;
+        case 'google cloud bigquery':
+          type = FeedType.GoogleCloudBigQuery
           break;
         default:
           type = FeedType.Auto;
@@ -329,7 +332,7 @@ export default class ConfigService {
             "code": 400,
             "message": "Unable to parse range: Main1!A1",
             "status": "INVALID_ARGUMENT"
-          }        
+          }
          */
         try {
           await this.sheetsAPI.spreadsheets.batchUpdate({
@@ -787,7 +790,7 @@ export default class ConfigService {
           values: [['destination folder', diff.dv360Template.destination_folder]],
         });
     }
-    // feeds 
+    // feeds
     if (diff.feedInfo && diff.feedInfo.feeds) {
       let values: any[][] = [];
       for (let feed of diff.feedInfo.feeds) {

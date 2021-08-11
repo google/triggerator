@@ -161,7 +161,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
           this.formExecution.get('schedule').disable({ emitEvent: false, onlySelf: true });
           this.formExecution.get('timeZone').disable({ emitEvent: false, onlySelf: true });
         }
-        // prevent appearing of "there are unsaved changes" notification for switches 
+        // prevent appearing of "there are unsaved changes" notification for switches
         if (values.hasOwnProperty('runDebugLogging')) {
           this.formExecution.controls.runDebugLogging.markAsPristine();
         }
@@ -293,6 +293,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
   }
 
   save() {
+    this.errorMessage = null;
     this.loading = true;
     try {
       this.configService.updateConfig(this.appId, this.config);
@@ -608,6 +609,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
   async loadFeed(feed: FeedInfo) {
     try {
+      this.errorMessage = null;
       this.loading = true;
       const data = await this.configService.loadFeed(this.appId, feed.name);
       this.showFeedData(data, feed.name);
@@ -620,6 +622,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
   async loadAllFeeds() {
     try {
+      this.errorMessage = null;
       this.loading = true;
       const result = await this.configService.loadAllFeeds(this.appId, this.evaluateRulesWithFeeds);
       if (!result) {
@@ -659,7 +662,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     this.feedDataPanel.open();
     this.tabsFeedDataSelected = this.tabsFeedData.indexOf(dataSetName);
   }
-  
+
   getFeedDataColumns() {
     return this.feedDataColumns['Result'];
   }

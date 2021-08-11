@@ -2,11 +2,14 @@
 
 >NOTE: BE is backend (server application), FE - frontend (client applciation)
 
+## 2021-08-11 (1.5.0)
+* Support for fetching data from Google Cloud BigQuery (tables/views/procedures)
+
 ## 2021-08-02 (1.4.0)
 * UI for custom fields, support JS-expressions for custom field values
 
 ## 2021-06-28 (1.3.0)
-* Reporting introduced: report "Activation times" (summary of time when LIs were activated for a period) 
+* Reporting introduced: report "Activation times" (summary of time when LIs were activated for a period)
 * Tracking of last run status in master spreadsheet, statuses are visible in application list
 
 ## 2021-06-12
@@ -22,7 +25,7 @@
 
 ## 2021-05-24 (1.2.0)
 * Logging with winston and cloud-logging
-* Rewrite of 'Run Execution' due to the lack of support of Server-Sent Events (and any streaming) in Google AppEngine Std 
+* Rewrite of 'Run Execution' due to the lack of support of Server-Sent Events (and any streaming) in Google AppEngine Std
 * BE: loadApplicationLists: returning job info; FE: application list displays scheduled statuses for each application
 * setup: `update.sh` extracts and puts git commit hash into `app.yaml`, that git hash will be visible on Settings page in the UI
 
