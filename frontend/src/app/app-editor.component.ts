@@ -727,9 +727,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     }
     // budget_factor_column
     this.formFeeds.controls.budget_factor_column.setErrors(null);
-    if (!budget_factor_column) {
-      this.formFeeds.controls.budget_factor_column.setErrors({ required: true });
-    } else if (!this.validateColumn(row, budget_factor_column)) {
+    if (budget_factor_column && !this.validateColumn(row, budget_factor_column)) {
       this.formFeeds.controls.budget_factor_column.setErrors({ unknownColumn: true });
     }
   }
