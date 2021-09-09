@@ -3,11 +3,11 @@ Decision engine for automated managing DV360 campaigns using signals from extern
 
 **This is not an officially supported Google product.**
 
+
 ## Description
-The idea behind this project is automating management of campaigns in Google Display&Video 360 (DV360) using data from external sources that we call data feeds (or just feeds). DV360 doesn't allow to change programmatically all settings of campaigns through API.
-This project takes an approach of generating ad campaigns up front with all possible combinations of Insertion Orders/Line Items/etc in a form of SDF (Structured Data Files) which should be imported into DV360 manually by the user. Later during runtime the execution engine takes a campaign created from generated SDF and enables/disables particular campaign's objects (IO/LI) for each row from feed(s).
+The idea behind this project is automating management of campaigns in Google Display&Video 360 (DV360) using data from external sources that we call *data feeds* (or just *feeds*). DV360 doesn't allow to change programmatically all settings of campaigns through API. This project takes an approach of generating ad campaigns up front with all possible combinations of Insertion Orders/Line Items/etc in a form of SDF (Structured Data Files) which should be imported into DV360 manually by the user. Later during runtime the execution engine takes a campaign created from generated SDF and enables/disables particular campaign's objects (IO/LI) for each row from feed(s).
 To decide which IOs/LIs should be enabled or disabled for each feed row the decision engine uses rules. A rule has a condition (expression in JavaScript) which is either evaluated to true or false. Enabling a IO/LI corresponding to a rule means that we apply bid, frequency and creatives that were assigned with that LI during the generation phase.
-With Triggerator scheduled to run periodically (it uses Cloud Scheduler for this) clients can dynamically adjust their ad campaigns based on external signals, such as weather, disease level, traffic, UV factor, inventory balances.
+With Triggerator scheduled to run periodically (it uses Cloud Scheduler for this) clients can dynamically adjust their ad campaigns based on external signals, such as weather, disease level, traffic, UV factor, inventory balances, etc.
 The tool supports both Display and TrueView (YouTube) campaigns.
 
 
@@ -18,6 +18,7 @@ Basically you can run this project in any environment but this guide targets Goo
 ### Prerequisites
 * In the Google Cloud Console, on the project selector page, select or create a Google Cloud project
 * Make sure that billing is enabled for your Cloud project, see [Enable, disable, or change billing for a project](https://cloud.google.com/billing/docs/how-to/modify-project) for details
+* Make sure you have Owner role in the project (or Editor and two AppEngine specific roles: appengine.appAdmin и appengine.appCreator - see https://cloud.google.com/appengine/docs/standard/python/roles)
 * Activate Cloud Console Shell and clone the repository
 ```
 git clone https://github.com/google/triggerator.git
@@ -138,7 +139,7 @@ Basically you just need to update source code (execute `git pull` in the cloned 
 Also please note that the only files you are supposed to changed (`app.yaml`, `mailer.json`) are not tracked by Git so you are safe to update from upstream. If it's not the case please proceed accordantly (e.g. do git stash `git stash` and `git stash pop` after the repository is updated).
 When you build the application from sources (and you do) there could be a case that `package-lock.json` will be slightly different that ones in the repository. This is not important but requires you to do reset (i.e. discard all local changes).
 
-So in general this commands should be sifficient for updating the application (or just run `update.sh` script in `scripts` folder):
+So in general these commands should be sifficient for updating the application (or just run `update.sh` script in `scripts` folder):
 ```shell
 git fetch
 git reset --hard origin/main
