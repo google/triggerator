@@ -264,7 +264,7 @@ export default class ConfigService {
         fields: "properties"
       })).data.properties;
       config.title = props?.title || "";
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error(`[ConfigService] Error on loading spreadsheet ${spreadsheetId}: ${e.message}`, e);
       e.logged = true;
       throw e;
@@ -301,7 +301,7 @@ export default class ConfigService {
             break;
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error(`[ConfigService] Error on fetching configuration from spreadsheet ${spreadsheetId}: ${e.message}`, e);
       e.logged = true;
       throw e;
@@ -319,10 +319,11 @@ export default class ConfigService {
         range: 'Main!A2:Z'
       })).data.values;
       if (values && values.length) {
-        return values.map(row => { return {id: row[0], status: row[1], timestampt: row[2]}});
+        return values.map(row => { return { id: row[0], status: row[1], timestampt: row[2] } })
+          .filter(app => !!app.id);
       }
       return [];
-    } catch (e) {
+    } catch (e: any) {
       if (e.response?.data?.error?.code === 400 && e.response.data.error.status === "INVALID_ARGUMENT") {
         this.logger.warn(`[ConfigService] Master spreadsheet ${masterSpreadsheetId} doesn't have Main sheet, creating one`);
         // it's an expected error that means there's no such Sheet 'Main' in the spreadsheet,
@@ -347,7 +348,7 @@ export default class ConfigService {
               }]
             }
           });
-        } catch (e) {
+        } catch (e: any) {
           this.logger.error(`[ConfigService] Failure on a sheet creation in master spreadsheet: ${e.message}`, e);
           throw e;
         }
@@ -433,7 +434,7 @@ export default class ConfigService {
           statusDetails: appdata.timestampt
           // ? `<a href='https://console.cloud.google.com/logs/query;query=;timeRange=PT1H;cursorTimestamp=${appdata.timestampt}?project='><${appdata.timestampt}/a>` : ''
         });
-      } catch (e) {
+      } catch (e: any) {
         this.logger.warn(`[ConfigService] Failed to fetch doc ${appdata.id}: ${e.message}`, e);
         appList.configurations.push({
           name: '',
@@ -515,12 +516,12 @@ export default class ConfigService {
                 emailAddress: userEmail
               }
             }));
-          } catch (e) {
+          } catch (e: any) {
             this.logger.error(`Failed to change permissions on doc ${appId} for user ${userEmail}: ${e.message}`, e);
             // throw e; or not to throw?
           }
         }
-      } catch (e) {
+      } catch (e: any) {
         this.logger.error(`[ConfigService] Couldn't create a new spreadsheet: ${e.message}`, e);
         throw e;
       }
@@ -556,7 +557,7 @@ export default class ConfigService {
           }]
         }
       });
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error(`[ConfigService] Failure on creating developer metadata: ${e.message}`, e);
       if (attachingExisting && e.response?.data?.error?.code === 403) {
         throw new Error(`Cannot update Spreadsheet ${appId}, did you share it with '${SERVICE_ACCOUNT}' user?`);
@@ -599,7 +600,7 @@ export default class ConfigService {
       await driveAPI.files.delete({
         fileId: appId
       })
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error(`[ConfigService] An error occured on deleting spreadsheet ${appId}: ${e.message}`, e);
       e.logged = true;
       throw e;
@@ -624,7 +625,7 @@ export default class ConfigService {
             values: values
           }
         })).data;
-      } catch (e) {
+      } catch (e: any) {
         this.logger.error(`[ConfigService] Couldn't update master spreadsheet with last execution status : ${e.message}`, e);
         throw e;
       }
@@ -652,7 +653,7 @@ export default class ConfigService {
           values: rows
         }
       })).data;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error(`[ConfigService] Couldn't update master spreadsheet with new application: ${e.message}`, e);
       throw e;
     }
@@ -682,7 +683,7 @@ export default class ConfigService {
             }]
           }
         });
-      } catch (e) {
+      } catch (e: any) {
         this.logger.error(`[ConfigService] Updating title (${diff.title}) in spreadsheet ${spreadsheetId} failed: ${e.message}`, e);
         e.logged = true;
         throw e;
@@ -859,7 +860,7 @@ export default class ConfigService {
       })).data;
       this.logger.info(`[ConfigService][applyChanges] Updated ${res.totalUpdatedCells} cells`);
       return <number>res.totalUpdatedCells;
-    } catch (e) {
+    } catch (e: any) {
       this.logger.error(`[ConfigService] Updating configuration ${spreadsheetId} failed: ${e.message}`, e);
       e.logged = true;
       throw e;

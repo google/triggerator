@@ -13,39 +13,158 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import math, { MathNode } from 'mathjs';
+import { create, all, factory, MathNode } from 'mathjs';
+import { LocalDateTime, LocalDate, Duration, Period, DateTimeFormatter } from '@js-joda/core';
+
 import { Config, RuleInfo, SDF } from '../types/config';
 import DV360Facade from './dv360-facade';
 import { FeedData, RecordSet, SdfFull } from '../types/types';
 import { Logger } from '../types/logger';
 
-const { create, all, factory } = require('mathjs');
-const allWithCustomFunctions = {
-  ...all,
-  createEqual: factory('equal', [], () => function equal(a: any, b: any) {
-    return a === b
+const mathjs = create(all);
+// MathJS customization:
+//  - date/time support (using type from @js-joda: LocalDateTime, LocalDate, Duration, Period)
+//  - support comparison operation (==,!=,>,<,>=,<=) for arbitrary types, including string (originally mathjs supports only numbers)
+mathjs!.import!([
+  // data types
+  factory('LocalDateTime', ['typed'], function createLocalDateTime({ typed }: { typed?: any }) {
+    typed.addType({
+      name: 'LocalDateTime',
+      test: (x: any) => x && x.constructor.name === 'LocalDateTime'
+    })
+    return LocalDateTime
+  }, { lazy: false }),
+
+  factory('LocalDate', ['typed'], function createLocalDate({ typed }: { typed?: any }) {
+    typed.addType({
+      name: 'LocalDate',
+      test: (x: any) => x && x.constructor.name === 'LocalDate'
+    })
+    return LocalDate
+  }, { lazy: false }),
+
+  factory('Duration', ['typed'], function createDuration({ typed }: { typed?: any }) {
+    typed.addType({
+      name: 'Duration',
+      test: (x: any) => x && x.constructor.name === 'Duration'
+    })
+    return Duration
+  }, { lazy: false }),
+
+  factory('Period', ['typed'], function createPeriod({ typed }: {typed?: any}) {
+    typed.addType({
+      name: 'Period',
+      test: (x: any) => x && x.constructor.name === 'Period'
+    })
+    return Period
+  }, { lazy: false }),
+
+  // conversion functions and factory functions
+  factory('datetime', ['typed'], function createLocalDateTime({ typed }: { typed?: any }) {
+    return typed('datetime', {
+      '': () => LocalDateTime.now(),
+      'null': () => LocalDateTime.now(),
+      'string': (x: any) => LocalDateTime.parse(x),
+      'string, string': (x: any, format: string) => { let formatter = DateTimeFormatter.ofPattern(format); return LocalDateTime.parse(x, formatter); }
+    })
   }),
-  createUnequal: factory('unequal', [], () => function unequal(a: any, b: any) {
-    return a !== b
+
+  factory('date', ['typed'], function createLocalDateTime({ typed }: { typed?: any }) {
+    return typed('datetime', {
+      '': () => LocalDate.now(),
+      'null': () => LocalDate.now(),
+      'string': (x: any) => LocalDate.parse(x),
+      'string,string': (x: any, format: string) => { let formatter = DateTimeFormatter.ofPattern(format); return LocalDate.parse(x, formatter); },
+      'LocalDateTime': (x: any) => x.toLocalDate(),
+      'number, number, number': (a: any, b: any, c: any) => LocalDate.of(a, b, c)
+    })
   }),
-  createSmaller: factory('smaller', [], () => function smaller(a: any, b: any) {
-    return a < b
+
+  factory('duration', ['typed'], function createDuration({ typed }: { typed?: any }) {
+    return typed('duration', {
+      'string': (x: any) => Duration.parse(x)
+    })
   }),
-  createSmallerEq: factory('smallerEq', [], () => function smallerEq(a: any, b: any) {
-    return a <= b
+
+  factory('period', ['typed'], function createDuration({ typed }: { typed?: any }) {
+    return typed('period', {
+      'string': (x: any) => Period.parse(x)
+    })
   }),
-  createLarger: factory('larger', [], () => function larger(a: any, b: any) {
-    return a > b
+
+  // operations
+  factory('add', ['typed'], function createLocalDateTimeAdd({ typed }: { typed?: any }) {
+    return typed('add', {
+      'LocalDateTime, Duration': (a: any, b: any) => a.plus(b),
+      'LocalDate, Period': (a: any, b: any) => a.plus(b),
+      'any, any': (a: any, b: any) => a + b
+    })
   }),
-  createLargerEq: factory('largerEq', [], () => function largerEq(a: any, b: any) {
-    return a >= b
+
+  factory('subtract', ['typed'], function createLocalDateTimeSubtract({ typed }: { typed?: any }) {
+    return typed('subtract', {
+      'LocalDateTime, Duration': (a: any, b: any) => a.minus(b),
+      'LocalDate, Period': (a: any, b: any) => a.minus(b),
+      'LocalDateTime, LocalDateTime': (a: any, b: any) => Duration.between(a, b),
+      'LocalDate, LocalDate': (a: any, b: any) => Duration.between(a, b),
+      'any, any': (a: any, b: any) => a - b
+    })
   }),
-  createCompare: factory('compare', [], () => function compare(a: any, b: any) {
-    return a > b ? 1 : a < b ? -1 : 0
+
+  factory('compare', ['typed'], function createLocalDateTimeEqual({ typed }: { typed?: any}) {
+    return typed('compare', {
+      'LocalDateTime|LocalDate, LocalDateTime|LocalDate': (a: any, b: any) => a.compareTo(b),
+      'any, any': (a: any, b: any) => a > b ? 1 : a < b ? -1 : 0
+    })
+  }),
+
+  factory('equal', ['typed', 'compare'], function createEqual({ typed, compare }: { typed?: any, compare?: any}) {
+    return typed('equal', {
+      'any, any': (a: any, b: any) => compare(a, b) === 0
+    })
+  }),
+
+  factory('unequal', ['typed', 'compare'], function createUnequal({ typed, compare }: {typed?: any, compare?: any}) {
+    return typed('unequal', {
+      'any, any': (a: any, b: any) => compare(a, b) !== 0
+    })
+  }),
+
+  factory('larger', ['typed', 'compare'], function createLarger({ typed, compare }: { typed?: any, compare?: any }) {
+    return typed('larger', {
+      'any, any': (a: any, b: any) => compare(a, b) > 0 //a > b
+    })
+  }),
+
+  factory('largerEq', ['typed', 'compare'], function createLargerEq({ typed, compare }: { typed?: any, compare?: any }) {
+    return typed('largerEq', {
+      'any, any': (a: any, b: any) => compare(a, b) >= 0
+    })
+  }),
+
+  factory('smallerEq', ['typed', 'compare'], function createSmallerEq({ typed, compare }: { typed?: any, compare?: any }) {
+    return typed('smallerEq', {
+      'any, any': (a: any, b: any) => compare(a, b) <= 0
+    })
+  }),
+
+  factory('smaller', ['typed', 'compare'], function createSmaller({ typed, compare }: { typed?: any, compare?: any }) {
+    return typed('smaller', {
+      'any, any': (a: any, b: any) => compare(a, b) < 0
+    })
+  }),
+
+  factory('today', [], function createToday() {
+    return () => LocalDate.now();
+  }),
+
+  factory('now', [], function createNow() {
+    return () => LocalDateTime.now();
   })
-}
-const parseCustom = create(allWithCustomFunctions).parse;
-const evaluateCustom = create(allWithCustomFunctions).evaluate;
+
+], { override: true });
+
+const math_parse = mathjs.parse!;
 
 export interface RuleEngineOptions {
   /**
@@ -60,17 +179,17 @@ export interface RuleEngineOptions {
 
 export class RuleEvaluator {
   parsed_conditions: Record<string, MathNode> = {};
-  
+
   validateRule(rule: RuleInfo) {
     if (rule.condition) {
       try {
-        let expr = parseCustom(rule.condition);
+        let expr = math_parse(rule.condition);
       } catch (e) {
         return e.message;
       }
     }
   }
-  
+
   getActiveRule(rules: RuleInfo[], row: Record<string, any>): RuleInfo | null {
     for (let i = 0; i < rules.length; i++) {
       let rule = rules[i];
@@ -78,7 +197,7 @@ export class RuleEvaluator {
         let expr = this.parsed_conditions[rule.condition];
         if (!expr) {
           try {
-            expr = parseCustom(rule.condition)
+            expr = math_parse(rule.condition)
           } catch (e) {
             throw new Error(`[RuleEvaluator] expression "${rule.condition}" can't be parsed: ${e.message}`);
           }
@@ -97,11 +216,11 @@ export class RuleEvaluator {
     return null;
   }
 
-  evaluateExpression(value: string, row: Record<string, string>): string {
+  evaluateExpression(value: string, row: Record<string, string>): any {
     let expr = this.parsed_conditions[value];
     if (!expr) {
       try {
-        expr = parseCustom(value)
+        expr = math_parse(value)
       } catch (e) {
         throw new Error(`[RuleEvaluator] expression "${value}" can't be parsed: ${e.message}`);
       }

@@ -1,5 +1,5 @@
 #!/bin/bash
-# 
+#
 # Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,7 @@ NC='\033[0m' # No Color
 GAE_LOCATION=europe-west
 PROJECT_TITLE=Triggerator
 USER_EMAIL=$(gcloud config get-value account 2> /dev/null)
-# detect default service account 
+# detect default service account
 PROJECT_ID=$(gcloud config get-value project 2> /dev/null) #"$(gcloud app describe --format='value(id)')"
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID | grep projectNumber | sed "s/.* '//;s/'//g")
 SERVICE_ACCOUNT=$PROJECT_ID@appspot.gserviceaccount.com
@@ -96,8 +96,8 @@ spreadsheetId=$MASTER_SPREADSHEET
 if [ -z "$spreadsheetId" ]; then
   # master spreadsheet wasn't specified via cli arguments
   # create a master spreadsheet and share it with the  SA
-  # NOTE: to access Sheets and Drive APIs we can't use gcloud's access token, 
-  # so we'll use GAE's default service account. 
+  # NOTE: to access Sheets and Drive APIs we can't use gcloud's access token,
+  # so we'll use GAE's default service account.
   # For this we'll export its key and set it up in well-known envvar GOOGLE_APPLICATION_CREDENTIALS,
   # where Python client (used in create-spreadsheet.py) can find it.
   gcloud iam service-accounts keys create key.json --iam-account=$SERVICE_ACCOUNT
@@ -146,7 +146,7 @@ gcloud app deploy --quiet
 # create IAP
 echo -e "${COLOR}Creating oauth brand (consent screen) for IAP...${NC}"
 gcloud alpha iap oauth-brands create --application_title="$PROJECT_TITLE" --support_email=$USER_EMAIL
-# Output `gcloud alpha iap oauth-brands create` example: 
+# Output `gcloud alpha iap oauth-brands create` example:
 # Created [964442731935].
 # applicationTitle: Triggerator
 # name: projects/964442731935/brands/964442731935
@@ -159,11 +159,14 @@ gcloud alpha iap oauth-clients create projects/$PROJECT_NUMBER/brands/$PROJECT_N
   python3 -c "import sys, json; res=json.load(sys.stdin); i = res['name'].rfind('/'); print(res['name'][i+1:]); print(res['secret'])" \
   > .oauth
 # NOTE: readarray isn't supported on MacOS
-readarray -t lines < .oauth
-# Now in .oath file we have two line, first client id, second is client secret
+# readarray -t lines < .oauth
+lines=()
+$ while IFS= read -r line; do lines+=("$line"); done < .oauth
+
+# Now in .oauth file we have two line, first client id, second is client secret
 IAP_CLIENT_ID=${lines[0]}
 IAP_CLIENT_SECRET=${lines[1]}
-# Output `gcloud alpha iap oauth-clients create` example: 
+# Output `gcloud alpha iap oauth-clients create` example:
 # {
 #  "displayName": "iap",
 #  "name": "projects/964442731935/brands/964442731935/identityAwareProxyClients/964442731935-tdkmgnvv296bcsr2ic04rl31o2ih0drv.apps.googleusercontent.com",
@@ -172,8 +175,8 @@ IAP_CLIENT_SECRET=${lines[1]}
 
 TOKEN=$(gcloud auth print-access-token)
 
-# Enable IAP for AppEngine 
-# (source: 
+# Enable IAP for AppEngine
+# (source:
 #   https://cloud.google.com/iap/docs/managing-access#managing_access_with_the_api
 #   https://cloud.google.com/iap/docs/reference/app-engine-apis)
 echo -e "${COLOR}Enabling IAP for App Engine...${NC}"

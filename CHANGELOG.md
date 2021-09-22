@@ -2,6 +2,9 @@
 
 >NOTE: BE is backend (server application), FE - frontend (client applciation)
 
+## 2021-09-22
+* Support for date and time in rules' expressions (mathjs was extended with new types and functions, see the User Guide)
+
 ## 2021-08-11 (1.5.0)
 * Support for fetching data from Google Cloud BigQuery (tables/views/procedures)
 
