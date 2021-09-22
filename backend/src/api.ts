@@ -511,7 +511,7 @@ router.post('/engine/:id/run', async (req: express.Request, res: express.Respons
 
 let g_running_ops: Record<string, string[]> = {};
 /**
- * Endpoint for manual starting engine execution from the client w/o streaming, 
+ * Endpoint for manual starting engine execution from the client w/o streaming,
  * this method starts an operation and return an opid which used later on with querystatus method
  * to query the operation status and get log events.
  */
@@ -764,7 +764,7 @@ router.get('/reports/:id/activationtimes', async (req: express.Request, res: exp
       res.status(StatusCodes.OK).send({fileId});
     } catch (e) {
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: 'Import CSV into Google Spreadsheet failed:' + e.message, details: JSON.stringify(e) });
-    }    
+    }
   }
 
   // #4 optionally save file to gDrive or GCS if the user asked for it

@@ -38,6 +38,7 @@ suite("RuleEvaluator", function () {
     ];
     let data = getFeedData();
     let evaluator = new RuleEvaluator();
+    evaluator.validateRule(rules[0]);
     assert.strictEqual(evaluator.getActiveRule(rules, data.getRow(0))!.name, "Above zero");
     assert.strictEqual(evaluator.getActiveRule(rules, data.getRow(1))!.name, "Above zero");
     assert.strictEqual(evaluator.getActiveRule(rules, data.getRow(2))!.name, "Above zero");
@@ -46,33 +47,40 @@ suite("RuleEvaluator", function () {
     assert.strictEqual(evaluator.getActiveRule(rules, data.getRow(5))!.name, "Below zero");
   });
 
-  test("", async function () {
-    this.skip();
-    /*
-    let advertiserId = "506732";
-    let campaignId = "TODO";
-    let config: Config = {
-      execution: {
-        advertiserId: advertiserId,
-        campaignId: campaignId,
-      },
-      feedInfo: {
-        name_column: "name",
-        feeds: [
-          { name: "main", url: "", type: FeedType.JSON, key_column: "id" }
-        ]
-      },
-      rules: [
-        { name: "Above zero", condition: "temp >=0", display_state: {bid: 100, frequency_li: "1/day", frequency_io: "1/day"} },
-        { name: "Below zero", condition: "temp <0" , display_state: {bid: 1, frequency_li: "1/week", frequency_io: "1/week"} }
-      ],
-    };
-    let dv_facade = new DV360Facade({useLocalCache: true});
-    let ruleEngine = new RuleEngine(config, dv_facade, {dontUpdate: true});
-    let feedData = getFeedData();
-    let sdf = await dv_facade.downloadSdf(advertiserId, campaignId);
-    ruleEngine.run(feedData, sdf);
-    console.log(ruleEngine.updateLog);
-    */
+  test("Comparison operations", function () {
+    let evaluator = new RuleEvaluator();
+    // verify that all comparison operations for numbers work
+    assert.strictEqual(evaluator.evaluateExpression("1 == 1", {}), true);
+    assert.strictEqual(evaluator.evaluateExpression("1 != 0", {}), true);
+    assert.strictEqual(evaluator.evaluateExpression("1 > 0", {}), true);
+    assert.strictEqual(evaluator.evaluateExpression("1 >= 0", {}), true);
+    assert.strictEqual(evaluator.evaluateExpression("1 < 0", {}), false);
+    assert.strictEqual(evaluator.evaluateExpression("1 <= 0", {}), false);
+    // verify that all comparison operations for strings work
+    assert.strictEqual(evaluator.evaluateExpression("'value' == value", { value: 'value' }), true);
+    assert.strictEqual(evaluator.evaluateExpression("'abc' != 'xyz'", {}), true);
+    assert.strictEqual(evaluator.evaluateExpression("'abc' < 'xyz'", {}), true);
+    assert.strictEqual(evaluator.evaluateExpression("'abc' > 'xyz'", {}), false);
+    // verify add/substruct
+    //  for numbers:
+    assert.strictEqual(evaluator.evaluateExpression("100 - 10 + 2 > 0", {}), true);
+    //  for strings:
+    assert.strictEqual(evaluator.evaluateExpression("'hello' + ' ' + 'world'", {}), 'hello world');
+  });
+
+  test("Date and time expressions", function () {
+    let evaluator = new RuleEvaluator();
+    let now = new Date();
+    let yesterday = new Date(now.valueOf() - (24 * 60 * 60 * 1000) * 1);
+    let str_yesterday = `${yesterday.getFullYear()}-${yesterday.getMonth() + 1}-${yesterday.getDate()}`;
+    // console.log(evaluator.evaluateExpression("today() - period('P1D')", {}));
+    // console.log(evaluator.evaluateExpression("date($date, 'yyyy-M-dd')", { $date: str_yesterday }));
+    // assert.strictEqual(evaluator.evaluateExpression("date('2021-09-22').toString()", {}), "2021-09-22");
+    assert.strictEqual(evaluator.evaluateExpression("today() - period('P1D') == date($date, 'yyyy-M-dd')", { $date: str_yesterday}), true);
+    assert.strictEqual(evaluator.evaluateExpression("today() - period('P1D') < today()", {}), true);
+    assert.strictEqual(evaluator.evaluateExpression("today() + period('P1D') > today()", {}), true);
+    assert.strictEqual(evaluator.evaluateExpression("now() - duration('PT1H') < now()", {}), true);
+    assert.strictEqual(evaluator.evaluateExpression("now() + duration('PT1H') > now()", {}), true);
+    assert.strictEqual(evaluator.evaluateExpression("now() >= datetime('2021-09-22T00:01:03')", {}), true);
   });
 });
