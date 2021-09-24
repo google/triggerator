@@ -68,18 +68,18 @@
         <mat-hint>Creative Assignments, list of values separated by commas or semicolons</mat-hint>
       </mat-form-field>
     </div>
-  </div>  
+  </div>
   <!-- IO Frequency (format: (\d+)\/(week|day|month)) -->
   <div class="row">
-    <div class="col">
-      <mat-form-field appearance="outline" color="accent">
+    <div class="col-6">
+      <mat-form-field appearance="outline" color="accent" class="full-width">
         <mat-label>IO Frequency Exposures</mat-label>
         <input matInput formControlName="display_io_frequency_value">
         <mat-hint>Numeric value for frequency</mat-hint>
       </mat-form-field>
     </div>
-    <div class="col">
-      <mat-form-field appearance="outline" color="accent">
+    <div class="col-6">
+      <mat-form-field appearance="outline" color="accent" class="full-width">
         <mat-label>IO Frequency Period</mat-label>
         <mat-select formControlName="display_io_frequency_period">
           <mat-option *ngFor="let periodType of periodTypes" [value]="periodType.value">
@@ -92,15 +92,15 @@
   </div>
   <!-- LI Frequency -->
   <div class="row">
-    <div class="col">
-      <mat-form-field appearance="outline" color="accent">
+    <div class="col-6">
+      <mat-form-field appearance="outline" color="accent" class="full-width">
         <mat-label>LI Frequency Exposures</mat-label>
         <input matInput formControlName="display_li_frequency_value">
         <mat-hint>Numeric value for frequency</mat-hint>
       </mat-form-field>
     </div>
-    <div class="col">
-      <mat-form-field appearance="outline" color="accent">
+    <div class="col-6">
+      <mat-form-field appearance="outline" color="accent" class="full-width">
         <mat-label>LI Frequency Period</mat-label>
         <mat-select formControlName="display_li_frequency_period">
           <mat-option *ngFor="let periodType of periodTypes" [value]="periodType.value">
@@ -143,18 +143,18 @@
         <mat-hint>Creative id for YouTube campaigns</mat-hint>
       </mat-form-field>
     </div>
-  </div>  
+  </div>
   <!-- IO Frequency -->
   <div class="row">
-    <div class="col">
-      <mat-form-field appearance="outline" color="accent">
+    <div class="col-6">
+      <mat-form-field appearance="outline" color="accent" class="full-width">
         <mat-label>IO Frequency Exposures</mat-label>
         <input matInput formControlName="yt_io_frequency_value">
         <mat-hint>Numeric value for frequency</mat-hint>
       </mat-form-field>
     </div>
-    <div class="col">
-      <mat-form-field appearance="outline" color="accent">
+    <div class="col-6">
+      <mat-form-field appearance="outline" color="accent" class="full-width">
         <mat-label>IO Frequency Period</mat-label>
         <mat-select formControlName="yt_io_frequency_period">
           <mat-option *ngFor="let periodType of periodTypes" [value]="periodType.value">
@@ -167,15 +167,15 @@
   </div>
   <!-- LI Frequency -->
   <div class="row">
-    <div class="col">
-      <mat-form-field appearance="outline" color="accent">
+    <div class="col-6">
+      <mat-form-field appearance="outline" color="accent" class="full-width">
         <mat-label>LI Frequency Exposures</mat-label>
         <input matInput formControlName="yt_li_frequency_value">
         <mat-hint>Numeric value for frequency</mat-hint>
       </mat-form-field>
     </div>
-    <div class="col">
-      <mat-form-field appearance="outline" color="accent">
+    <div class="col-6">
+      <mat-form-field appearance="outline" color="accent" class="full-width">
         <mat-label>LI Frequency Period</mat-label>
         <mat-select formControlName="yt_li_frequency_period">
           <mat-option *ngFor="let periodType of periodTypes" [value]="periodType.value">
