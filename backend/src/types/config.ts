@@ -39,7 +39,6 @@ export enum FrequencyPeriod {
   "day" = "day",
   "month" = "month"
 }
-//export type FrequencyPeriod = "week" | "day" | "month";
 export type RuleState = {
   creatives?: string;
   bid?: string | number;
@@ -52,16 +51,6 @@ export type RuleInfo = {
   condition: string;
   display_state?: RuleState;
   youtube_state?: RuleState;
-  /*
-  creatives?: string[];
-  yt_creatives?: string[];
-  bid?: number;
-  yt_bid?: number;
-  frequency_io?: Frequency;
-  frequency_li?: Frequency;
-  yt_frequency_io?: Frequency;
-  yt_frequency_li?: Frequency;
-  */
 }
 export enum FeedType {
   "Auto" = "Auto",
@@ -81,6 +70,8 @@ export type FeedInfo = {
   username?: string,
   password?: string,
 }
+export const Feed_BigQuery_Url_RegExp = "(projects\/(?<project>[^\/]+)\/)?datasets\/(?<dataset>[^\/]+)\/(tables\/(?<table>.+)|views\/(?<view>.+)|procedures\/(?<proc>.+))";
+
 export type FeedConfig = {
   name_column?: string;
   //score_column: string;

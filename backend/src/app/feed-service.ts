@@ -25,7 +25,7 @@ import yauzl from 'yauzl';
 import csv_parse from 'csv-parse/lib/sync';
 import { decode } from 'iconv-lite';
 import argv from './../argv';
-import { FeedConfig, FeedInfo, FeedType } from '../types/config';
+import { FeedConfig, FeedInfo, FeedType, Feed_BigQuery_Url_RegExp } from '../types/config';
 import { FeedData } from '../types/types';
 import { tryParseNumber } from './utils';
 import GoogleDriveFacade from './google-drive-facade';
@@ -175,7 +175,8 @@ export default class FeedService {
     //  - projects/project_id/datasets/dataset_id/tables/table_id
     //  - datasets/dataset_id/tables/table_id (project_id will be used from current auth)
     //  - datasets/dataset_id/views/view_id
-    let rePath = /(projects\/(?<project>[^\/]+)\/)?datasets\/(?<dataset>[^\/]+)\/(tables\/(?<table>.+)|views\/(?<view>.+)|procedures\/(?<proc>.+))/;
+    //let rePath = /(projects\/(?<project>[^\/]+)\/)?datasets\/(?<dataset>[^\/]+)\/(tables\/(?<table>.+)|views\/(?<view>.+)|procedures\/(?<proc>.+))/;
+    let rePath = new RegExp(Feed_BigQuery_Url_RegExp);
     let match = rePath.exec(feedInfo.url);
     if (!match || !match.groups) {
       throw new Error(`Unsupported BigQuery url (${feedInfo.url}), expected projects/project_id/datasets/dataset_id/[tables/table_id|views/view_id|procedures/proc_id]`);

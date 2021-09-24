@@ -16,7 +16,7 @@
 import * as _ from 'lodash';
 import { AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Config, DV360TemplateInfo, FeedInfo, JobInfo, ReportFormat } from '../../../backend/src/types/config';
+import { Config, DV360TemplateInfo, FeedInfo, FeedType, Feed_BigQuery_Url_RegExp, JobInfo, ReportFormat } from '../../../backend/src/types/config';
 import { ConfigService } from './shared/config.service';
 import { FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -642,6 +642,34 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     }
   }
 
+  getFeedDisplayUrl(feed: FeedInfo): string {
+    // https://console.cloud.google.com/bigquery?project=triggerator-sd&page=table&d=test&p=triggerator-sd&t=gsk-feed
+    if (feed.type === FeedType.GoogleCloudBigQuery) {
+      // projects/triggerator-sd/datasets/test/views/gsk-feed
+      // projects/triggerator-sd/datasets/test/tables/test
+      // projects/triggerator-sd/datasets/test/procedures/test_proc
+      let rePath = new RegExp(Feed_BigQuery_Url_RegExp);
+      let match = rePath.exec(feed.url);
+      if (!match || !match.groups) {
+        return feed.url;
+      }
+
+      let projectId = match.groups['project'];
+      let datasetId = match.groups['dataset'];
+      let tableId = match.groups['table'];
+      let viewId = match.groups['view'];
+      let procedure = match.groups['proc']
+      let href = '';
+      if (procedure) {
+        href = `https://console.cloud.google.com/bigquery?project=${projectId}&page=routine&d=${datasetId}&p=${projectId}&r=${procedure}`;
+      } else {
+        let name = tableId ? tableId : viewId;
+        href = `https://console.cloud.google.com/bigquery?project=${projectId}&page=table&d=${datasetId}&p=${projectId}&t=${name}`;
+      }
+      return href;
+    }
+    return feed.url;
+  }
   tabsFeedData = ['Result'];
   tabsFeedDataSelected = 0;
   showFeedData(feedData: Record<string, any>[], dataSetName: string) {
