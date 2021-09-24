@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import _ from 'lodash';
-import { Config, DV360TemplateInfo, FrequencyPeriod, RuleInfo, SdfElementType, TemplateMacros, SDF } from '../types/config';
+import { Config, DV360TemplateInfo, FrequencyPeriod, RuleInfo, SdfElementType, TemplateMacros, SDF, RuleState } from '../types/config';
 import { RuleEvaluator } from './rule-engine';
 import { FeedData, SdfFull } from '../types/types';
 import { Logger } from '../types/logger';
@@ -51,7 +51,7 @@ class DV360Template {
   }
 
   /**
-   * Whather Display IO's template contains rule_name 
+   * Whather Display IO's template contains rule_name
    */
   isDisplayIoPerRule(): boolean {
     return this.info.io_template?.indexOf(TemplateMacros.rule_name) != -1;
@@ -155,8 +155,8 @@ export default class SdfGenerator {
    * A mapping of IO Ids from template campaing to IsTrueView flag.
    */
   trueViewTmplIOs: Record<string, boolean> = {};
-  /** 
-   * A list (actually mapping to true) of existing IOs' ids that we're going to activate 
+  /**
+   * A list (actually mapping to true) of existing IOs' ids that we're going to activate
    * (ids are from currentSdf.insertionOrders).
    * So that all other IOs (absent in this map) will be archived.
    */
@@ -170,12 +170,12 @@ export default class SdfGenerator {
   existingAdGroupsMap: Record<string, boolean> = {};
   existingAdsMap: Record<string, boolean> = {};
   /**
-   * A mapping for IOs of a composite key (template IO's id + rowName + ruleName) 
+   * A mapping for IOs of a composite key (template IO's id + rowName + ruleName)
    * to a new IO's id in a campaing being generated.
    */
   resultIosMap: Record<string, string> = {};
   /**
-   * A mapping of keys consisting of 'Line Item Id' + rowName + ruleName (rule) 
+   * A mapping of keys consisting of 'Line Item Id' + rowName + ruleName (rule)
    * to LI's indecies in `currentSdf.lineItems` (existing LI)
    */
   sourceToDestLineItem: Record<string, number> = {};
@@ -188,11 +188,11 @@ export default class SdfGenerator {
   /** End date for new campaign */
   endDate?: Date;
 
-  constructor(private config: Config, 
+  constructor(private config: Config,
     private logger: Logger,
     private ruleEvaluator: RuleEvaluator,
     private feedData: FeedData,
-    private tmplSdf: SdfFull, 
+    private tmplSdf: SdfFull,
     private currentSdf: SdfFull | null) {
     if (!logger) throw new Error('[SdfGenerator] ArgumentException: Required argument logger is missing');
   }
@@ -242,7 +242,7 @@ export default class SdfGenerator {
       this.logger.log('debug', `[SdfGenerator] Updating campaign ${campaignId}`, {campaing: new_campaign});
       if (!currentSdf.insertionOrders || currentSdf.insertionOrders.rowCount == 0) {
         throw new Error(`[SdfGenerator] Campaign ${campaignId} that's beign updated doesn't contain Insertion Orders`);
-      }      
+      }
     } else {
       // generating new
       currentSdf = null;
@@ -260,7 +260,7 @@ export default class SdfGenerator {
     }
     if (this.startDate) {
       if (currentSdf != null) {
-        // if we're updating and campaign's start date in the past, there's no point to change it 
+        // if we're updating and campaign's start date in the past, there's no point to change it
         // as it'll cause an import error: "The campaign has already started. The start date cannot be modified."
         // format: MM/DD/YYYY
         let dtCurrent = Date.parse(new_campaign[SDF.Campaign.CampaignStartDate]);
@@ -299,7 +299,7 @@ export default class SdfGenerator {
         // we go through line items because TrueView is their parameters
         let liType = tmplSdf.lineItems.get(SDF.LI.Type, k);
         let ioId = tmplSdf.lineItems.get(SDF.LI.IoId, k);
-        // it's legal to have TrueView and non-TrueView line items inside a single IO, 
+        // it's legal to have TrueView and non-TrueView line items inside a single IO,
         // but we don't support such configuration
         let isTrueViewPrev = this.trueViewTmplIOs[ioId];
         let isTrueView = liType == 'TrueView';
@@ -405,8 +405,7 @@ export default class SdfGenerator {
         for (let i = 0; i < this.feedData.rowCount; i++) {
           let feedRow = this.feedData.getRow(i);
           for (const ruleInfo of this.config.rules!) {
-            // TODO:
-            // left from v1:
+            // TODO: in v1 we didn't create LIs if a rule's frequesncy was empty:
             // if (tmplLi['Type'] == 'TrueView' && !ruleInfo.yt_frequency_li)
             //   continue;
             // if (tmplLi['Type'] != 'TrueView' && !ruleInfo.frequency_li)
@@ -457,7 +456,7 @@ export default class SdfGenerator {
     }
 
     if (currentSdf) {
-      // archiving IOs    
+      // archiving IOs
       for (var i = 0; i < currentSdf.insertionOrders.rowCount; i++) {
         if (!this.existingIosMap[currentSdf.insertionOrders.get(SDF.IO.IoId, i)]) {
           let new_io = _.clone(currentSdf.insertionOrders.getRow(i));
@@ -589,13 +588,13 @@ export default class SdfGenerator {
     if (!this.currentSdf) {
       // generating a new SDF, we need adjust dates in Budget Segmets of IOs
       // BudgetSegments format:
-      // (Budget, Start Date, End Date). 
-      // Budget is in currency floating format. Dates are in MM/DD/YYYY format. 
+      // (Budget, Start Date, End Date).
+      // Budget is in currency floating format. Dates are in MM/DD/YYYY format.
       // Example: "(100.50;01/01/2016;03/31/2016;);(200.00;04/01/2016;06/30/2016;);"
       //  "(1.0; 04/05/2021; 05/05/2021;);"
       let matches = /\([0-9.]+;/.exec(new_io[SDF.IO.BudgetSegments]);
       if (matches !== null) {
-        new_io[SDF.IO.BudgetSegments] = 
+        new_io[SDF.IO.BudgetSegments] =
           `${matches[0]} ${this.formatDateOnly(this.startDate!)}; ${this.formatDateOnly(this.endDate!)};);`
       }
     }
@@ -680,7 +679,7 @@ export default class SdfGenerator {
       const geo_code = feedRow[feedInfo.geo_code_column];
       if (_.isInteger(+geo_code)) {
         new_li[SDF.LI.GeographyTargeting_Include] = geo_code;
-      } 
+      }
       else if (geo_code.includes(';')) {
         const res = _.every(geo_code.split(';'), (val) => {
           return _.isInteger(+val);
@@ -717,17 +716,7 @@ export default class SdfGenerator {
 
         let state = rule.display_state!;
         if (state.bid) {
-          if (typeof state.bid == 'string' && state.bid[0] == 'x') {
-            let mult = parseFloat(state.bid.substr(1));
-            let bid = Number(new_li[SDF.LI.BidStrategyValue]) * mult;
-            if (isNaN(bid)) {
-              throw new Error(`Couldn't parse LI's bid value as number: ${new_li[SDF.LI.BidStrategyValue]}`);
-            }
-            // TODO: previously numbers were directly assigned, now it's strings, not sure it's correct
-            new_li[SDF.LI.BidStrategyValue] = bid.toString();
-          } else {
-            new_li[SDF.LI.BidStrategyValue] = state.bid.toString();
-          }
+          new_li[SDF.LI.BidStrategyValue] = this.getBidValue(state.bid, new_li[SDF.LI.BidStrategyValue]);
         }
         if (state.creatives) {
           let creatives = state.creatives.replace(/,/g,";").replace(/ */g, '');
@@ -748,6 +737,8 @@ export default class SdfGenerator {
         new_li[SDF.LI.FrequencyExposures] = frequency.exposures.toString();
         new_li[SDF.LI.FrequencyPeriod] = frequency.period;
 
+        // NOTE: bid and creative will be set in agroup/ad
+
         // NOTE: it was commented out in v1!
         //          newSdf.lineItems.set('TrueView View Frequency Enabled', -1, 'TRUE');
         //          newSdf.lineItems.set('TrueView View Frequency Exposures', -1, f.exposures);
@@ -767,6 +758,18 @@ export default class SdfGenerator {
 
     this.setCustomFields(new_li, SdfElementType.LI, ruleName, isTrueView ? 'YouTube' : 'Display', feedRow);
     return new_li;
+  }
+
+  private getBidValue(bid: any, tmplValue: string): string {
+    if (typeof bid == 'string' && bid[0] == 'x') {
+      let mult = parseFloat(bid.substr(1));
+      bid = Number(tmplValue) * mult;
+      if (isNaN(bid)) {
+        throw new Error(`Couldn't parse LI's bid value as number: ${tmplValue}`);
+      }
+    }
+    // TODO: previously numbers were directly assigned, now it's strings, not sure it's correct
+    return bid.toString();
   }
 
   private sdf_adgroup(tmplAg: Record<string, string>, feedRow: Record<string, string>,
@@ -817,8 +820,10 @@ export default class SdfGenerator {
     }
 
     new_adgroup[SDF.AdGroup.Name] = tmpl.adgroup_name(new_adgroup[SDF.AdGroup.Name], rowName, ruleName);
-    if (rule.youtube_state && rule.youtube_state.bid)
-      new_adgroup[SDF.AdGroup.BidCost] = <any>rule.youtube_state.bid;
+    // Bid
+    if (rule.youtube_state && rule.youtube_state.bid) {
+      new_adgroup[SDF.AdGroup.BidCost] = this.getBidValue(rule.youtube_state.bid, new_adgroup[SDF.AdGroup.BidCost]);
+    }
 
     this.setCustomFields(new_adgroup, SdfElementType.AdGroup, ruleName, 'YouTube', feedRow);
     return new_adgroup;
@@ -830,9 +835,9 @@ export default class SdfGenerator {
     var rowName = feedRow[feedInfo.name_column!];
     var ruleName = rule.name;
     if (!rule.youtube_state || !rule.youtube_state.creatives)
-      throw new Error(`[SdfGenerator] State configuration ${ruleName} doesn\'t have an TrueView creative`);
+      throw new Error(`[SdfGenerator] Rule "${ruleName}" doesn't have a TrueView creative`);
     if (rule.youtube_state.creatives.indexOf(',') > 1 || rule.youtube_state.creatives.indexOf(';') > 1)
-      throw new Error(`[SdfGenerator] State configuration ${ruleName} has more than 1 TrueView creatives which is not allowed`);
+      throw new Error(`[SdfGenerator] Rule "${ruleName}" has more than one TrueView creatives which is not allowed`);
 
     var agIndex = this.sourceToDestAdGroup[tmplAd[SDF.Ad.AdGroupId] + rowName + ruleName];
     var adIndex = -1;
@@ -879,7 +884,7 @@ export default class SdfGenerator {
     let month = date.getMonth() + 1;
     let day = date.getDate();
     let year = date.getFullYear();
-    return (month <= 9 ? "0" : "") + month.toString() + "/" + 
+    return (month <= 9 ? "0" : "") + month.toString() + "/" +
       (day <=9 ? "0" : "") + `${day}/${year}`
   }
 
