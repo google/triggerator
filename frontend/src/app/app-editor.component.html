@@ -388,7 +388,7 @@
               <ng-container matColumnDef="url">
                 <mat-header-cell *matHeaderCellDef> URL </mat-header-cell>
                 <mat-cell *matCellDef="let element" [matTooltip]="element.url">
-                  <a href="{{element.url}}" target="_blank"> {{element.url}} </a>
+                  <a href="{{getFeedDisplayUrl(element)}}" target="_blank"> {{element.url}} </a>
                 </mat-cell>
               </ng-container>
               <!-- Encoding Column -->
