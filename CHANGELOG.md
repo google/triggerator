@@ -2,6 +2,10 @@
 
 >NOTE: BE is backend (server application), FE - frontend (client applciation)
 
+## 2021-09-24
+* Fix: BigQuery feed urls open datasources in GCP BigQuery UI
+* Fix: Support for Bid syntax "xN" for YouTube rules (previously only for Display rules)
+
 ## 2021-09-22
 * Support for date and time in rules' expressions (mathjs was extended with new types and functions, see the User Guide)
 
