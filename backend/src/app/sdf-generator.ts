@@ -175,10 +175,14 @@ export default class SdfGenerator {
    */
   resultIosMap: Record<string, string> = {};
   /**
-   * A mapping of keys consisting of 'Line Item Id' + rowName + ruleName (rule)
+   * A mapping of keys consisting of template's 'Line Item Id' + rowName + ruleName (rule)
    * to LI's indecies in `currentSdf.lineItems` (existing LI)
    */
   sourceToDestLineItem: Record<string, number> = {};
+  /**
+   * A mapping of key consusting of template's AdGroupId + rowName + ruleName
+   * to AdGroup indecies in `currentSdf.adGroups` (existing AdGroup)
+   */
   sourceToDestAdGroup: Record<string, number> = {};
   recalculateStatus = false;
   /** Whether to make new campaign active or not */
@@ -447,8 +451,12 @@ export default class SdfGenerator {
           for (const rule of this.config.rules!) {
             if (!rule.youtube_state?.frequency_li)
               continue;
-            let new_ad = this.sdf_ad(tmplAd, feedRow, rule, tmpl, no);
-            newSdf.ads!.addRow(new_ad);
+            let new_ads = this.sdf_ad(tmplAd, feedRow, rule, tmpl, no);
+            for (const ad of new_ads) {
+              newSdf.ads!.addRow(ad);
+            }
+            // NOTE: the numbering should be done in the same way as for AdGroups above
+            // (because a number in sdf_ad is used for referencing to an adgroup)
             no++;
           }
         }
@@ -830,51 +838,64 @@ export default class SdfGenerator {
   }
 
   private sdf_ad(tmplAd: Record<string, string>, feedRow: Record<string, string>,
-    rule: RuleInfo, tmpl: DV360Template, entryNum: number): Record<string, string> {
+    rule: RuleInfo, tmpl: DV360Template, entryNum: number): Record<string, string>[] {
     var feedInfo = this.config.feedInfo!;
     var rowName = feedRow[feedInfo.name_column!];
     var ruleName = rule.name;
     if (!rule.youtube_state || !rule.youtube_state.creatives)
       throw new Error(`[SdfGenerator] Rule "${ruleName}" doesn't have a TrueView creative`);
-    if (rule.youtube_state.creatives.indexOf(',') > 1 || rule.youtube_state.creatives.indexOf(';') > 1)
-      throw new Error(`[SdfGenerator] Rule "${ruleName}" has more than one TrueView creatives which is not allowed`);
-
-    var agIndex = this.sourceToDestAdGroup[tmplAd[SDF.Ad.AdGroupId] + rowName + ruleName];
-    var adIndex = -1;
-    if (agIndex > -1) {
-      var allAdIndexes = this.currentSdf!.ads!.findAll(SDF.Ad.AdGroupId, this.currentSdf!.adGroups!.get(SDF.Ad.AdGroupId, agIndex));
-      for (let idx of allAdIndexes) {
-        if (this.currentSdf!.ads!.get(SDF.Ad.VideoId, idx) == rule.youtube_state.creatives) {
-          adIndex = idx;
-          break;
+    // We support multiple creatives in YT-rule,
+    // so in such a case we need to create an Ad per each video id
+    // At the same time entryNum is an index of AdGroup should it shouldn't change and used for all Ads of same AdGroups
+    let new_ads = [];
+    let creatives = rule.youtube_state.creatives.split(/[,;]/);
+    let creative_idx = -1;
+    for (const videoId of creatives) {
+      creative_idx++;
+      // we should either create a new Ad for each rule's creative or find an existing one in currentSdf!.ads
+      let adIndex = -1; // an existing Ad index
+      let agIndex = this.sourceToDestAdGroup[tmplAd[SDF.Ad.AdGroupId] + rowName + ruleName];
+      if (agIndex > -1) {
+        // find all Ads in currentSdf that belong to an AdGroup with id at agIndex index
+        let allAdIndexes = this.currentSdf!.ads!.findAll(SDF.Ad.AdGroupId, this.currentSdf!.adGroups!.get(SDF.Ad.AdGroupId, agIndex));
+        for (let idx of allAdIndexes) {
+          if (this.currentSdf!.ads!.get(SDF.Ad.VideoId, idx) == videoId) {
+            adIndex = idx;
+            break;
+          }
         }
       }
-    }
+      let new_ad = _.clone(tmplAd);
 
-    let new_ad = _.clone(tmplAd);
+      if (adIndex > -1) {
+        // updating an existing Ad
+        let cur_ad = this.currentSdf!.ads!.getRow(adIndex, SDF.Ad.AdGroupId, SDF.Ad.AdId, SDF.Ad.Status);
+        new_ad[SDF.Ad.AdGroupId] = cur_ad[SDF.Ad.AdGroupId];
+        new_ad[SDF.Ad.AdId] = cur_ad[SDF.Ad.AdId];
+        new_ad[SDF.Ad.Status] = this.fixDraft(cur_ad[SDF.Ad.Status]);
+        this.existingAdsMap[cur_ad[SDF.Ad.AdId]] = true;
+      }
+      else {
+        // creating a new Ad
+        new_ad[SDF.Ad.AdId] = 'ext' + new_ad[SDF.Ad.AdId] + entryNum + creative_idx;
+        // find an existing parent AdGroup or refer to a newly created one
+        if (agIndex > -1) {
+          new_ad[SDF.Ad.AdGroupId] = this.currentSdf!.adGroups!.get(SDF.Ad.AdGroupId, agIndex);
+        }
+        else {
+          new_ad[SDF.Ad.AdGroupId] = 'ext' + new_ad[SDF.Ad.AdGroupId] + entryNum;
+        }
+      }
+      if (this.recalculateStatus) {
+        new_ad[SDF.Ad.Status] = 'Active';
+      }
+      new_ad[SDF.Ad.Name] = tmpl.ad_name(new_ad[SDF.Ad.Name], rowName, ruleName);
+      new_ad[SDF.Ad.VideoId] = videoId;
 
-    if (adIndex > -1) {
-      let cur_ad = this.currentSdf!.ads!.getRow(adIndex, SDF.Ad.AdGroupId, SDF.Ad.AdId, SDF.Ad.Status);
-      new_ad[SDF.Ad.AdGroupId] = cur_ad[SDF.Ad.AdGroupId];
-      new_ad[SDF.Ad.AdId] = cur_ad[SDF.Ad.AdId];
-      new_ad[SDF.Ad.Status] = this.fixDraft(cur_ad[SDF.Ad.Status]);
-      this.existingAdsMap[cur_ad[SDF.Ad.AdId]] = true;
+      this.setCustomFields(new_ad, SdfElementType.Ad, ruleName, 'YouTube', feedRow);
+      new_ads.push(new_ad);
     }
-    else {
-      new_ad[SDF.Ad.AdId] = 'ext' + new_ad[SDF.Ad.AdId] + entryNum;
-      if (agIndex > -1)
-        new_ad[SDF.Ad.AdGroupId] = this.currentSdf!.adGroups!.get(SDF.Ad.AdGroupId, agIndex);
-      else
-        new_ad[SDF.Ad.AdGroupId] = 'ext' + new_ad[SDF.Ad.AdGroupId] + entryNum;
-    }
-    if (this.recalculateStatus) {
-      new_ad[SDF.Ad.Status] = 'Active';
-    }
-    new_ad[SDF.Ad.Name] = tmpl.ad_name(new_ad[SDF.Ad.Name], rowName, ruleName);
-    new_ad[SDF.Ad.VideoId] = rule.youtube_state.creatives;
-
-    this.setCustomFields(new_ad, SdfElementType.Ad, ruleName, 'YouTube', feedRow);
-    return new_ad;
+    return new_ads;
   }
 
   /** Formats a date in SDF format for date: MM/DD/YYYY HH:mm */
