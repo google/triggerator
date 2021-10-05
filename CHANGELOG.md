@@ -1,6 +1,8 @@
 # Changelog
 
 >NOTE: BE is backend (server application), FE - frontend (client applciation)
+## 2021-10-05 (1.6.0)
+* Support for multiple YouTube-creatives (a YT rule can have a list of creatives not just one)
 
 ## 2021-09-24
 * Fix: BigQuery feed urls open datasources in GCP BigQuery UI
