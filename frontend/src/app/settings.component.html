@@ -11,29 +11,36 @@
 </div>
 
 <form novalidate>
-  <fieldset>
-    <legend>Basic Information</legend>
+  <mat-card>
+    <mat-card-title>Settings</mat-card-title>
+    <mat-card-content class="my-3">
+      <mat-table [dataSource]="dataSource" class="mat-elevation-z8 editable-table">
 
-    <mat-table [dataSource]="dataSource" class="mat-elevation-z8 editable-table">
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+          <mat-cell *matCellDef="let element">{{element.name}}</mat-cell>
+        </ng-container>
 
-      <!-- Name Column -->
-      <ng-container matColumnDef="name">
-        <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
-        <mat-cell *matCellDef="let element">{{element.name}}</mat-cell>
-      </ng-container>
+        <!-- Value Column -->
+        <ng-container matColumnDef="value">
+          <mat-header-cell *matHeaderCellDef> Value! </mat-header-cell>
+          <mat-cell *matCellDef="let element">
+            <a href="{{element.link}}" target="_blank" *ngIf="element.link; else elseBlock">{{element.value}}</a>
+            <ng-template #elseBlock> {{element.value}} </ng-template>
+          </mat-cell>
+        </ng-container>
 
-      <!-- Version Column -->
-      <ng-container matColumnDef="value">
-        <mat-header-cell *matHeaderCellDef> Value! </mat-header-cell>
-        <mat-cell *matCellDef="let element"> 
-          <a href="{{element.link}}" target="_blank" *ngIf="element.link; else elseBlock">{{element.value}}</a>
-          <ng-template #elseBlock> {{element.value}} </ng-template> 
-        </mat-cell>
-      </ng-container>
+        <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+        <mat-row *matRowDef="let row; let e = index; columns: displayedColumns;"></mat-row>
+      </mat-table>
 
-      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-      <mat-row *matRowDef="let row; let e = index; columns: displayedColumns;"></mat-row>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-button (click)="shareSpreadsheets()" color="accent">
+        <mat-icon>share</mat-icon> Reshare spreadsheets
+      </button>
+    </mat-card-actions>
+  </mat-card>
 
-    </mat-table>
-  </fieldset>
 </form>

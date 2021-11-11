@@ -21,6 +21,7 @@ import { FeedData } from '../types/types';
 import { RuleEvaluator } from './rule-engine';
 import { Logger } from '../types/logger';
 import SchedulerService from './cloud-scheduler-service';
+import { shareFile } from './google-drive-facade';
 
 export const CONFIG_SHEETS = {
   General: "General",
@@ -29,8 +30,11 @@ export const CONFIG_SHEETS = {
   CustomFields: "SDF Fields"
 }
 type AppData = {
+  /** Spreadsheet id with configuration */
   id: string;
+  /** Status of last run (error/sucess) */
   status: string | undefined;
+  /** Timestamp of last run */
   timestampt: string | undefined;
 }
 type AppListData = AppData[];
@@ -354,7 +358,7 @@ export default class ConfigService {
         }
         return [];
       }
-      // any other error mean a real problem (permissions or non existing doc)
+      // any other error means a real problem (permissions or non existing doc)
       this.logger.error(`[ConfigService] Failed to fetch master spreadsheet ${masterSpreadsheetId}: ${e.message}`, e);
       throw e;
     }
@@ -422,16 +426,25 @@ export default class ConfigService {
     }
     for (const appdata of app_ids) {
       try {
-        let props = (await this.sheetsAPI.spreadsheets.get({
+        let propsTask = this.sheetsAPI.spreadsheets.get({
           spreadsheetId: appdata.id,
           fields: "properties"
-        })).data.properties;
+        });
+        let driveAPI = google.drive({ version: "v3" });
+        let fileInfoTask = driveAPI.files.get({
+          fileId: appdata.id,
+          fields: "modifiedTime,lastModifyingUser"
+        });
+        let props = (await propsTask).data.properties;
+        let fileProps = (await fileInfoTask).data;
         appList.configurations.push({
           name: props?.title || '',
           configId: appdata.id,
           version: "1",
           status: appdata.status ? 'last run ' + (appdata.status === 'error' ? 'failed' : 'succeeded') : 'never ran',
-          statusDetails: appdata.timestampt
+          statusDetails: appdata.timestampt,
+          lastModified: fileProps.modifiedTime ?? undefined,
+          lastModifiedBy: fileProps.lastModifyingUser?.emailAddress ?? undefined
           // ? `<a href='https://console.cloud.google.com/logs/query;query=;timeRange=PT1H;cursorTimestamp=${appdata.timestampt}?project='><${appdata.timestampt}/a>` : ''
         });
       } catch (e: any) {
@@ -466,12 +479,12 @@ export default class ConfigService {
     let app_ids = await this.validateMasterSpreadsheet(masterSpreadsheetId);
     // if appId is specified we need just connect master Spreadsheet and the referenced doc,
     // otherwise we need to create a new spreadsheet
-    let sheetsAPI = google.sheets({ version: "v4" });
     if (appId) {
       if (app_ids.find(app => app.id === appId)) {
         throw new Error(`[ConfigService] Application with id ${appId} already exists`);
       }
     }
+    let sheetsAPI = google.sheets({ version: "v4" });
     let attachingExisting = !!appId;
     if (!appId) {
       this.logger.info(`[ConfigService] Creating a new spreadsheet for a new app '${name}'`);
@@ -505,17 +518,8 @@ export default class ConfigService {
         appId = response.spreadsheetId!;
         if (userEmail) {
           this.logger.info(`[ConfigService] Sharing the created doc (${appId}) with user '${userEmail}'`);
-          let driveAPI = google.drive({ version: "v3" });
           try {
-            (await driveAPI.permissions.create({
-              fileId: appId,
-              //transferOwnership: true, - Sorry, cannot transfer ownership to xxx@xxx.com. Ownership can only be transferred to another user in the same organization as the current owner.
-              requestBody: {
-                role: 'writer',
-                type: 'user',
-                emailAddress: userEmail
-              }
-            }));
+            await shareFile(appId, userEmail);
           } catch (e: any) {
             this.logger.error(`Failed to change permissions on doc ${appId} for user ${userEmail}: ${e.message}`, e);
             // throw e; or not to throw?
@@ -580,10 +584,53 @@ export default class ConfigService {
     let result: AppInfo = {
       name: name,
       configId: appId,
-      status: 'active',
+      status: 'never ran',
       version: "1"
     };
     this.logger.info(`[ConfigService] Application created: `, JSON.stringify(result), { result: result });
+    return result;
+  }
+
+  async cloneApplication(masterSpreadsheetId: string, userEmail: string | null | undefined, appId: string) {
+    this.logger.info(`[ConfigService] Cloning an application ${appId}`);
+    let app_ids = await this.validateMasterSpreadsheet(masterSpreadsheetId);
+    if (!app_ids.find(app => app.id === appId)) {
+      throw new Error(`[ConfigService] Application with id ${appId} doesn't exist`);
+    }
+    //let sheetsAPI = google.sheets({ version: "v4" });
+    let driveAPI = google.drive({ version: "v3" });
+    let newTitle = '';
+    try {
+      let res = (await driveAPI.files.copy({
+        fileId: appId
+      })).data;
+      appId = res.id!;
+      newTitle = res.name!;
+    } catch (e: any) {
+      this.logger.error(`[ConfigService] Couldn't copy a spreadsheet: ${e.message}`, e);
+      throw e;
+    }
+
+    if (userEmail) {
+      try {
+        await shareFile(appId, userEmail);
+      } catch (e: any) {
+        this.logger.error(`Failed to change permissions on doc ${appId} for user ${userEmail}: ${e.message}`, e);
+        // throw e; or not to throw?
+      }
+    }
+    // add the new appId into the master doc
+    app_ids.push({ id: appId, status: undefined, timestampt: undefined });
+    // write it back
+    this.updateApplicationList(masterSpreadsheetId, app_ids.map(app => app.id));
+
+    let result: AppInfo = {
+      name: newTitle,
+      configId: appId,
+      status: 'never ran',
+      version: "1"
+    };
+    this.logger.info(`[ConfigService] Application cloned: `, JSON.stringify(result), { result: result });
     return result;
   }
 
@@ -599,7 +646,7 @@ export default class ConfigService {
     try {
       await driveAPI.files.delete({
         fileId: appId
-      })
+      });
     } catch (e: any) {
       this.logger.error(`[ConfigService] An error occured on deleting spreadsheet ${appId}: ${e.message}`, e);
       e.logged = true;

@@ -60,7 +60,7 @@ export class SettingsComponent extends ComponentBase implements OnInit {
               data.push({ name: name + '.' + subname, value: value[subname] });
             }
           }
-        } 
+        }
         else {
           data.push({ name, value });
         }
@@ -73,4 +73,16 @@ export class SettingsComponent extends ComponentBase implements OnInit {
     }
   }
 
+  async shareSpreadsheets() {
+    this.errorMessage = null;
+    this.loading = true;
+    try {
+      await this.configService.shareSpreadsheets();
+    } catch (e) {
+      this.handleApiError('An error occured during sharing', e);
+      return;
+    } finally {
+      this.loading = false;
+    }
+  }
 }

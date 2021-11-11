@@ -45,16 +45,17 @@ export default async function createApp(): Promise<express.Express> {
   app.use(mw);
   app.use(express.json());
   const staticFilesDir = path.join(__dirname, STATIC_DIR);
-  app.use(express.static(staticFilesDir));
-  
+  app.use(express.static(staticFilesDir, { lastModified: false}));
+
   // Add headers allows CORS
   app.use((req, res, next) => {
     // Website you wish to allow to connect
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.removeHeader('Last-Modified');
     // Pass to next layer of middleware
     next();
   });
-  
+
   if (SECURITY === 'IAP') {
     // Check authorization header from IAP to make sure all requests are authenticated
     app.use(async (req: express.Request, res: express.Response, next) => {
@@ -63,6 +64,9 @@ export default async function createApp(): Promise<express.Express> {
         next();
       }
       if (req.header('x-cloudscheduler') === 'true') {
+        // TODO: instead we should validate OidcToken from Authorization header,
+        // but it's not supported by calls from Scheduler, we need to use Pub/Sub with auth.
+        // claim = id_token.verify_oauth2_token(token, requests.Request())
         logger.info(`[WebApi] Triggered by Cloud Scheduler, job=` + req.header('x-cloudscheduler-jobname'));
         next();
         return;
@@ -94,6 +98,7 @@ export default async function createApp(): Promise<express.Express> {
       next();
     });
   } else if (SECURITY === 'CLIENT') {
+    // client-side auth, not really used currently
     app.use(async (req: express.Request, res: express.Response, next) => {
       if (req.headers.authorization) {
         try {
@@ -111,9 +116,9 @@ export default async function createApp(): Promise<express.Express> {
       next();
     });
   }
-    
+
   app.use('/api/v1', router);
-  
+
   // global error handler
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (!err.logged)
@@ -125,20 +130,20 @@ export default async function createApp(): Promise<express.Express> {
   router.get('/api/*', (req: express.Request, res: express.Response) => {
     res.sendStatus(StatusCodes.NOT_FOUND);
   });
-  
+
   if (HEALTH_CHECK_URL) {
     app.get(HEALTH_CHECK_URL, (req, res) => {
       res.type('text').send('ok');
     });
   }
-  
+
   // support of client-side routing in SPA apps (all routes that are not api lead to root)
   app.get('/*', function (req, res) {
     res.sendFile('index.html', { root:  staticFilesDir });
   });
 
   logger.debug(`Express app created`);
-  return app;  
+  return app;
 }
 
 process.on('unhandledRejection', (reason, p) => {

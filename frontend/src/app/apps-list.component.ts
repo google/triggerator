@@ -30,7 +30,7 @@ import { ConfigService } from './shared/config.service';
 })
 export class AppsListComponent extends ComponentBase implements OnInit {
   loading: boolean;
-  displayedColumns: string[] = ['position', 'name', 'spreadsheetId', 'version', 'status', 'scheduled', 'actions'];
+  displayedColumns: string[] = ['position', 'name', 'spreadsheetId', 'version', 'status', 'scheduled', 'lastModified', 'actions'];
   dataSource: MatTableDataSource<AppInfo>;
 
   mouseOverIndex;
@@ -64,7 +64,8 @@ export class AppsListComponent extends ComponentBase implements OnInit {
       this.loading = false;
     }
   }
-  
+
+  /** Recalculates row numbers */
   updateRowNums() {
     let i = 1;
     this.dataSource.data.forEach(el => el["position"] = i++);
@@ -94,6 +95,22 @@ export class AppsListComponent extends ComponentBase implements OnInit {
       this.dataSource.data.splice(this.dataSource.data.indexOf(config), 1);
       this.dataSource.data = this.dataSource.data;
       this.updateRowNums();
+    }
+  }
+
+  async cloneConfig(config: AppInfo) {
+    this.errorMessage = null;
+    this.loading = true;
+    try {
+      const appInfo = await this.configService.cloneApp(config.configId);
+      this.dataSource.data.push(appInfo);
+      this.dataSource.data = this.dataSource.data;
+      this.updateRowNums();
+    } catch (e) {
+      this.handleApiError('An error occured during application cloning', e);
+      return;
+    } finally {
+      this.loading = false;
     }
   }
 

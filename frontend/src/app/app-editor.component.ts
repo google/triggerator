@@ -564,7 +564,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     const dialogRef = this.confirm(`Are you sure to delete the feed "${feed.name}"?`);
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        console.log(result);
+        //console.log(result);
         const original = _.cloneDeep(this.config);
         this.config.feedInfo.feeds.splice(this.config.feedInfo.feeds.indexOf(feed), 1);
         this.dataSourceFeeds.data = this.config.feedInfo.feeds;
