@@ -21,7 +21,7 @@ import logger from './logger-winston';
 export async function uploadFile(filePath: string, destinationUrl: string): Promise<string> {
   if (!destinationUrl || !destinationUrl.startsWith("drive://"))
     throw new Error(`[GoogleDriveFacade] destination (${destinationUrl}) is in incorrect format, expected 'drive://folderid'`);
-    
+
   let folderId = destinationUrl.substring("drive://".length);
   const driveAPI = google.drive({ version: 'v3' });
   const res = await driveAPI.files.create(
@@ -31,7 +31,7 @@ export async function uploadFile(filePath: string, destinationUrl: string): Prom
         parents: [folderId]
       },
       media: {
-        body: fs.createReadStream(filePath),        
+        body: fs.createReadStream(filePath),
       },
       fields: 'id'
     }
@@ -105,7 +105,7 @@ export async function importCsvAsSpreadsheet(filePath: string, title: string, ow
       });
     } catch (e) {
       logger.warn(`Failed to transfer ownership for documenet ${fileId}: ${e.message}`, e);
-      // there could be a case when transfering ownership doesn't work - 
+      // there could be a case when transfering ownership doesn't work -
       // "Sorry, cannot transfer ownership to xxx@xxx.com. Ownership can only be transferred to another user in the same organization as the current owner."
       // so in a case of error just share the doc with the user instead
       (await driveAPI.permissions.create({
@@ -121,8 +121,21 @@ export async function importCsvAsSpreadsheet(filePath: string, title: string, ow
   return fileId;
 }
 
+export function shareFile(fileId: string, userEmail: string): Promise<any> {
+  let driveAPI = google.drive({ version: "v3" });
+  return driveAPI.permissions.create({
+    fileId: fileId,
+    requestBody: {
+      role: 'writer',
+      type: 'user',
+      emailAddress: userEmail
+    }
+  });
+}
+
 export default {
   importCsvAsSpreadsheet,
   downloadFile,
-  uploadFile
+  uploadFile,
+  shareFile
 };

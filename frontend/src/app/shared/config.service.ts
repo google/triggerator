@@ -46,6 +46,10 @@ export class ConfigService {
     return this.backendService.postApi(`/apps/${appId}/delete`);
   }
 
+  cloneApp(appId: string) {
+    return this.backendService.postApi(`/apps/${appId}/clone`);
+  }
+
   getConfig(configId: string): Promise<Config> {
     return this.backendService.getApi<Config>('/config/' + configId);
   }
@@ -94,8 +98,8 @@ export class ConfigService {
   runExecution(configId: string, options?: { debugLogging?: boolean, sendNotification?: boolean, forceUpdate?: boolean, dryRun?: boolean }): Observable<string> {
     return this.backendService.getEventsLegacy(
       `/engine/${configId}/run/legacy`,
-      { 
-        debug: options?.debugLogging, 
+      {
+        debug: options?.debugLogging,
         notify: options?.sendNotification,
         forceUpdate: options?.forceUpdate,
         dryRun: options?.dryRun
@@ -110,5 +114,9 @@ export class ConfigService {
     } else {
       return this.backendService.getApi(`/reports/${configId}/activationtimes`, options);
     }
+  }
+
+  shareSpreadsheets() {
+    return this.backendService.postApi('/settings/reshare');
   }
 }

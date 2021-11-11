@@ -1,6 +1,13 @@
 # Changelog
 
 >NOTE: BE is backend (server application), FE - frontend (client applciation)
+
+## 2021-11-12 (1.7.0)
+* Cloning applications
+* Ability to share spreadsheets with current user from application ('Reshare' on Settings page)
+* Prevent static files caching (ease updating app)
+* Display configuration last update timestamps
+
 ## 2021-10-05 (1.6.0)
 * Support for multiple YouTube-creatives (a YT rule can have a list of creatives not just one)
 

@@ -179,13 +179,24 @@ export default class ConfigInfo implements Config {
 }
 
 export interface AppInfo {
+  /** Configuration title */
   name?: string;
+  /** Configuration id (equals to spreadsheet id) */
   configId: string;
+  /** Version of configuration (currently always "1") */
   version: string;
+  /** Descriptive status of last run */
   status: string;
+  /** Description of last run status (timestamp) */
   statusDetails?: string;
+  /** The last time the file was modified by anyone (RFC 3339 date-time) */
+  lastModified?: string;
+  /** The last user to modify the file (email) */
+  lastModifiedBy?: string;
+  /** Description of scheduled job (in Cloud Scheduler) */
   job?: JobInfo;
 }
+
 export interface AppList {
   spreadsheetId: string;
   configurations: Array<AppInfo>;

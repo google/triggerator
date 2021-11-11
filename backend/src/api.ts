@@ -89,6 +89,17 @@ router.post('/apps/:id/delete', async (req: express.Request, res: express.Respon
   }
 });
 
+router.post('/apps/:id/clone', async (req: express.Request, res: express.Response, next) => {
+  let appId = req.params.id;
+  let cfgSvc = new ConfigService(req.log);
+  try {
+    let result = await cfgSvc.cloneApplication(MASTER_SPREADSHEET, req.user, appId);
+    res.status(200).send(result);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get('/config/:id', async (req: express.Request, res: express.Response, next) => {
   let configId = <string>req.params.id;
   req.log.info(`[WebApi] Fetching configuration from ${configId} spreadsheet`);
@@ -705,6 +716,39 @@ router.get('/settings', async (req: express.Request, res: express.Response) => {
   res.send({ settings });
 });
 
+router.post('/settings/reshare', async (req: express.Request, res: express.Response) => {
+  let masterSpreadsheetId = MASTER_SPREADSHEET;
+  if (!masterSpreadsheetId) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: "Server hasn't been fully configured, master spreadsheet id is missing" });
+    return;
+  }
+  let userEmail = req.user;
+  if (!userEmail) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: "Couldn't detect user" });
+    return;
+  }
+  req.log.info(`Resharing all spreadsheets with ${userEmail}`);
+  try {
+    let tasks = [];
+    tasks.push(GoogleDriveFacade.shareFile(MASTER_SPREADSHEET, userEmail));
+    let cfgSvc = new ConfigService(req.log);
+    let apps: AppList = await cfgSvc.loadApplicationList(masterSpreadsheetId);
+    for (const app of apps.configurations) {
+      tasks.push(GoogleDriveFacade.shareFile(app.configId, userEmail));
+      req.log.debug(`Sharing ${app.configId} doc`);
+    }
+    req.log.debug(`Waiting all sharing operations to complete`);
+    await Promise.all(tasks);
+    req.log.info(`Shared ${tasks.length} docs`);
+  } catch (e) {
+    if (!e.logged)
+      req.log.error(`[WebApi] Resharing failed: ${e.message}`, e);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message, details: JSON.stringify(e) });
+    return;
+  }
+  res.status(StatusCodes.OK).send({});
+});
+
 router.get('/reports/:id/activationtimes', async (req: express.Request, res: express.Response) => {
   let appId = <string>req.params.id;
   const logger = req.log;
@@ -737,7 +781,7 @@ router.get('/reports/:id/activationtimes', async (req: express.Request, res: exp
     csvText = await reportSvc.buildLineItemActiveTimeSummaryReport(appId, fromDate, toDate, excludeEmpty);
   } catch (e) {
     if (!e.logged)
-      logger.error(`[WebApi][ Report generation failed: ${e.message}`, e);
+      logger.error(`[WebApi] Report generation failed: ${e.message}`, e);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: e.message, details: JSON.stringify(e) });
     return;
   }
