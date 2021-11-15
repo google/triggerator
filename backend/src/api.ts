@@ -191,6 +191,15 @@ router.get('/config/:id/feeds/_all_', async (req: express.Request, res: express.
     res.status(StatusCodes.NO_CONTENT).send({ message: "Configuration doesn't contain any feeds" });
     return;
   }
+  let errors = ConfigValidator.validateFeeds(config.feedInfo!);
+  if (errors.length) {
+    const err = new Error(`There are errors in configuration: ` +
+      errors.map(e => e.message).join(', \n')
+    );
+    req.log.error(err);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: err.message });
+    return;
+  }
   req.log.info(`[WebApi][GenerateSdf] Loading joined feeds data`);
   let feedSvc = new FeedService(req.log);
   try {

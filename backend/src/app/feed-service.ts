@@ -614,6 +614,9 @@ export default class FeedService {
         result.push(newRow);
       } // otherwise just skip it
     }
+    if (feedLeft.recordSet.rowCount > 0 && result.length === 0) {
+      throw new Error(`Joining '${feedRight.name}' feed produced no data`);
+    }
 
     // // build an index for left feed by ext_key:
     // let lookup: Record<string, Record<string,any>> = {};

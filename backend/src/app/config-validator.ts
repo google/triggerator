@@ -68,8 +68,6 @@ export default class ConfigValidator {
         // TODO: key_columns задана если больше 2
         if (!feed.type)
           errors.push({ message: `The '${feed.name}' feed's type is not specified` });
-        if (!feed.key_column && feedInfo.feeds.length > 1)
-          errors.push({ message: `The '${feed.name}' feed has no key column specified while there more than 1 feed` });
         if (feed.external_key) {
           let ext_feed_name = feed.external_key.substring(0, feed.external_key.indexOf("."));
           let ext_feed = feedInfo.feeds.find(f => f.name === ext_feed_name);
@@ -78,17 +76,24 @@ export default class ConfigValidator {
           } else if (ext_feed.name === feed.name) {
             errors.push({ message: `The '${feed.name}' feed refers to itself by its external key` });
           }
+          // if a feed has a external_key, it must have a key
+          if (!feed.key_column) {
+            errors.push({ message: `The '${feed.name}' feed has an external key but has no key column` });
+          }
         }
       }
       if (feedInfo.feeds.length > 1 && feedInfo.feeds.filter(f => !f.external_key).length > 1) {
         // there can be only one feed without external_key
         errors.push({ message: `Found several feeds without external key` });
       }
+      if (feedInfo.feeds.length > 1 && feedInfo.feeds.filter(f => !f.external_key).length == 0) {
+        errors.push({ message: `Among several feeds there should be one and only one without external key` });
+      }
       // TODO: ссылки ключами не образуют циклов (надо построить граф)
     }
     return errors;
   }
-  
+
   static validateRules(rules: RuleInfo[]): ValidationError[] {
     let errors: ValidationError[] = [];
     for (const rule of rules) {
@@ -118,7 +123,7 @@ export default class ConfigValidator {
       }
       // If IO doesn't depend on rule then LI must depend on rule
       if (io_templ.includes(TemplateMacros.row_name) && !io_templ.includes(TemplateMacros.rule_name) && !li_templ.includes(TemplateMacros.rule_name)) {
-        errors.push({ 
+        errors.push({
           message: `If IO template doesn't depend on rule (no rule_name macro) then LI template must depend on rule but it doesn't`
         });
       }
@@ -140,7 +145,7 @@ export default class ConfigValidator {
     }
     return errors;
   }
-  
+
   /**
    * Validate a configuration for generating SDF with new/updated campaign.
    * @param config Configuration to validate
