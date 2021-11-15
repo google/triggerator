@@ -19,16 +19,59 @@ import ConfigValidator from '../app/config-validator';
 import { FeedData, RecordSet } from '../types/types';
 
 suite('ConfigValidator', () => {
-  test('validate config: feeds', function () {
+  test('validate feeds config: feed should be specified', function () {
     // no feeds
     let errors = ConfigValidator.validateFeeds({});
     assert.strictEqual(errors.length, 1);
     // no feeds
     errors = ConfigValidator.validateFeeds({ feeds: [] });
     assert.strictEqual(errors.length, 1);
-    // no feeds
-    errors = ConfigValidator.validateFeeds({ feeds: [{ type: FeedType.Auto, url: 'url', name: "feed1" }] });
+  });
+
+  test('validate feeds config: required fields', function () {
+    // no name column specified
+    let errors = ConfigValidator.validateFeeds({ feeds: [{ type: FeedType.Auto, url: 'url', name: "feed1" }] });
     assert.strictEqual(errors.length, 1);
+    assert.strictEqual(errors[0].message, "Feed name column is not specified");
+  });
+
+  test('validate feeds config: only one feed can be without external key', () => {
+    let config = {
+      name_column: "name",
+      feeds: [
+        { type: FeedType.Auto, url: 'url', name: "feed1" },
+        { type: FeedType.Auto, url: 'url', name: "feed2" }
+      ]
+    };
+    let errors = ConfigValidator.validateFeeds(config);
+    assert.strictEqual(errors.length, 1);
+    assert.strictEqual(errors[0].message, "Found several feeds without external key");
+  });
+
+  test('validate feeds config: one feed should be without external key', () => {
+    let config = {
+      name_column: "name",
+      feeds: [
+        { type: FeedType.Auto, url: 'url', name: "feed1", external_key: "feed2.id", key_column: "id" },
+        { type: FeedType.Auto, url: 'url', name: "feed2", external_key: "feed1.id", key_column: "id" },
+      ]
+    };
+    let errors = ConfigValidator.validateFeeds(config);
+    assert.strictEqual(errors.length, 1);
+    assert.strictEqual(errors[0].message, "Among several feeds there should be one and only one without external key");
+  });
+
+  test('validate feeds config: feed with external key should have key_column', () => {
+    let config = {
+      name_column: "name",
+      feeds: [
+        { type: FeedType.Auto, url: 'url', name: "feed1" },
+        { type: FeedType.Auto, url: 'url', name: "feed2", external_key: "feed1.id" },
+      ]
+    };
+    let errors = ConfigValidator.validateFeeds(config);
+    assert.strictEqual(errors.length, 1);
+    assert.strictEqual(errors[0].message, "The 'feed2' feed has an external key but has no key column");
   });
 
   test('validateGeneratingConfiguration', function () {

@@ -48,7 +48,7 @@ suite('ConfigService', () => {
           type: FeedType.JSONL,
           url: "http://bulk.openweathermap.org/snapshot/REDACTED_KEY/weather_14.json.gz",
           charset: "",
-          key_column: "city.id",
+          key_column: undefined,
           external_key: undefined
         }, {
           name: "extra",
@@ -163,7 +163,7 @@ suite('ConfigService', () => {
             type: FeedType.JSONL,
             url: "http://bulk.openweathermap.org/snapshot/REDACTED_KEY/weather_14.json.gz",
             charset: "",
-            key_column: "city.id",
+            key_column: undefined,
             external_key: undefined
           }, {
             name: "extra",
