@@ -34,6 +34,7 @@ import { Observable, Subject } from 'rxjs';
 import { map, startWith, takeUntil } from 'rxjs/operators';
 import { ObjectDetailsDialogComponent } from './components/object-details-dialog.component';
 import { ConfirmationDialogComponent, ConfirmationDialogModes } from './components/confirmation-dialog.component';
+import { FeedJoinWizardDialogComponent } from './feed-join-wizard-dialog.component';
 
 @Component({
   selector: 'app-app-editor',
@@ -642,6 +643,49 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     }
   }
 
+  async defineJoins() {
+    let columns_all = {};
+    let feeds_to_load = [];
+    for (const feed of this.config.feedInfo.feeds) {
+      let columns = this.feedDataColumns[feed.name];
+      if (columns) {
+        columns_all[feed.name] = columns;
+      } else {
+        feeds_to_load.push(feed);
+      }
+    }
+    if (feeds_to_load.length > 0) {
+      for (const feed of feeds_to_load) {
+        await this.loadFeed(feed);
+        let columns = this.feedDataColumns[feed.name];
+        if (columns) {
+          columns_all[feed.name] = columns;
+        } else {
+          console.log(`Could not load columns for feed ${feed.name}`);
+        }
+      }
+    }
+    const dialogRef = this.dialog.open(FeedJoinWizardDialogComponent, {
+      //width: '600px',
+      data: { feedInfo: this.config.feedInfo, columns: columns_all }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        console.log(result);
+        const original = _.cloneDeep(this.config);
+        for (const feed_result of result.feeds) {
+          let feed: FeedInfo = this.config.feedInfo.feeds.find(f => f.name === feed_result.name);
+          if (feed) {
+            feed.key_column = feed_result.key_column;
+            feed.external_key = feed_result.external_key;
+          }
+        }
+        this.saveFeeds(original);
+      }
+    });
+  }
+
   getFeedDisplayUrl(feed: FeedInfo): string {
     // https://console.cloud.google.com/bigquery?project=triggerator-sd&page=table&d=test&p=triggerator-sd&t=gsk-feed
     if (feed.type === FeedType.GoogleCloudBigQuery) {
@@ -670,6 +714,7 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     }
     return feed.url;
   }
+
   tabsFeedData = ['Result'];
   tabsFeedDataSelected = 0;
   showFeedData(feedData: Record<string, any>[], dataSetName: string) {

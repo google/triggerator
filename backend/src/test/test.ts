@@ -15,8 +15,6 @@
  */
 import fs from 'fs';
 import path from 'path';
-import {Stream, pipeline} from 'stream';
-import _ from 'lodash';
 import { google } from 'googleapis';
 import ConfigService from '../app/config-service';
 import FeedService from '../app/feed-service';
@@ -164,7 +162,7 @@ async function generate_sdf_from_template() {
     }
   };
   let dv_facade = new DV360Facade(winston, {useLocalCache: true});
-  let ruleEvaluator = new RuleEvaluator();       
+  let ruleEvaluator = new RuleEvaluator();
   let sdf_svc = new SdfService(config, winston, ruleEvaluator, dv_facade);
   let values = [
     { id: 1, name: 'Moscow', temp: 0},
@@ -180,10 +178,10 @@ async function generate_sdf_from_template() {
 
 async function test_drive() {
   let feedSvc = new FeedService(winston);
-  let feedData = await feedSvc.loadFromDrive({ 
-    url: 'drive://1JWz87cdPk74tEYBPDQoG8-BVTFO_aQyk/weather.json', 
-    name: 'test', 
-    type: FeedType.JSON, 
+  let feedData = await feedSvc.loadFromDrive({
+    url: 'drive://1JWz87cdPk74tEYBPDQoG8-BVTFO_aQyk/weather.json',
+    name: 'test',
+    type: FeedType.JSON,
     key_column: 'city.id'
   });
   console.log(JSON.stringify(feedData));
