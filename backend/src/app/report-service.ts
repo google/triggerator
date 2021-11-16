@@ -17,7 +17,6 @@ import { Log, Logging } from '@google-cloud/logging';
 import { Entry, LogEntry } from '@google-cloud/logging/build/src/entry';
 import { GoogleAuth } from 'google-auth-library';
 import { sheets_v4, google } from 'googleapis';
-import _ from 'lodash';
 import { Logger } from '../types/logger';
 import { getProjectId } from './cloud-utils';
 import { CLOUD_LOG_NAME } from './logger-winston';
@@ -127,7 +126,7 @@ export default class ReportService {
       filter: `timestamp >= "${fromDate.toISOString()}" AND timestamp <= "${toDate.toISOString()}"`,
       orderBy: 'timestamp asc',
     });
-    
+
     let result: Report = {};
     entries.forEach((entry: Entry) => {
       const metadata: LogEntry = entry.metadata;

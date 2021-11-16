@@ -18,7 +18,6 @@ import path from 'path';
 import yazl from 'yazl';
 import csv_stringify from 'csv-stringify/lib/sync';
 import csvStringify from 'csv-stringify';
-import _ from 'lodash';
 import { Config } from '../types/config';
 import { RuleEvaluator } from './rule-engine';
 import { FeedData, SdfFull } from '../types/types';
@@ -43,19 +42,19 @@ export default class SdfService {
     quoted: true
   };
 
-  constructor(private config: Config, 
+  constructor(private config: Config,
     private logger: Logger,
     private ruleEvaluator: RuleEvaluator,
-    private dv_facade: DV360Facade) 
-  { 
+    private dv_facade: DV360Facade)
+  {
     if (!logger) throw new Error('[SdfService] ArgumentException: Required argument logger is missing');
     if (!ruleEvaluator) throw new Error('[SdfService] ArgumentException: Required argument ruleEvaluator is missing');
     if (!dv_facade) throw new Error('[SdfService] ArgumentException: Required argument dv_facade is missing');
   }
 
   async generateSdf(feedData: FeedData, options: GenerateSdfOptions): Promise<string> {
-    let sdf = await this.generateFromTemplate(feedData, 
-      options.update || false, 
+    let sdf = await this.generateFromTemplate(feedData,
+      options.update || false,
       options.autoActivate || false,
       options.startDate,
       options.endDate
@@ -100,7 +99,7 @@ export default class SdfService {
    * @param feedData A feed data
    * @param update true for updating an existing campaign
    * @param autoActivate true for activating all created campaign
-   * @returns 
+   * @returns
    */
   async generateFromTemplate(feedData: FeedData, update: boolean, autoActivate: boolean, startDate?: Date, endDate?: Date): Promise<SdfFull> {
     // NOTE: we assume that config has been validated already (via ConfigService)
@@ -137,7 +136,7 @@ export default class SdfService {
     if (endDate && !isNaN(endDate.valueOf())) {
       generator.endDate = endDate;
     }
-    
+
     return generator.generate();
   }
 

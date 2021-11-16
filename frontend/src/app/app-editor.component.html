@@ -439,6 +439,9 @@
               (change)="this.evaluateRulesWithFeeds=!this.evaluateRulesWithFeeds"
               matTooltip="Evaluate rules (see below) with for every row in joined feed data" class="ml-3">Evaluate rules
             </mat-checkbox>
+            <button mat-raised-button (click)="defineJoins()" color="accent" class="mx-5">
+              <mat-icon>join_left</mat-icon> Define joins
+            </button>
           </div>
           <div class="col text-right">
             <button mat-raised-button color="accent" (click)='createFeed()'>

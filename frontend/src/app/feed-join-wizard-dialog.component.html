@@ -1,0 +1,57 @@
+<h1 mat-dialog-title>Define feed joins</h1>
+<div class="row">
+  <div class="col-8">
+    <div class="alert alert-dark" *ngIf="!linking">Choose a feed's column to link from</div>
+    <div class="alert alert-dark" *ngIf="linking">Now choose a target column to link to</div>
+  </div>
+  <div class="col-1">
+    <button mat-raised-button *ngIf="linking" (click)="cancelLinking()">
+      <mat-icon>cancel</mat-icon> Cancel
+    </button>
+  </div>
+</div>
+<form [formGroup]="form" novalidate>
+  <div class="row">
+    <span formArrayName="feeds" *ngFor="let feed of feeds.controls; let i=index">
+      <div class="col">
+        <mat-card [formGroupName]="i" class="my-2">
+          <mat-card-title>
+            {{feed.get("name").value }}
+          </mat-card-title>
+          <div class="row divider">
+            <div class="col">
+              <mat-divider [inset]="true"></mat-divider>
+            </div>
+          </div>
+          <mat-list>
+            <mat-list-item *ngFor="let col of feed.get('columns').value; let j=index">
+              <span matLine>{{ col }}
+                <button mat-raised-button *ngIf="!linking" (click)="startLinking(feed, col)">
+                  <mat-icon>add_link</mat-icon> Link from
+                </button>
+                <button mat-raised-button *ngIf="linking && !isSameFeed(feed)" (click)="commitLinking(feed, col)">
+                  <mat-icon>vertical_align_bottom</mat-icon> Link to
+                </button>
+              </span>
+              <span matLine *ngIf="feed.get('key_column').value === col">&nbsp;->{{feed.get('external_key').value
+                }}</span>
+            </mat-list-item>
+          </mat-list>
+          <div class="row">
+            <div class="col">
+              <button mat-raised-button *ngIf="!linking" (click)="clearLink(feed)">
+                <mat-icon>clear</mat-icon> Clear link
+              </button>
+            </div>
+          </div>
+        </mat-card>
+      </div>
+    </span>
+  </div>
+</form>
+<div class="row">
+  <div class="col text-right">
+    <button mat-raised-button color="accent" (click)='save()' [disabled]="!form.valid">Save</button>
+    <button mat-raised-button mat-dialog-close style="margin-left: 20px">Cancel</button>
+  </div>
+</div>

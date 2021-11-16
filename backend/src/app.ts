@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import path from 'path';
-import _ from 'lodash';
 import express from 'express';
 import { StatusCodes } from 'http-status-codes';
 import logger from './app/logger-winston';

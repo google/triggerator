@@ -2,6 +2,9 @@
 
 >NOTE: BE is backend (server application), FE - frontend (client applciation)
 
+## 2021-11-16 (1.8.0)
+* UI for defining joins of feeds
+
 ## 2021-11-12 (1.7.0)
 * Cloning applications
 * Ability to share spreadsheets with current user from application ('Reshare' on Settings page)

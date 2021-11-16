@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import { sheets_v4, google } from 'googleapis';
-import _ from 'lodash';
 import { SERVICE_ACCOUNT } from '../env';
 import { FeedInfo, FeedType, RuleInfo, RuleState, Config, AppList, CustomFields, AppInfo, FeedConfig, SdfElementType, JobInfo } from '../types/config';
 import { FeedData } from '../types/types';
