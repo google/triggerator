@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,9 @@ import winston from 'winston';
       async updateLineItemStatus(advertiserId: string, liId: string, status: 'active' | 'paused') {},
       async downloadSdf(advertiserId: string, campaignId: string, options?: SdfDownloadOptions | null): Promise<SdfFull> {
         return {
-          advertiserId: advertiserId, 
-          campaigns: RecordSet. , 
-          insertionOrders, 
+          advertiserId: advertiserId,
+          campaigns: RecordSet. ,
+          insertionOrders,
           lineItems,
           adGroups,
           ads
@@ -181,6 +181,6 @@ suite('SdfService', function() {
    * 1. template IO is non-TrV and doesn't depend on feed (no {row_name} in its name template)
    * 2. template IO is non-TrV but depends on feed (has {row_name} in its name template)
    * 3. template IO is TrV and ---TODO: what? can it depend and not depend? or shoult only depend or only not to depend?
-   * 
+   *
    */
 });

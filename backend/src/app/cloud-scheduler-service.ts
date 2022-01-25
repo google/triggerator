@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@ let schedulerAPI = google.cloudscheduler({ version: "v1" });
 const COMPONENT = 'CloudSchedulerService';
 
 export default class SchedulerService {
-  constructor(private logger: Logger) {    
+  constructor(private logger: Logger) {
   }
 
   async getJobParent(): Promise<string> {
     const projectId = await getProjectId();
     const locationId: string = await this.getLocationId(projectId);// Or just hardcode: GAE_LOCATION; ?
-    const parent = `projects/${projectId}/locations/${locationId}`; 
+    const parent = `projects/${projectId}/locations/${locationId}`;
     return parent;
   }
 
@@ -38,7 +38,7 @@ export default class SchedulerService {
     const jobName = `${parent}/jobs/${appId}`;
     return jobName;
   }
-  
+
   async getJob(jobName: string): Promise<JobInfo | null> {
     try {
       let job = (await schedulerAPI.projects.locations.jobs.get({
@@ -76,13 +76,13 @@ export default class SchedulerService {
       throw e;
     }
   }
-  
+
 
   async getLocationId(projectId: string) {
     // fetch AppEngine's location via Admin API
     // TODO: I'm not sure we should do this, as anyway here's some sort of hard-code (adding "1" to region)
     // Then currently (at 2021 April) there're just two locations for Scheduler: us-west1 and europe-west1.
-    // Maybe it's easier to get from ENV always: 
+    // Maybe it's easier to get from ENV always:
     if (GAE_LOCATION)
       return GAE_LOCATION;
     try {
@@ -94,10 +94,10 @@ export default class SchedulerService {
       throw e;
     }
   }
-  
+
   async updateJob(appId: string, jobInfo: JobInfo) {
     this.logger.info(`Updating scheduler job for configuration ${appId}`, {component: COMPONENT});
-  
+
     const jobParent = await this.getJobParent();
     const jobName = `${jobParent}/jobs/${appId}`;
     let jobInfoExist = await this.getJob(jobName);

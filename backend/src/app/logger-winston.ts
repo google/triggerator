@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ const transports: winston.transport[] = []
 if ((IS_GAE || CLOUD_LOGGING) && CLOUD_LOGGING !== false) {
   // we're in GAE, or Cloud Logging excplicitly enabled and it wasn't disabled
   transports.push(new LoggingWinston({
-    projectId: process.env.GOOGLE_CLOUD_PROJECT, 
+    projectId: process.env.GOOGLE_CLOUD_PROJECT,
     keyFilename: argv.keyFile,
     logName: CLOUD_LOG_NAME,
     labels: {
@@ -58,7 +58,7 @@ if (!IS_GAE || transports.length === 0) {
 }
 
 const logger = winston.createLogger({
-  level: LOG_LEVEL, // NOTE: we use same log level for all transports 
+  level: LOG_LEVEL, // NOTE: we use same log level for all transports
   format: format.combine(
     format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
     // format to add 'component' meta value into log message (prepending '[$component] ')
@@ -75,7 +75,7 @@ export default logger;
 
 // Logger adapter for morgan (logging Express middleware)
 // We used to use morgan for logging http requests (api calls) before,
-// but with cloud-logging it seems excessive. 
+// but with cloud-logging it seems excessive.
 // before enabling morgan should be installed: `npm i morgan`
 // const myStream = {
 //   write: (text: string) => {

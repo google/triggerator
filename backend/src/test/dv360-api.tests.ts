@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ suite('DV360Facade', () => {
     this.timeout(50000);
     let advertiserId = "506732";
     let campaignId = "3242703";
-    
+
     let dv = new DV360Facade(winston);
     let sdf = await dv.downloadSdf(advertiserId, campaignId);
     console.log('Campaigns count: ' + JSON.stringify(sdf.campaigns?.rowCount));

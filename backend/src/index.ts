@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import createApp from './app';
 import { getProjectId } from './app/cloud-utils';
 
 async function mainServer() {
-  // NOTE: setup authetication for server-to-server communication 
+  // NOTE: setup authetication for server-to-server communication
   // (i.e. accessing other GCP services)
   // If keyFile provided then we'll use the specified service account, otherwise
   // we'll use so called Application Default Credentials (see https://github.com/googleapis/google-auth-library-nodejs#choosing-the-correct-credential-type-automatically)
   // NOTE: for running server under a user account (it's possible) see code in test/test.ts,fixture.ts,auth.ts (it requires a OAuth flow)
   let keyFile = argv.keyFile;
-  // NOTE: we should set up google.options with auth in any way (even without keyFile), 
+  // NOTE: we should set up google.options with auth in any way (even without keyFile),
   //       otherwise accessing APIs will fail with "The request is missing a valid API key" error
   const auth = new google.auth.GoogleAuth({
     keyFile: keyFile,
@@ -39,7 +39,7 @@ async function mainServer() {
   google.options({
     auth: auth
   });
-  
+
   const projectId = await getProjectId();
   const app = await createApp();
   app.listen(PORT, () => {

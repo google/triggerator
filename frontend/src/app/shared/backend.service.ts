@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,9 @@ export class BackendService {
   /**
    * Execution an long-running operation via legacy request/response pattern (two methods start and querystatus)
    * when Server-Sent Event are not supported (e.g. GAE).
-   * @param url 
-   * @param params 
-   * @returns 
+   * @param url
+   * @param params
+   * @returns
    */
   getEventsLegacy(url: string, params?: Record<string, any>): Observable<string> {
     const subject = new Subject<string>();
@@ -89,9 +89,9 @@ export class BackendService {
 
   /**
    * Execution an long-running operation via Server-Sent Events
-   * @param url 
-   * @param params 
-   * @returns 
+   * @param url
+   * @param params
+   * @returns
    */
   getEvents(url: string, params?: Record<string, any>): Observable<string> {
     const subject = new Subject<string>();

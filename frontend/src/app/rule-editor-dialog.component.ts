@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ export class RuleEditorDialogComponent extends ComponentBase implements OnInit {
         // editing an existing
         this.updateRuleData(rule);
       }
-      // NOTE: do NOT pass original config because we don't need to calc the diff for rules array, 
+      // NOTE: do NOT pass original config because we don't need to calc the diff for rules array,
       // we overwrite rules (and feeds) array on every save
       try {
         await this.configService.saveConfig(this.configId, { rules }, null);
