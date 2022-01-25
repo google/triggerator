@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ export default class DV360Facade {
     })).data;
     // NOTE: the format of log message is important, it's used in reporting (search before changing)
     this.logger.info(`[DV360Facade] LineItem ${li.name}(${liId}) now has entity status ${li.entityStatus}.`);
-    
+
     /*
         // request body parameters:
         //   "advertiserId": "my_advertiserId",
@@ -219,7 +219,7 @@ export default class DV360Facade {
               "FILE_TYPE_AD"
             ],
             "filterType": "FILTER_TYPE_CAMPAIGN_ID",
-            "filterIds": [campaignId]          
+            "filterIds": [campaignId]
           },
           //version: "SDF_VERSION_5_3" //SDF_VERSION_UNSPECIFIED
         },
@@ -300,7 +300,7 @@ export default class DV360Facade {
               //   resolve(strData);
               // }
             });
-            // All files in archive are expeteced to have names like SDF-XXX.csv, 
+            // All files in archive are expeteced to have names like SDF-XXX.csv,
             // where XXX either: Campaigns, InsertionOrders, LineItems, AdGroupAds, AdGroupAds
             let match = /SDF\-([^.]+)/.exec(entry.fileName);
             if (!match || !match.length) {

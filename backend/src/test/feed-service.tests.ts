@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,7 +206,7 @@ suite('FeedService', () => {
       };
       let feedData = await feedService.loadFeed(feedInfo);
       console.log(feedData.getRow(0)['Region']);
-      assert.strictEqual(feedData.getRow(0)['Region'], 'Республика Хакасия');      
+      assert.strictEqual(feedData.getRow(0)['Region'], 'Республика Хакасия');
     });
 
     test('load non existing file', async function () {
@@ -295,7 +295,7 @@ suite('FeedService', () => {
       };
       let feedData = await feedService.loadFeed(feedInfo);
       console.log(feedData.getRow(0)['Region']);
-      assert.strictEqual(feedData.getRow(0)['Region'], 'Республика Хакасия');      
+      assert.strictEqual(feedData.getRow(0)['Region'], 'Республика Хакасия');
     });
   });
 
@@ -448,7 +448,7 @@ suite('FeedService', () => {
             524901	Moscow	524901	0.5362506897
             522941	Neftekumsk	522941	0.3007998106
             523812	Mytishchi	523812	0.6217774466
-            */            
+            */
           }, {
             name: 'sheet1',
             url: 'https://docs.google.com/spreadsheets/d/1KH8OlT9OqLWdktZ6zPSNs9caMq53zcDvs4aFWavkgtg/edit',
@@ -461,12 +461,12 @@ suite('FeedService', () => {
             521118	Nizhnekamsk	521118	0.565594712
             520494	Nizhniy Tagil	520494	0.7539554041
             524901	Moscow	524901	0.5362506897
-            */            
+            */
           }
         ],
         name_column: "city_name"
       }
-      let feedData = await feedService.loadAll(feedConfig);    
+      let feedData = await feedService.loadAll(feedConfig);
       assert.deepStrictEqual(feedData.recordSet.values, [
         {
           city_id: 524901,
@@ -494,12 +494,12 @@ suite('FeedService', () => {
             type: FeedType.GoogleSpreadsheet,
             key_column: 'city_id'
             /* The spreadsheet (shared globaly) is (Sheet "JointTest1"):
-            city_id	temp  
-            452949	-20   
-            521118	-30   
-            520494	-40   
-            524901	-10   
-            */            
+            city_id	temp
+            452949	-20
+            521118	-30
+            520494	-40
+            524901	-10
+            */
           }, {
             name: 'city',
             url: '1KH8OlT9OqLWdktZ6zPSNs9caMq53zcDvs4aFWavkgtg,JoinTest2!A1:Z5',
@@ -509,7 +509,7 @@ suite('FeedService', () => {
             /* The spreadsheet (shared globaly) is (Sheet "JointTest2"):
             id	    city          country_id
             520494	Nizhniy Tagil 7
-            524901	Moscow        7   
+            524901	Moscow        7
             */
           }, {
             // NOTE that it's the very same sheet actually, but different rows
@@ -520,13 +520,13 @@ suite('FeedService', () => {
             external_key: 'city.country_id'
             /* The spreadsheet (shared globaly) is (Sheet "JointTest2"):
             id	country
-            7	  Russia        
-            */            
+            7	  Russia
+            */
           }
         ],
         name_column: "city"
       }
-      let feedData = await feedService.loadAll(feedConfig);    
+      let feedData = await feedService.loadAll(feedConfig);
       assert.deepStrictEqual(feedData.recordSet.values, [
         {
           city_id: 520494,

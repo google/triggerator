@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ export async function authorizeAsync(credentials: any, reauthenticate?: boolean)
   if (reauthenticate) {
     return getAuthenticatedClient(oAuth2Client);
   }
-  try {    
+  try {
     token = fs.readFileSync(TOKEN_PATH, 'utf8');
   } catch (e) {
     return getAuthenticatedClient(oAuth2Client);

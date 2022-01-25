@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ import argv from './argv';
 
 /**
  * App Engine for an environemnt variable in app.yaml with empty value return 'None',
- * we'are converting 'None' to '' to simplify things. 
+ * we'are converting 'None' to '' to simplify things.
  * @param envvar an environment variable's value
- * @returns 
+ * @returns
  */
 function getVal(envvar: any) {
   if (envvar === 0) return envvar;
@@ -35,7 +35,7 @@ export const HEALTH_CHECK_URL = argv.healthCheckUrl || getVal(process.env.HEALTH
 // Supported values: 'IAP' (Identity-Aware Proxy), 'CLIENT' (auth tokens in Authotization header):
 export const SECURITY = argv.security || getVal(process.env.SECURITY) || 'CLIENT';
 
-// applicabale for SECURITY=='IAP', it's a value from 'Signed Header JWT Audience' 
+// applicabale for SECURITY=='IAP', it's a value from 'Signed Header JWT Audience'
 // on https://console.cloud.google.com/security/iap?project=YOUR_PROJECT
 // See https://cloud.google.com/iap/docs/signed-headers-howto#verifying_the_jwt_payload
 export const EXPECTED_AUDIENCE = argv.expectedAudience || getVal(process.env.EXPECTED_AUDIENCE);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 Google LLC
+ * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 import { google } from 'googleapis';
 
 /**
- * Returns current GCP project id, 
+ * Returns current GCP project id,
  * overcome issue https://github.com/googleapis/google-auth-library-nodejs/issues/1211
  * (when google.auth.getProjectId return project id from global config instead of from specified keyFile).
  * @returns project id
