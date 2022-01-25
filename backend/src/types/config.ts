@@ -89,7 +89,8 @@ export type ExecutionConfig = {
    */
   campaignId?: string;
   notificationEmails?: string;
-  run_at?: string; //'00:00',
+  notificationsEnabled?: boolean;
+  //run_at?: string; //'00:00',
   //dv360ApiVersion?: string; //'2.0 or 1.0'
   //reallocateBudgets?: boolean;
   //adjustBids?: boolean;
@@ -155,13 +156,13 @@ export default class ConfigInfo implements Config {
       destination_folder: ''
     };
     this.execution = {
-      //run_at: '00:00',
       advertiserId: '',
       campaignId: '',
       //dv360ApiVersion: '1.0', //'2.0 or 1.0'
       //reallocateBudgets: true,
       //adjustBids: true,
       notificationEmails: '',
+      notificationsEnabled: false
     } as ExecutionConfig;
     this.customFields = [];
   }
@@ -343,7 +344,7 @@ export enum ReportFormat {
     ApplyFloorPriceForDeals: "Apply Floor Price For Deals", // "TRUE", "FALSE"
     AlgorithmId: "Algorithm Id",  // integer
   },
-  LI: {
+  LI: { // validated for SDF v5.3
     // See https://developers.google.com/display-video/api/structured-data-file/v5-3/LineItem
     LineItemId: "Line Item Id",
     IoId: "Io Id",
@@ -499,3 +500,5 @@ export enum ReportFormat {
     VideoDiscoveryLandingPage: "Video Discovery Landing Page"
   }
 }
+
+export const SDF_VERSION = '5.3'; // the latest supported SDF Version (see https://developers.google.com/display-video/api/structured-data-file/rel-notes?hl=en)

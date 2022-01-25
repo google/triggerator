@@ -725,6 +725,27 @@ router.get('/settings', async (req: express.Request, res: express.Response) => {
   res.send({ settings });
 });
 
+router.post('/settings/send-test-email', async (req: express.Request, res: express.Response) => {
+  let userEmail = req.user;
+  if (IS_GAE && !userEmail) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: "Couldn't detect user" });
+    return;
+  }
+  let emails = <string>req.body.emails;
+  let reciever = emails || userEmail;
+  if (!reciever) {
+    return res.status(StatusCodes.BAD_REQUEST).send({ error: "No emails provided and couldn't detect current user" });
+  }
+  try {
+    const text = `Hi there! This is a test email from Triggerator. Congrats, your mail setup seems to work. See you.`;
+    let info = await sendEmail(reciever, 'Triggerator Status: Test', text);
+    req.log.debug(`Notification to ${reciever} sent:` + JSON.stringify(info));
+    return res.status(StatusCodes.OK).send();
+  } catch (e) {
+    req.log.error("[WebApi] An error occured on sending email notification about execution success", e);
+  }
+});
+
 router.post('/settings/reshare', async (req: express.Request, res: express.Response) => {
   let masterSpreadsheetId = MASTER_SPREADSHEET;
   if (!masterSpreadsheetId) {
