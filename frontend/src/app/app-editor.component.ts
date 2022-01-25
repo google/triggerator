@@ -16,7 +16,7 @@
 import * as _ from 'lodash';
 import { AfterViewInit, Component, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Config, DV360TemplateInfo, FeedInfo, FeedType, Feed_BigQuery_Url_RegExp, JobInfo, ReportFormat } from '../../../backend/src/types/config';
+import { Config, DV360TemplateInfo, FeedInfo, FeedType, Feed_BigQuery_Url_RegExp, JobInfo, ReportFormat, SDF_VERSION } from '../../../backend/src/types/config';
 import { ConfigService } from './shared/config.service';
 import { FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -368,6 +368,19 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
     );
   }
 
+  // General Tab
+  async sendTestEmail() {
+    this.loading = true;
+    try {
+      await this.configService.sendTestEmail(this.formGeneral.get('notificationEmails').value);
+      this.showSnackbar('Email sent');
+    } catch (e) {
+      this.handleApiError('Failed to sent an email', e);
+    } finally {
+      this.loading = false;
+    }
+  }
+
   // Execution Tab
   async saveSchedule() {
     this.loading = true;
@@ -460,6 +473,10 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
       console.error(e);
       this.executing = false;
     }
+  }
+
+  get SdfVersionName(): string {
+    return SDF_VERSION;
   }
 
   // Generate SDF Tab

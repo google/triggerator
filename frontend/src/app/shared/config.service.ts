@@ -119,4 +119,8 @@ export class ConfigService {
   shareSpreadsheets() {
     return this.backendService.postApi('/settings/reshare');
   }
+
+  sendTestEmail(emails?: string) {
+    return this.backendService.postApi('/settings/send-test-email', { emails });
+  }
 }

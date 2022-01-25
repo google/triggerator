@@ -40,8 +40,8 @@
       <mat-card>
         <!-- AdvertiserId -->
         <div class="row">
-          <div class="col">
-            <mat-form-field appearance="outline" color="accent">
+          <div class="col-4">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
               <mat-label>Advertiser Id</mat-label>
               <input matInput formControlName="advertiserId">
               <mat-error *ngIf="formGeneral.controls['advertiserId'].hasError('required')">
@@ -53,7 +53,7 @@
         </div>
         <!-- CampaignId -->
         <div class="row">
-          <div class="col">
+          <div class="col-4 mb-4">
             <mat-form-field appearance="outline" class="full-width" color="accent">
               <mat-label>Campaign Id</mat-label>
               <input matInput formControlName="campaignId">
@@ -65,13 +65,23 @@
         </div>
         <!-- notificationEmail -->
         <div class="row">
-          <div class="col">
+          <div class="col-8">
             <mat-form-field appearance="outline" class="full-width" color="accent">
               <mat-label>Notification email</mat-label>
               <input matInput formControlName="notificationEmails">
               <mat-icon matSuffix>email</mat-icon>
-              <mat-hint>An email where all notifications will be sent to</mat-hint>
+              <mat-hint>An email (or comma separated list of emails) where all notifications will be sent</mat-hint>
             </mat-form-field>
+          </div>
+          <div class="col-4">
+            <div class="alert alert-dark" *ngIf="this.config && !this.config?.execution.notificationsEnabled">
+              Currently email notifications are disabled. You might need to set up mail config on the server.
+            </div>
+            <div *ngIf="this.config?.execution.notificationsEnabled">
+              <button mat-raised-button (click)="sendTestEmail()" class="mt-2">
+                <mat-icon>mail</mat-icon> Send test email
+              </button>
+            </div>
           </div>
         </div>
       </mat-card>
@@ -133,6 +143,7 @@
             </mat-form-field>
           </div>
         </div>
+        <!-- Schedule operations -->
         <div class="row">
           <div class="col">
             <button mat-raised-button (click)="saveSchedule()" color="accent" class="mat-elevation-z2">
@@ -177,17 +188,17 @@
       </mat-card>
     </form>
   </mat-tab>
-  <!-- Tab: SDF -->
+  <!-- Tab: SDF Generation -->
   <mat-tab label="DV360 Generation">
     <form [formGroup]="formSdf" novalidate>
       <mat-card>
         <!-- template campaign id -->
         <div class="row">
-          <div class="col">
-            <mat-form-field appearance="outline" color="accent">
+          <div class="col-4">
+            <mat-form-field appearance="outline" class="full-width" color="accent">
               <mat-label>Template Campaign</mat-label>
               <input matInput formControlName="template_campaign">
-              <mat-hint>Id of a template DV360 campaign to generate SDF from</mat-hint>
+              <mat-hint>DV360 template campaign Id to generate SDF from</mat-hint>
             </mat-form-field>
           </div>
         </div>
@@ -345,6 +356,12 @@
             </mat-form-field>
           </div>
         </div>
+        <div class="row">
+          <div class="col">
+            <div class="alert alert-dark">Please note that the generated SDF will be in {{SdfVersionName}} format,
+              you might need to change the SDF version in your advertiser settings (Basic Details).</div>
+          </div>
+        </div>
         <!-- Operations -->
         <div class="row">
           <div class="col">
@@ -361,7 +378,7 @@
       </mat-card>
     </form>
   </mat-tab>
-  <!-- FEEDS tab -->
+  <!-- Tab: Feeds & Rules -->
   <mat-tab label="Feeds & Rules">
     <form [formGroup]="formFeeds" novalidate>
       <mat-card>
@@ -591,7 +608,7 @@
       </mat-card>
     </form>
   </mat-tab>
-  <!-- Reports tab -->
+  <!-- Tab: Reports -->
   <mat-tab label="Reports">
     <form [formGroup]="formReports" novalidate>
       <mat-card>

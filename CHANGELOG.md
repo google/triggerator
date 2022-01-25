@@ -2,6 +2,10 @@
 
 >NOTE: BE is backend (server application), FE - frontend (client applciation)
 
+## 2022-01-26
+* Reflect status of mail setup status in UI
+* Ability to send a test email from UI
+
 ## 2021-11-16 (1.8.0)
 * UI for defining joins of feeds
 
