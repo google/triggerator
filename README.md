@@ -213,6 +213,15 @@ Here's a list of supported environment variables:
 Please note that an empty value for a variable in app.yaml becomes 'None' in runtime. So it's better to avoid adding empty variables.
 
 
+## Troubleshooting
+
+If build (ng build) fails with 'Error: error:0308010C:digital envelope routines::unsupported' error then try to execute:
+```
+export NODE_OPTIONS=--openssl-legacy-provider
+```
+and rerun.
+
+
 ## Change history
 
 See [CHANGELOG](CHANGELOG.md)
@@ -223,3 +232,10 @@ See [CHANGELOG](CHANGELOG.md)
 Apache Version 2.0
 
 See [LICENSE](LICENSE)
+
+
+## Disclaimer
+This is not an officially supported Google product.
+
+Copyright 2020-2022 Google LLC. This solution, including any related sample code or data, is made available on an “as is,” “as available,” and “with all faults” basis, solely for illustrative purposes, and without warranty or representation of any kind. This solution is experimental, unsupported and provided solely for your convenience. Your use of it is subject to your agreements with Google, as applicable, and may constitute a beta feature as defined under those agreements. To the extent that you make any data available to Google in connection with your use of the solution, you represent and warrant that you have all necessary and appropriate rights, consents and permissions to permit Google to use and process that data. By using any portion of this solution, you acknowledge, assume and accept all risks, known and unknown, associated with its usage, including with respect to your deployment of any portion of this solution in your systems, or usage in connection with your business, if at all.
+

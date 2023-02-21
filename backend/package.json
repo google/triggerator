@@ -27,7 +27,7 @@
   ],
   "author": "Google Inc. (gTech gPS CSE team)",
   "private": true,
-  "license": "ISC",
+  "license": "Apache-2.0",
   "dependencies": {
     "@google-cloud/bigquery": "^5.9.0",
     "@google-cloud/debug-agent": "^5.2.8",
@@ -38,7 +38,7 @@
     "csv-parse": "^4.16.3",
     "express": "^4.17.1",
     "gaxios": "^4.3.2",
-    "google-auth-library": "^7.9.2",
+    "google-auth-library": "^7.14.1",
     "googleapis": "^87.0.0",
     "http-errors": "^1.8.0",
     "http-status-codes": "^2.1.4",

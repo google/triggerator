@@ -145,7 +145,7 @@ gcloud app deploy --quiet
 
 # create IAP
 echo -e "${COLOR}Creating oauth brand (consent screen) for IAP...${NC}"
-gcloud alpha iap oauth-brands create --application_title="$PROJECT_TITLE" --support_email=$USER_EMAIL
+gcloud iap oauth-brands create --application_title="$PROJECT_TITLE" --support_email=$USER_EMAIL
 # Output `gcloud alpha iap oauth-brands create` example:
 # Created [964442731935].
 # applicationTitle: Triggerator
@@ -154,16 +154,17 @@ gcloud alpha iap oauth-brands create --application_title="$PROJECT_TITLE" --supp
 # create OAuth client for IAP
 echo -e "${COLOR}Creating OAuth client for IAP...${NC}"
 # TODO: ideally we need to parse the response from the previous command to get brand full name
-gcloud alpha iap oauth-clients create projects/$PROJECT_NUMBER/brands/$PROJECT_NUMBER --display_name=iap \
+gcloud iap oauth-clients create projects/$PROJECT_NUMBER/brands/$PROJECT_NUMBER --display_name=iap \
   --format=json 2> /dev/null |\
   python3 -c "import sys, json; res=json.load(sys.stdin); i = res['name'].rfind('/'); print(res['name'][i+1:]); print(res['secret'])" \
   > .oauth
+# Now in .oauth file we have two line, first client id, second is client secret
+
 # NOTE: readarray isn't supported on MacOS
 # readarray -t lines < .oauth
 lines=()
-$ while IFS= read -r line; do lines+=("$line"); done < .oauth
+while IFS= read -r line; do lines+=("$line"); done < .oauth
 
-# Now in .oauth file we have two line, first client id, second is client secret
 IAP_CLIENT_ID=${lines[0]}
 IAP_CLIENT_SECRET=${lines[1]}
 # Output `gcloud alpha iap oauth-clients create` example:
