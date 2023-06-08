@@ -87,6 +87,13 @@ while :; do
   shift
 done
 
+BILLING_ENABLED=$(gcloud beta billing projects describe $PROJECT_ID --format="csv(billingEnabled)" | tail -n 1)
+if [[ "$BILLING_ENABLED" = 'False' ]]
+then
+  echo -e "${RED}The project $PROJECT_ID does not have a billing enabled. Please activate billing${NC}"
+  exit -1
+fi
+
 LOCATION=${GAE_LOCATION}1
 
 # enable required APIs
@@ -107,7 +114,7 @@ fi
 
 if [ -z "$spreadsheetId" ]; then
   echo "Spreadsheet was not created, unable to proceed"
-  exit
+  exit -1
 fi
 echo -e "${COLOR}Created a master spreadsheet: $spreadsheetId${NC}"
 
