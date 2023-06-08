@@ -354,6 +354,9 @@ export default class SdfGenerator {
     }
 
     // processing IOs
+    this.logger.debug(
+      `Generating InsertionOrders from ${tmplSdf.insertionOrders.rowCount} template InsertionOrders`
+    );
     for (let k = 0; k < tmplSdf.insertionOrders.rowCount; k++) {
       let no = 0;
       let tmplIo = tmplSdf.insertionOrders.getRow(k);
@@ -395,10 +398,14 @@ export default class SdfGenerator {
           }
         }
       }
+      this.logger.info(`Generated ${newSdf.insertionOrders!.rowCount} InsertionOrders`);
     }
 
     // processing LIs
     if (tmplSdf.lineItems) {
+      this.logger.debug(
+        `Generating LineItems from ${tmplSdf.lineItems.rowCount} template LineItems`
+      );
       for (var k = 0; k < tmplSdf.lineItems.rowCount; k++) {
         var no = 0;
         let tmplLi = tmplSdf.lineItems.getRow(k);
@@ -421,36 +428,40 @@ export default class SdfGenerator {
           }
         }
       }
+      this.logger.info(`Generated ${newSdf.lineItems!.rowCount} LineItems`);
     }
 
-    // processing AdDroups
+    // processing AdGroups
     if (tmplSdf.adGroups) {
+      this.logger.debug(`Generating AdGroups from ${tmplSdf.adGroups.rowCount} template AdGroups`);
       for (let k = 0; k < tmplSdf.adGroups.rowCount; k++) {
         let no = 0;
         let tmplAg = tmplSdf.adGroups.getRow(k);
         for (let i = 0; i < this.feedData.rowCount; i++) {
           let feedRow = this.feedData.getRow(i);
           for (const rule of this.config.rules!) {
-            if (!rule.youtube_state?.frequency_li)
-              continue;
+            // if (!rule.youtube_state?.frequency_li)
+            //   continue;
             let new_adgroup = this.sdf_adgroup(tmplAg, feedRow, rule, tmpl, no);
             newSdf.adGroups!.addRow(new_adgroup);
             no++;
           }
         }
       }
+      this.logger.info(`Generated ${newSdf.adGroups!.rowCount} AdGroups`);
     }
 
     // processing Ads
     if (tmplSdf.ads) {
+      this.logger.debug(`Generating Ads from ${tmplSdf.ads.rowCount} template Ads`);
       for (let k = 0; k < tmplSdf.ads.rowCount; k++) {
         let no = 0;
         let tmplAd = tmplSdf.ads.getRow(k);
         for (let i = 0; i < this.feedData.rowCount; i++) {
           let feedRow = this.feedData.getRow(i);
           for (const rule of this.config.rules!) {
-            if (!rule.youtube_state?.frequency_li)
-              continue;
+            // if (!rule.youtube_state?.frequency_li)
+            //   continue;
             let new_ads = this.sdf_ad(tmplAd, feedRow, rule, tmpl, no);
             for (const ad of new_ads) {
               newSdf.ads!.addRow(ad);
@@ -461,6 +472,7 @@ export default class SdfGenerator {
           }
         }
       }
+      this.logger.info(`Generated ${newSdf.ads!.rowCount} Ads`);
     }
 
     if (currentSdf) {
@@ -530,7 +542,7 @@ export default class SdfGenerator {
             this.logger.warn(`CustomFields' expression '${value}' was evaluated to ${value}`);
           }
         }
-        if (value !== null && value !== undefined && value !== '' && <any>value !== NaN) {
+        if (value !== null && value !== undefined && value !== '' && !Number.isNaN(value)) {
           row[cf.sdf_field] = value;
         }
       }
@@ -589,21 +601,26 @@ export default class SdfGenerator {
         budget = tmpl.info.total_budget;
       }
       if (_.isFinite(budget)) {
-        new_io[SDF.IO.BudgetSegments] = new_io[SDF.IO.BudgetSegments].replace(/\([0-9.]+;/, '(' + budget + ';');
+        new_io[SDF.IO.BudgetSegments] = new_io[SDF.IO.BudgetSegments].replace(
+          /\([0-9.]+;/,
+          "(" + budget + ";"
+        );
       }
       // NOTE: otherwise new_io's budget will have a value from tempalte IO
     }
     if (!this.currentSdf) {
       // generating a new SDF, we need adjust dates in Budget Segmets of IOs
       // BudgetSegments format:
-      // (Budget, Start Date, End Date).
+      // v5.3: (Budget, Start Date, End Date)
+      // v5.4: (Budget; Start Date; End Date;Campaign Budget ID;Description;), "Campaign Budget ID" and "Description" can be empty
       // Budget is in currency floating format. Dates are in MM/DD/YYYY format.
       // Example: "(100.50;01/01/2016;03/31/2016;);(200.00;04/01/2016;06/30/2016;);"
       //  "(1.0; 04/05/2021; 05/05/2021;);"
       let matches = /\([0-9.]+;/.exec(new_io[SDF.IO.BudgetSegments]);
       if (matches !== null) {
-        new_io[SDF.IO.BudgetSegments] =
-          `${matches[0]} ${this.formatDateOnly(this.startDate!)}; ${this.formatDateOnly(this.endDate!)};);`
+        new_io[SDF.IO.BudgetSegments] = `${matches[0]} ${this.formatDateOnly(
+          this.startDate!
+        )}; ${this.formatDateOnly(this.endDate!)}; ; ;);`;
       }
     }
 
