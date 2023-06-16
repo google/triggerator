@@ -515,9 +515,9 @@
             <h3 mat-subheader>Columns</h3>
           </div>
         </div>
-        <!-- name_column -->
         <div class="row">
-          <div class="col">
+          <!-- name_column -->
+          <div class="col-3">
             <mat-form-field appearance="outline" color="accent">
               <mat-label>Name column</mat-label>
               <input matInput formControlName="name_column" [matAutocomplete]="autoNameColumn">
@@ -536,10 +536,8 @@
             </mat-form-field>
             <mat-icon color="accent" *ngIf="formFeeds.get('name_column').valid">check</mat-icon>
           </div>
-        </div>
-        <!-- geo_code_column -->
-        <div class="row">
-          <div class="col">
+          <!-- geo_code_column -->
+          <div class="col-3">
             <mat-form-field appearance="outline" color="accent">
               <mat-label>GEO code column</mat-label>
               <input matInput formControlName="geo_code_column" [matAutocomplete]="autoGeoColumn">
@@ -558,10 +556,8 @@
             </mat-form-field>
             <mat-icon color="accent" *ngIf="formFeeds.get('geo_code_column').valid">check</mat-icon>
           </div>
-        </div>
-        <!-- budget_factor_column -->
-        <div class="row">
-          <div class="col">
+          <!-- budget_factor_column -->
+          <div class="col-3">
             <mat-form-field appearance="outline" color="accent">
               <mat-label>Budget factor column</mat-label>
               <input matInput formControlName="budget_factor_column" [matAutocomplete]="autoBudgetColumn">
