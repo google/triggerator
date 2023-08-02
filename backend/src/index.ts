@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 import { PORT, IS_GAE } from './env';
 import argv from './argv';
-if (IS_GAE) {
-  require('@google-cloud/debug-agent').start({ serviceContext: { enableCanary: false } });
-}
 import { google } from 'googleapis';
 import { OAUTH_SCOPES } from './consts';
 import createApp from './app';

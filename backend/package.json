@@ -1,6 +1,6 @@
 {
   "name": "triggerator-backend",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "Google DV360 Triggerator backend (decision engine)",
   "main": "index.js",
   "scripts": {
@@ -30,7 +30,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@google-cloud/bigquery": "^5.9.0",
-    "@google-cloud/debug-agent": "^5.2.8",
     "@google-cloud/logging-winston": "^4.1.1",
     "@google-cloud/storage": "^5.14.2",
     "@js-joda/core": "^4.0.0",
