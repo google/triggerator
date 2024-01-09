@@ -49,7 +49,7 @@ export default class ReportService {
     //   keyFile: argv.keyFile,
     // });
     let auth = google._options.auth;
-    const logging = new Logging({ projectId, auth: <GoogleAuth>auth });
+    const logging = new Logging({ projectId, auth: <any>auth });
     const log = logging.log(CLOUD_LOG_NAME);
 
     if (!fromDate) {

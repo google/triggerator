@@ -39,6 +39,22 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
-    }
+    }, {
+      "name": "Run Mocha Tests",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/node_modules/mocha/bin/_mocha",
+      "args": [
+        "--require", "ts-node/register",
+        "--require", "backend/src/test/fixtures-auth-key.ts",
+        "-u", "tdd",
+        "--timeout", "999999",
+        "--colors", "${workspaceFolder}/backend/src/test/**/*.ts"
+      ],
+      "protocol": "inspector",
+      "console": "internalConsole",
+      "internalConsoleOptions": "openOnSessionStart",
+      "sourceMaps": true,
+    },
   ]
 }

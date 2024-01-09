@@ -274,7 +274,7 @@ export default class DV360Facade {
 
   private unzipAndReadSdf(filename: string, resourceName: string): Promise<Record<string, string>> {
     return new Promise((resolve, reject) => {
-      yauzl.open(filename, { lazyEntries: true }, (err: Error | undefined, zipfile: yauzl.ZipFile | undefined) => {
+      yauzl.open(filename, { lazyEntries: true }, (err: Error | null, zipfile: yauzl.ZipFile) => {
         if (err || !zipfile) {
           throw new Error(`[DV360Facade] A file returned by DV360 API (${resourceName}) cannot be parsed as zip: ${err}`);
         }
