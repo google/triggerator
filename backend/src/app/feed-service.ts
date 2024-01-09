@@ -237,7 +237,7 @@ export default class FeedService {
       let buffer = Buffer.from(rawData);
       //let strData = '';
       let binaryString = Buffer.from('');
-      yauzl.fromBuffer(buffer, { lazyEntries: true }, (err: Error | undefined, zipfile: yauzl.ZipFile | undefined) => {
+      yauzl.fromBuffer(buffer, { lazyEntries: true }, (err: Error | null, zipfile: yauzl.ZipFile) => {
         if (err || !zipfile) {
           throw new Error(`[FeedService] A file returned by ${url} cannot be parsed as zip: ${err}`);
         }
@@ -447,7 +447,7 @@ export default class FeedService {
       for (let i = 0; i < objects.length; i++) {
         const item = objects[i];
         let row: any[] = [];
-        traverseObject(objects[0], (name, value, path, object) => {
+        traverseObject(item, (name, value, path, object) => {
           let field = path.join('.');
           let idx = column2idx[field];
           row[idx] = value;
