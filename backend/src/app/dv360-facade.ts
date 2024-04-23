@@ -16,7 +16,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Writable } from 'stream';
-import { google, displayvideo_v1 as dv360, displayvideo_v1 } from 'googleapis';
+import { google, displayvideo_v3 as dv360, displayvideo_v3 } from 'googleapis';
 import yauzl from 'yauzl';
 import csv_parse from 'csv-parse/lib/sync';
 import _ from 'lodash';
@@ -39,15 +39,15 @@ type DownloadOptionsRuntime = { max_wait: number, polling_interval: number };
 const TEMP_DIR = getTempDir();
 
 export default class DV360Facade {
-  private dv_api: displayvideo_v1.Displayvideo;
+  private dv_api: displayvideo_v3.Displayvideo;
   private options: DV360FacadeOptions;
 
   constructor(public logger: Logger, options?: DV360FacadeOptions) {
     if (!logger) throw new Error('[DV360Facade] Required argument logger is missing');
     options = options || {};
-    options.apiOptions = options.apiOptions || { version: "v1" };
+    options.apiOptions = options.apiOptions || { version: "v3" };
     if (!options.apiOptions.version)
-      options.apiOptions.version = "v1";
+      options.apiOptions.version = "v3";
     this.options = options;
     this.dv_api = google.displayvideo(options.apiOptions);
   }
