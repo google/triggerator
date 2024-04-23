@@ -17,6 +17,7 @@ cd ../backend
 npm install --no-audit
 npm run clean
 cd ../frontend
+export NODE_OPTIONS=--openssl-legacy-provider
 npm install --no-audit
 npm run build
 cd ../backend
