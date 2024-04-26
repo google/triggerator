@@ -32,7 +32,7 @@ export class EventListComponent implements OnInit {
     if (addTimestamp) {
       msg = formatDate(new Date(), 'dd/MM hh:mm:ss', 'en') + ' ' + msg;
     }
-    newElement.innerHTML = msg;
+    newElement.innerText = msg;
     this.eventList.nativeElement.appendChild(newElement);
   }
 
