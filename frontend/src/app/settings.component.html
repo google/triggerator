@@ -3,7 +3,7 @@
 
 <div *ngIf="errorMessage">
   <div class="alert alert-danger alert-dismissible" #errorMessageAlert>
-    <div [innerHTML]="errorMessage"></div>
+    <div [innerText]="errorMessage"></div>
     <button type="button" class="close" aria-label="Close" (click)="closeErrorMessage()">
       <span aria-hidden="true">&times;</span>
     </button>
