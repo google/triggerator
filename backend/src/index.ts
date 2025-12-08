@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import * as dotenv from "dotenv";
+dotenv.config();
+
 import { PORT, IS_GAE } from './env';
 import argv from './argv';
 import { google } from 'googleapis';

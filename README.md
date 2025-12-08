@@ -172,7 +172,12 @@ The application does not use any database. Instead all data is kept in Google Sp
 There are two type of environment in GAE: standard and flexible. See https://cloud.google.com/appengine/docs/the-appengine-environments
 As flexibile environment doesn't provide Free Tier we use standard. But you can manually change the environemnt in your `app.yaml`. Standard environment allows to scale down to 0 running instances when the application is not in use.
 
-There are several types of scaling in standard environment. By default automatic scaling is used. Different scaling type have [different characterictics](https://cloud.google.com/appengine/docs/standard/nodejs/how-instances-are-managed#scaling_types). For this solution the most important one is *request timeout*. During main execution there will lots of calls to DV360 API (to enable/disable IO/LI) and the API is quite slow. So one execution can last quite long.
+There are several types of scaling in standard environment. By default automatic scaling is used. 
+Different scaling type have [different characterictics](https://cloud.google.com/appengine/docs/standard/nodejs/how-instances-are-managed#scaling_types). 
+For this solution the most important one is *request timeout*. 
+During main execution there will lots of calls to DV360 API (to enable/disable IO/LI) and the API is quite slow. 
+So one execution can last quite long.
+
 Request timeouts are following:
 * Automatic scaling : 10 minutes
 * Basic/manual scaling: 24 hours

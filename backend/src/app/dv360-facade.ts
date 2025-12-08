@@ -221,7 +221,7 @@ export default class DV360Facade {
             "filterType": "FILTER_TYPE_CAMPAIGN_ID",
             "filterIds": [campaignId]
           },
-          //version: "SDF_VERSION_5_3" //SDF_VERSION_UNSPECIFIED
+          //version: "SDF_VERSION_7" - NOTE: we're not hard-coding and configure SDF version, instead we rely on what is set in Advertiser's settings
         },
       })).data;
     } catch(e) {
