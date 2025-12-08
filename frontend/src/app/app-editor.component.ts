@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/member-ordering */
 /**
  * Copyright 2022 Google LLC
  *
@@ -320,8 +321,8 @@ export class AppEditorComponent extends ComponentBase implements OnInit, AfterVi
 
   undo() {
     if (this.undoStack.length > 0) {
-      let newState = this.undoStack.pop();
-      let oldState = _.cloneDeep(this.config);
+      const newState = this.undoStack.pop();
+      const oldState = _.cloneDeep(this.config);
       this.config = newState;
       this.updateFormValues();
       this.configService.saveConfig(this.appId, newState, oldState).catch((e) => {

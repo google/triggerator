@@ -280,7 +280,7 @@ export enum ReportFormat {
      Timestamp: "Timestamp",
      Status: "Status",
      IoType: "Io Type",
-     BillableOutcome: "Billable Outcome",
+     //BillableOutcome: "Billable Outcome",
      Fees: "Fees",
      IntegrationCode: "Integration Code",
      Details: "Details",

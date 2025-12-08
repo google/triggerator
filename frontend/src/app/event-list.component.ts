@@ -28,7 +28,7 @@ export class EventListComponent implements OnInit {
   ngOnInit(): void { }
 
   addMessage(msg: string, addTimestamp: boolean = true) {
-    const newElement = document.createElement("li");
+    const newElement = document.createElement('li');
     if (addTimestamp) {
       msg = formatDate(new Date(), 'dd/MM hh:mm:ss', 'en') + ' ' + msg;
     }
