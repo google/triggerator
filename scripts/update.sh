@@ -36,7 +36,7 @@ if [ -f "$FILE" ]; then
 else
   echo "No local app.yaml found, trying to copy it from GCS"
   GCS_BUCKET=gs://${PROJECT_ID}-setup
-  gsutil cp $GCS_BUCKET/app.yaml $FILE
+  gcloud storage cp $GCS_BUCKET/app.yaml $FILE
 fi
 
 if [ -f "$FILE" ]; then
@@ -45,4 +45,3 @@ if [ -f "$FILE" ]; then
 else
   echo "Couldn't find app.yaml (App Engine configuration file), unable to proceed"
 fi
-

@@ -137,8 +137,8 @@ sed -i'.original' -e "s/GIT_COMMIT\s*:\s*.*$/GIT_COMMIT: '$GIT_COMMIT'/" app.yam
 
 # app.yaml is done, save it to a well-known location on GCS, so that it's not lost
 GCS_BUCKET=gs://${PROJECT_ID}-setup
-gsutil mb -l $LOCATION -b on $GCS_BUCKET
-gsutil cp app.yaml $GCS_BUCKET/
+gcloud storage buckets create $GCS_BUCKET --location $LOCATION --uniform-bucket-level-access
+gcloud storage cp app.yaml $GCS_BUCKET/
 
 
 # build and deploy app to GAE:
