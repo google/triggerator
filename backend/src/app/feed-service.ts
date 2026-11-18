@@ -179,7 +179,7 @@ export default class FeedService {
     let rePath = new RegExp(Feed_BigQuery_Url_RegExp);
     let match = rePath.exec(feedInfo.url);
     if (!match || !match.groups) {
-      throw new Error(`Unsupported BigQuery url (${feedInfo.url}), expected projects/project_id/datasets/dataset_id/[tables/table_id|views/view_id|procedures/proc_id]`);
+      throw new Error('Unsupported BigQuery url, expected projects/project_id/datasets/dataset_id/[tables/table_id|views/view_id|procedures/proc_id]');
     }
 
     let projectId = match.groups['project'];
@@ -189,7 +189,31 @@ export default class FeedService {
     let datasetId = match.groups['dataset'];
     let tableId = match.groups['table'];
     let viewId = match.groups['view'];
-    let procedure = match.groups['proc']
+    let procedure = match.groups['proc'];
+
+    // Validate projectId, datasetId, tableId, viewId, and procedure against
+    // GCP / BigQuery identifier grammars before constructing REST paths or
+    // backtick-quoted SQL identifiers (prevents CWE-89 SQL injection via
+    // backtick breakout as well as REST path traversal).
+    const projectPattern = /^(?:[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*:)?[A-Za-z0-9][A-Za-z0-9_-]{0,62}$/;
+    const datasetPattern = /^[A-Za-z0-9_]{1,1024}$/;
+    const tableOrViewPattern = /^[A-Za-z0-9_-]{1,1024}$/;
+    const procPattern = /^[A-Za-z0-9_-]{1,256}$/;
+    if (!projectId || !projectPattern.test(projectId)) {
+      throw new Error(`[FeedService] Invalid BigQuery identifier for projectId (must match ${projectPattern})`);
+    }
+    if (!datasetId || !datasetPattern.test(datasetId)) {
+      throw new Error(`[FeedService] Invalid BigQuery identifier for datasetId (must match ${datasetPattern})`);
+    }
+    for (const [name, value, pattern] of [
+      ['tableId', tableId, tableOrViewPattern],
+      ['viewId', viewId, tableOrViewPattern],
+      ['procedure', procedure, procPattern],
+    ] as Array<[string, string | undefined, RegExp]>) {
+      if (value !== undefined && !pattern.test(value)) {
+        throw new Error(`[FeedService] Invalid BigQuery identifier for ${name} (must match ${pattern})`);
+      }
+    }
 
     // Using old api client (supports global auth via google.auth)
     // const bigquery = google.bigquery('v2');
@@ -229,7 +253,7 @@ export default class FeedService {
       this.logger.debug(`[FeedService] Loaded ${values.length} rows from BigQuery stored procedure ${projectId}.${datasetId}.${procedure}`);
       return new FeedData(values);
     }
-    throw new Error(`Unsupported BigQuery url (${feedInfo.url})`);
+    throw new Error('Unsupported BigQuery url');
   }
 
   unzip(rawData: ArrayBuffer, url: string): Promise<Buffer> {
