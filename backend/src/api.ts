@@ -258,17 +258,67 @@ router.get('/config/:id/rules/validate', async (req: express.Request, res: expre
 });
 
 router.get('/config/:id/sdf/download', (req: express.Request, res: express.Response, next) => {
-  let filename = <string>req.query.file;
-  if (!filename) {
+  const rawFile = req.query.file;
+  if (rawFile === undefined || rawFile === '') {
     res.status(StatusCodes.BAD_REQUEST).send({ error: 'file parameter wasn\'t specified' });
     return;
   }
+  if (typeof rawFile !== 'string') {
+    res.status(StatusCodes.BAD_REQUEST).send({ error: 'invalid file parameter' });
+    return;
+  }
 
-  let filepath = path.resolve(path.join(getTempDir(), filename));
+  const filename = rawFile;
+  const tempDir = path.resolve(getTempDir());
+  const tempDirPrefix = tempDir.endsWith(path.sep) ? tempDir : tempDir + path.sep;
+  const filepath = path.resolve(path.join(tempDir, filename));
+  if (
+    filename.includes('\0') ||
+    filename.includes('/') ||
+    filename.includes('\\') ||
+    filename === '.' ||
+    filename === '..' ||
+    path.basename(filename) !== filename ||
+    !filepath.startsWith(tempDirPrefix)
+  ) {
+    res.status(StatusCodes.BAD_REQUEST).send({ error: 'invalid file parameter' });
+    return;
+  }
+
+  let stat: fs.Stats;
+  let realTempDir: string;
+  let realFilepath: string;
+  try {
+    stat = fs.lstatSync(filepath);
+    if (stat.isSymbolicLink() || !stat.isFile()) {
+      res.status(StatusCodes.BAD_REQUEST).send({ error: 'invalid file parameter' });
+      return;
+    }
+    realTempDir = fs.realpathSync(tempDir);
+    realFilepath = fs.realpathSync(filepath);
+  } catch (e) {
+    if (e && e.code === 'ENOENT') {
+      req.log.error(`[WebApi][GenerateSdf] Sending SDF file ${filepath} failed: ${e.message}`, e);
+      res.status(StatusCodes.NOT_FOUND).send({ error: 'SDF file not found' });
+      return;
+    }
+    next(e);
+    return;
+  }
+
+  const realTempDirPrefix = realTempDir.endsWith(path.sep) ? realTempDir : realTempDir + path.sep;
+  if (!realFilepath.startsWith(realTempDirPrefix)) {
+    res.status(StatusCodes.BAD_REQUEST).send({ error: 'invalid file parameter' });
+    return;
+  }
+
   res.setHeader("Access-Control-Expose-Headers", "Content-Disposition");
-  res.download(filepath, (err) => {
+  res.download(realFilepath, (err) => {
     if (err) {
-      req.log.error(`[WebApi][GenerateSdf] Sending SDF file ${filepath} failed: ${err.message}`, err);
+      req.log.error(`[WebApi][GenerateSdf] Sending SDF file ${realFilepath} failed: ${err.message}`, err);
+      if (!res.headersSent) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({ error: 'Failed to send SDF file' });
+      }
       return;
     }
   });
