@@ -70,7 +70,7 @@ export type FeedInfo = {
   username?: string,
   password?: string,
 }
-export const Feed_BigQuery_Url_RegExp = "(projects\/(?<project>[^\/]+)\/)?datasets\/(?<dataset>[^\/]+)\/(tables\/(?<table>.+)|views\/(?<view>.+)|procedures\/(?<proc>.+))";
+export const Feed_BigQuery_Url_RegExp = "^(projects\/(?<project>[^\/]+)\/)?datasets\/(?<dataset>[^\/]+)\/(tables\/(?<table>.+)|views\/(?<view>.+)|procedures\/(?<proc>.+))$";
 
 export type FeedConfig = {
   name_column?: string;

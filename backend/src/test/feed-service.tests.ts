@@ -558,4 +558,104 @@ suite('FeedService', () => {
       ]);
     });
   });
+
+  suite('load data from BigQuery (identifier validation)', function () {
+    const BigQueryModule = require('@google-cloud/bigquery');
+    let origQuery: any;
+    let origDataset: any;
+    let capturedQueries: string[];
+    let capturedTables: Array<{ datasetId: string; tableId: string }>;
+
+    setup(function () {
+      capturedQueries = [];
+      capturedTables = [];
+      origQuery = BigQueryModule.BigQuery.prototype.query;
+      origDataset = BigQueryModule.BigQuery.prototype.dataset;
+      BigQueryModule.BigQuery.prototype.query = async function (req: any) {
+        const sql = typeof req === 'string' ? req : req.query;
+        capturedQueries.push(sql);
+        return [[{ col: 1 }]];
+      };
+      BigQueryModule.BigQuery.prototype.dataset = function (datasetId: string) {
+        return {
+          table: async (tableId: string) => {
+            capturedTables.push({ datasetId, tableId });
+            return {
+              getMetadata: async () => [{ schema: { fields: [{ name: 'col' }] } }],
+              getRows: async () => [[{ col: 1 }]],
+            };
+          },
+        };
+      };
+    });
+
+    teardown(function () {
+      BigQueryModule.BigQuery.prototype.query = origQuery;
+      BigQueryModule.BigQuery.prototype.dataset = origDataset;
+    });
+
+    test('allows valid BigQuery views, procedures, tables, macros, and domain-scoped projects', async function () {
+      const feedService = new FeedService(winston);
+      await feedService.loadFeed({
+        name: 'view1',
+        type: FeedType.GoogleCloudBigQuery,
+        url: 'projects/my-proj/datasets/my_ds/views/gsk-feed',
+      });
+      await feedService.loadFeed({
+        name: 'view2',
+        type: FeedType.GoogleCloudBigQuery,
+        url: 'projects/google.com:triggerator-sandbox/datasets/2026_ds/views/%Y_%m_view',
+      });
+      await feedService.loadFeed({
+        name: 'proc1',
+        type: FeedType.GoogleCloudBigQuery,
+        url: 'projects/my-proj/datasets/my_ds/procedures/load_feed_v1',
+      });
+      await feedService.loadFeed({
+        name: 'table1',
+        type: FeedType.GoogleCloudBigQuery,
+        url: 'projects/my-proj/datasets/my_ds/tables/2026_table-1',
+      });
+
+      assert.strictEqual(capturedQueries.length, 3);
+      assert.strictEqual(capturedQueries[0], 'select * from `my-proj.my_ds.gsk-feed`');
+      assert.match(capturedQueries[1], /^select \* from `google\.com:triggerator-sandbox\.2026_ds\.\d{4}_\d{2}_view`$/);
+      assert.strictEqual(capturedQueries[2], 'call `my-proj.my_ds.load_feed_v1`()');
+      assert.deepStrictEqual(capturedTables, [{ datasetId: 'my_ds', tableId: '2026_table-1' }]);
+    });
+
+    test('rejects SQL injection and traversal payloads before reaching BigQuery', async function () {
+      const feedService = new FeedService(winston);
+      const maliciousUrls = [
+        'projects/p/datasets/d/views/v` UNION ALL SELECT secret FROM `victim.ds.t` -- ',
+        'projects/p/datasets/d/procedures/x`(); SELECT secret; -- ',
+        'projects/p`--/datasets/d/views/v',
+        'projects/p.other/datasets/d/views/v',
+        'projects/p/datasets/d`--/views/v',
+        'projects/p/datasets/d.other/views/v',
+        'projects/p/datasets/d/views/v\\',
+        'projects/p/datasets/d/tables/../../other',
+        'projects/p/datasets/d/views/my_view\n` UNION ALL SELECT 1 --',
+      ];
+
+      for (const badUrl of maliciousUrls) {
+        await assert.rejects(
+          async () => {
+            await feedService.loadFeed({
+              name: 'bad',
+              type: FeedType.GoogleCloudBigQuery,
+              url: badUrl,
+            });
+          },
+          (err: Error) => {
+            assert.ok(!err.message.includes('UNION ALL'), 'error must not reflect payload');
+            return true;
+          },
+          `Expected rejection for: ${badUrl}`
+        );
+      }
+      assert.strictEqual(capturedQueries.length, 0);
+      assert.strictEqual(capturedTables.length, 0);
+    });
+  });
 });
